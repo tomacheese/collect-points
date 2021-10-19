@@ -1,6 +1,6 @@
-import TestCrawler from "./providers/test";
+import PointTownCrawler from "./providers/pointtown";
 
 (async () => {
-  const crawler = new TestCrawler();
-  await crawler.run();
+  const crawler = new PointTownCrawler();
+  await crawler.run(true);
 })();
