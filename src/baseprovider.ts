@@ -1,6 +1,7 @@
 import fs from "fs";
 import { Logger } from "log4js";
-import puppeteer, { Browser, Page } from "puppeteer";
+import { Browser, Page } from "puppeteer";
+import puppeteer from "puppeteer-extra";
 import { getLogger } from "./functions";
 
 export interface Crawler {
@@ -20,15 +21,24 @@ export abstract class BaseCrawler implements Crawler {
    * @param method 実行対象のメソッド
    */
   async run(debug: boolean = false, method: any = null): Promise<void> {
-    if (!fs.existsSync("data")) {
-      fs.mkdirSync("data");
+    if (!fs.existsSync("user_data")) {
+      fs.mkdirSync("user_data");
     }
-    const browser = await puppeteer.launch({
-      headless: !debug,
+    const launchOptions = {
+      headless: false,
       slowMo: 100,
-      userDataDir: `data/${this.constructor.name.toLowerCase()}`,
-    });
+      userDataDir: `user_data/${this.constructor.name.toLowerCase()}`,
+      defaultViewport: {
+        width: 1920,
+        height: 1080,
+      },
+    };
+
+    const browser = await puppeteer.launch(launchOptions);
     const _page = await browser.newPage();
+    await _page.setUserAgent(
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:93.0) Gecko/20100101 Firefox/93.0"
+    );
     if (method !== null) {
       this.logger.info("Target mode");
       if (!(await this.checkAlreadyLogin(_page))) {
@@ -44,6 +54,7 @@ export abstract class BaseCrawler implements Crawler {
       }
       await this.crawl(browser, _page);
     }
+    this.logger.info("close browser");
     if (!debug) await browser.close();
   }
 

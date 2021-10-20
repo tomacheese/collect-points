@@ -1,6 +1,8 @@
+import axios from "axios";
+import config from "config";
 import log4js from "log4js";
 import path from "path";
-import { Page } from "puppeteer";
+import { ElementHandle, Page } from "puppeteer";
 
 const sleep = (msec: number) =>
   new Promise((resolve) => setTimeout(resolve, msec));
@@ -50,11 +52,19 @@ export async function isExistsSelector(
   });
 }
 
-export async function getNewTabPage(
+export async function getNewTabPageFromSelector(
   logger: log4js.Logger,
   page: Page,
   elementSelector: string
-) {
+): Promise<Page | null> {
+  await page.waitForSelector(elementSelector);
+  return getNewTabPage(logger, page, await page.$(elementSelector));
+}
+export async function getNewTabPage(
+  logger: log4js.Logger,
+  page: Page,
+  element: ElementHandle<Element> | null
+): Promise<Page | null> {
   logger.info(`getNewTabPage()`);
   const browser = page.browser();
   const beforeOpenPages = (await browser.pages()).length;
@@ -62,9 +72,7 @@ export async function getNewTabPage(
 
   await sleep(1000);
   logger.info(`click element`);
-  await page
-    .waitForSelector(elementSelector)
-    .then((element) => element?.click());
+  element?.click();
 
   let successful = false;
   for (let i = 0; i < 30; i++) {
@@ -91,4 +99,59 @@ export async function getNewTabPage(
   const newPage = pages[pages.length - 1];
   await sleep(3000);
   return newPage;
+}
+
+export function sendMessage(channel: string, message: string) {
+  axios
+    .post(
+      `https://discordapp.com/api/channels/${channel}/messages`,
+      {
+        content: message,
+      },
+      {
+        headers: {
+          "content-type": "application/json",
+          Authorization: `Bot ${config.get("discordToken")}`,
+        },
+      }
+    )
+    .then((response) => {
+      console.log(response);
+    })
+    .catch((error) => {
+      console.log(error);
+    });
+}
+
+export function startNotify(targetScript: string) {
+  sendMessage(
+    "643815908753539072",
+    `:ballot_box_with_check: Start script: \`${targetScript}\``
+  );
+}
+export function finishedNotify(
+  targetScript: string,
+  beforePt: number,
+  afterPt: number,
+  rate: number
+) {
+  const earnedPt = calcEarnedPoint(beforePt, afterPt);
+  let earnedYen;
+  if (rate != undefined) {
+    earnedYen = calcEarnedYen(earnedPt, rate);
+  } else {
+    earnedYen = null;
+  }
+  // saveCurrentPoint(targetScript, afterPt, earnedPt, earnedYen);
+  sendMessage(
+    "643815908753539072",
+    `:ballot_box_with_check: Finished script: \`${targetScript}\` (\`${beforePt}\`pt -> \`${afterPt}\`pt | Earned: \`${earnedPt}\`pt, \`${earnedYen}\`yen)`
+  );
+}
+
+export function calcEarnedPoint(prevPoint: number, currPoint: number) {
+  return +(currPoint - prevPoint).toFixed(2);
+}
+export function calcEarnedYen(earnedPoint: number, rate: number) {
+  return +(earnedPoint * rate).toFixed(2);
 }
