@@ -1,39 +1,10 @@
-import axios from "axios";
-import config from "config";
-import log4js from "log4js";
-import path from "path";
-import { ElementHandle, Page } from "puppeteer";
+import { Logger } from '@book000/node-utils'
+import { Browser, ElementHandle, Page } from 'puppeteer-core'
+import { getConfig } from './configuration'
+import { sendDiscordMessage } from './discord'
 
-const sleep = (msec: number) =>
-  new Promise((resolve) => setTimeout(resolve, msec));
-
-export function getLogger(scriptName: string) {
-  log4js.configure({
-    appenders: {
-      console: {
-        type: "console",
-      },
-      system: {
-        type: "dateFile",
-        filename: path.join("logs", scriptName),
-        pattern: "_yyyy-MM-dd.log",
-        keepFileExt: true,
-        alwaysIncludePattern: true,
-        daysToKeep: 10,
-        layout: {
-          type: "pattern",
-          pattern: "[%d{yyyy-MM-dd hh:mm:ss.SSS}] [%p] %m",
-        },
-      },
-    },
-    categories: {
-      default: {
-        appenders: ["console", "system"],
-        level: "all",
-      },
-    },
-  });
-  return log4js.getLogger(scriptName);
+export async function sleep(msec: number) {
+  return new Promise((resolve) => setTimeout(resolve, msec))
 }
 
 export async function isExistsSelector(
@@ -42,116 +13,126 @@ export async function isExistsSelector(
 ): Promise<boolean> {
   return new Promise((resolve) => {
     page
-      .waitForSelector(selector, { visible: true, timeout: 3000 })
+      .waitForSelector(selector, { timeout: 3000 })
       .then(() => {
-        resolve(true);
+        resolve(true)
       })
       .catch(() => {
-        resolve(false);
-      });
-  });
+        resolve(false)
+      })
+  })
 }
 
 export async function getNewTabPageFromSelector(
-  logger: log4js.Logger,
+  logger: Logger,
   page: Page,
   elementSelector: string
 ): Promise<Page | null> {
-  await page.waitForSelector(elementSelector);
-  return getNewTabPage(logger, page, await page.$(elementSelector));
+  await page.waitForSelector(elementSelector)
+  return getNewTabPage(logger, page, await page.$(elementSelector))
 }
+
+export async function getPageCount(browser: Browser) {
+  const pages = await browser.pages()
+  return pages.length
+}
+
 export async function getNewTabPage(
-  logger: log4js.Logger,
+  logger: Logger,
   page: Page,
   element: ElementHandle<Element> | null
 ): Promise<Page | null> {
-  logger.info(`getNewTabPage()`);
-  const browser = page.browser();
-  const beforeOpenPages = (await browser.pages()).length;
-  logger.info(`beforeOpenPages: ${beforeOpenPages}`);
+  logger.info(`getNewTabPage()`)
+  const browser = page.browser()
+  const beforeOpenPages = await getPageCount(browser)
+  logger.info(`beforeOpenPages: ${beforeOpenPages}`)
 
-  await sleep(1000);
-  logger.info(`click element`);
-  element?.click();
+  await sleep(1000)
+  logger.info(`click element`)
+  element?.click()
 
-  let successful = false;
-  for (let i = 0; i < 30; i++) {
+  let successful = false
+  for (let index = 0; index < 30; index++) {
     // wait 30 seconds
-    logger.info(`[${i}] getting pages`);
-    const pages = await browser.pages();
-    const afterOpenPages = pages.length;
-    logger.info(`[${i}] afterOpenPages: ${afterOpenPages}`);
+    logger.info(`[${index}] getting pages`)
+    const afterOpenPages = await getPageCount(browser)
+    logger.info(`[${index}] afterOpenPages: ${afterOpenPages}`)
     if (beforeOpenPages < afterOpenPages) {
-      successful = true;
-      logger.info(`[${i}] successful, break`);
-      break;
+      successful = true
+      logger.info(`[${index}] successful, break`)
+      break
     }
-    logger.info(`[${i}] wait 1 sec`);
-    await sleep(1000);
-    logger.info(`[${i}] next...`);
+    logger.info(`[${index}] wait 1 sec`)
+    await sleep(1000)
+    logger.info(`[${index}] next...`)
   }
   if (!successful) {
-    logger.info(`not successful`);
-    return null;
+    logger.info(`not successful`)
+    return null
   }
-  logger.info(`afterOpenPages: successful`);
-  const pages = await browser.pages();
-  const newPage = pages[pages.length - 1];
-  await sleep(3000);
-  return newPage;
+  logger.info(`afterOpenPages: successful`)
+  const pages = await browser.pages()
+  return pages[pages.length - 1]
 }
 
-export function sendMessage(channel: string, message: string) {
-  axios
-    .post(
-      `https://discordapp.com/api/channels/${channel}/messages`,
-      {
-        content: message,
-      },
-      {
-        headers: {
-          "content-type": "application/json",
-          Authorization: `Bot ${config.get("discordToken")}`,
-        },
+type EqualType = 'equal' | 'includes' | 'startsWith'
+
+export async function waitForUrl(
+  page: Page,
+  type: EqualType,
+  url: string,
+  timeout = 60_000
+) {
+  return new Promise<void>((resolve, reject) => {
+    const interval = setInterval(async () => {
+      const currentUrl = page.url()
+      if (type === 'equal' && currentUrl === url) {
+        clearInterval(interval)
+        resolve()
+      } else if (type === 'includes' && currentUrl.includes(url)) {
+        clearInterval(interval)
+        resolve()
+      } else if (type === 'startsWith' && currentUrl.startsWith(url)) {
+        clearInterval(interval)
+        resolve()
       }
-    )
-    .then((response) => {
-      console.log(response);
-    })
-    .catch((error) => {
-      console.log(error);
-    });
+    }, 1000)
+    setTimeout(() => {
+      clearInterval(interval)
+      reject(new Error(`Timeout: ${url}`))
+    }, timeout)
+  })
 }
 
-export function startNotify(targetScript: string) {
-  sendMessage(
-    "643815908753539072",
-    `:ballot_box_with_check: Start script: \`${targetScript}\``
-  );
+export function scrollToBottom(page: Page) {
+  return page.evaluate(() => {
+    window.scroll({
+      top: document.body.scrollHeight,
+      left: 0,
+      behavior: 'smooth',
+    })
+  })
 }
+
 export function finishedNotify(
   targetScript: string,
   beforePt: number,
   afterPt: number,
   rate: number
 ) {
-  const earnedPt = calcEarnedPoint(beforePt, afterPt);
-  let earnedYen;
-  if (rate != undefined) {
-    earnedYen = calcEarnedYen(earnedPt, rate);
-  } else {
-    earnedYen = null;
-  }
+  const config = getConfig()
+  const earnedPt = calcEarnedPoint(beforePt, afterPt)
+  const earnedYen = rate === undefined ? null : calcEarnedYen(earnedPt, rate)
   // saveCurrentPoint(targetScript, afterPt, earnedPt, earnedYen);
-  sendMessage(
-    "643815908753539072",
+  sendDiscordMessage(
+    config,
     `:ballot_box_with_check: Finished script: \`${targetScript}\` (\`${beforePt}\`pt -> \`${afterPt}\`pt | Earned: \`${earnedPt}\`pt, \`${earnedYen}\`yen)`
-  );
+  )
 }
 
-export function calcEarnedPoint(prevPoint: number, currPoint: number) {
-  return +(currPoint - prevPoint).toFixed(2);
+export function calcEarnedPoint(previousPoint: number, currentPoint: number) {
+  return +(currentPoint - previousPoint).toFixed(2)
 }
 export function calcEarnedYen(earnedPoint: number, rate: number) {
-  return +(earnedPoint * rate).toFixed(2);
+  return +(earnedPoint * rate).toFixed(2)
 }

@@ -1,18 +1,32 @@
 {
+  "ts-node": { "files": true },
   "compilerOptions": {
-    "target": "esnext",
+    "target": "es2020",
+    "module": "commonjs",
     "moduleResolution": "Node",
-    "lib": ["ESNext", "ESNext.AsyncIterable", "DOM"],
+    "lib": ["ESNext", "esnext.AsyncIterable", "DOM"],
+    "outDir": "./dist",
+    "removeComments": true,
     "esModuleInterop": true,
     "allowJs": true,
+    "checkJs": true,
+    "incremental": true,
     "sourceMap": true,
+    "declaration": true,
+    "declarationMap": true,
     "strict": true,
-    "noEmit": true,
+    "noImplicitAny": true,
+    "strictBindCallApply": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
     "experimentalDecorators": true,
     "baseUrl": ".",
+    "newLine": "LF",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["src/*"]
     }
   },
-  "include": ["src", "node_modules/@types/puppeteer/index.d.ts"]
+  "include": ["src/**/*"]
 }

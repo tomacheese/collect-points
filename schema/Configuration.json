@@ -1,0 +1,48 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "properties": {
+        "discord": {
+            "description": "Discord webhook URL or bot token",
+            "properties": {
+                "channel_id": {
+                    "description": "Discord channel ID (required if using bot)",
+                    "type": "string"
+                },
+                "token": {
+                    "description": "Discord bot token (required if using bot)",
+                    "type": "string"
+                },
+                "webhook_url": {
+                    "description": "Discord webhook URL (required if using webhook)",
+                    "type": "string"
+                }
+            },
+            "type": "object"
+        },
+        "pointtown": {
+            "properties": {
+                "answer": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "answer",
+                "email",
+                "password"
+            ],
+            "type": "object"
+        }
+    },
+    "required": [
+        "discord",
+        "pointtown"
+    ],
+    "type": "object"
+}
+

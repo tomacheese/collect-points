@@ -1,130 +1,109 @@
-import { BaseCrawler } from "@/baseProvider";
+import { BaseCrawler } from '@/base-provider'
+import { getConfig } from '@/configuration'
 import {
   finishedNotify,
   getNewTabPage,
   getNewTabPageFromSelector,
   isExistsSelector,
-} from "@/functions";
-import config from "config";
-import fs from "fs";
-import { Browser, Page } from "puppeteer";
+  scrollToBottom,
+  sleep,
+  waitForUrl,
+} from '@/functions'
+import fs from 'node:fs'
+import { Browser, Page, KnownDevices } from 'puppeteer-core'
 
 export default class PointTownCrawler extends BaseCrawler {
+  protected async login(page: Page): Promise<void> {
+    const config = getConfig()
+    await page.goto('https://www.pointtown.com/login', {
+      waitUntil: 'domcontentloaded',
+    })
+
+    await waitForUrl(
+      page,
+      'startsWith',
+      'https://id.gmo.jp/gui/auth/login/sso',
+      10_000
+    )
+      .then(async () => {
+        await page
+          .waitForSelector('input[type="email"]')
+          .then((element) => element?.type(config.pointtown.email))
+        await page
+          .waitForSelector('input[type="password"]')
+          .then((element) => element?.type(config.pointtown.password))
+        await page
+          .waitForSelector('button[type="submit"]')
+          .then((element) => element?.click())
+      })
+      .catch(() => {})
+
+    await waitForUrl(page, 'equal', 'https://www.pointtown.com/secure/question')
+      .then(async () => {
+        await page
+          .waitForSelector('input[name="answerText"]')
+          .then((element) => element?.type(config.pointtown.answer))
+        await page
+          .waitForSelector('button[type="submit"]')
+          .then((element) => element?.click())
+      })
+      .catch(() => {})
+
+    await waitForUrl(page, 'equal', 'https://www.pointtown.com/')
+  }
+
   protected async crawl(_: Browser, page: Page) {
-    this.logger.info("crawl()");
-    const beforePoint = await this.getCurrentPoint(page);
-    this.logger.info(`beforePoint: ${beforePoint}`);
+    this.logger.info('crawl()')
+    const beforePoint = await this.getCurrentPoint(page)
+    this.logger.info(`beforePoint: ${beforePoint}`)
 
-    await this.triangleLot(page);
-    await this.pointQ(page);
-    await this.mailCheck(page);
-    await this.pointChance(page);
-    await this.competition(page);
-    await this.usapo(page);
-    await this.pointNumbers(page);
-    await this.easyGame(page);
-    await this.lottery(page);
-    await this.collection(page);
-    await this.stamprally(page);
+    await this.triangleLot(page)
+    await this.pointQ(page)
+    await this.mailCheck(page)
+    await this.pointChance(page)
+    await this.competition(page)
+    await this.easyGame(page)
+    await this.gesoten(page)
+    await this.news(page)
+    await this.gacha(page)
 
-    // gesoten https://github.com/book000/rewards-bot_raspi/blob/2a45de79ff378f196c469c10c5252c2fddb6e6ad/scripts/pointtown.js#L1033
-    // gacha https://github.com/book000/rewards-bot_raspi/blob/2a45de79ff378f196c469c10c5252c2fddb6e6ad/scripts/pointtown.js#L1076
-    // kokki https://github.com/book000/rewards-bot_raspi/blob/2a45de79ff378f196c469c10c5252c2fddb6e6ad/scripts/pointtown.js#L401
-    // proverb https://github.com/book000/rewards-bot_raspi/blob/2a45de79ff378f196c469c10c5252c2fddb6e6ad/scripts/pointtown.js#L512
-    // eitango https://github.com/book000/rewards-bot_raspi/blob/2a45de79ff378f196c469c10c5252c2fddb6e6ad/scripts/pointtown.js#L649
-    // news https://github.com/book000/rewards-bot_raspi/blob/2a45de79ff378f196c469c10c5252c2fddb6e6ad/scripts/pointtown.js#L1150
-    // gacha_smf https://github.com/book000/rewards-bot_raspi/blob/2a45de79ff378f196c469c10c5252c2fddb6e6ad/scripts/pointtown.js#L1115
-    // news_smf https://github.com/book000/rewards-bot_raspi/blob/2a45de79ff378f196c469c10c5252c2fddb6e6ad/scripts/pointtown.js#L1228
+    // スマホ系
+    const mobilePage = await page.browser().newPage()
+    await this.omikuji(mobilePage)
+    await this.horoscope(mobilePage)
+    await mobilePage.close()
+    // await this.stamprally(page)
 
-    const afterPoint = await this.getCurrentPoint(page);
-    this.logger.info(`afterPoint: ${afterPoint}`);
-    finishedNotify(this.constructor.name, beforePoint, afterPoint, 0.05);
+    const afterPoint = await this.getCurrentPoint(page)
+    this.logger.info(`afterPoint: ${afterPoint}`)
+    finishedNotify(this.constructor.name, beforePoint, afterPoint, 0.05)
   }
 
   protected async checkAlreadyLogin(page: Page): Promise<boolean> {
-    this.logger.info("checkAlreadyLogin()");
-    await page.goto("https://www.pointtown.com/ptu/mypage/top", {
-      waitUntil: "networkidle2",
-    });
-    return await isExistsSelector(page, "span.pt-status-block__content--point");
-  }
-
-  async login(page: Page): Promise<void> {
-    this.logger.info("login()");
-    await page.goto(
-      "https://www.pointtown.com/ptu/show_login.do?nextPath=%2Fptu%2Ftop",
-      { waitUntil: "networkidle2" }
-    );
-    await page
-      .waitForSelector("img.Icon--Yahoo")
-      .then((element) => element?.click());
-
-    await page.waitForNavigation({ waitUntil: "networkidle2" });
-
-    await page
-      .waitForSelector("input#username")
-      .then((element) => element?.type(config.get("pointtown.yahoo_id")));
-    await page
-      .waitForSelector("button#btnNext")
-      .then((element) => element?.click());
-    await page
-      .waitForSelector("input#passwd")
-      .then((element) => element?.type(config.get("pointtown.password")));
-    await page
-      .waitForSelector("button#btnSubmit")
-      .then((element) => element?.click());
-
-    await page.waitForNavigation({ waitUntil: "networkidle2" });
-
-    const isGMOCheckPage = await isExistsSelector(
+    this.logger.info('checkAlreadyLogin()')
+    await page.goto('https://www.pointtown.com/mypage', {
+      waitUntil: 'networkidle2',
+    })
+    return await isExistsSelector(
       page,
-      'button[type="submit"]'
-    );
-
-    if (isGMOCheckPage) {
-      await page
-        .waitForSelector('button[type="submit"]')
-        .then((element) => element?.click())
-        .catch(() => {});
-
-      await page
-        .waitForNavigation({ waitUntil: "networkidle2" })
-        .catch(() => {});
-    }
-
-    const isCheckSecretAnswer = await isExistsSelector(page, "input#answer");
-    if (isCheckSecretAnswer) {
-      await page
-        .waitForSelector("input#answer")
-        .then((element) => element?.type(config.get("pointtown.secret_answer")))
-        .catch(() => {});
-      await page
-        .waitForSelector("input.pt-submit-btn")
-        .then((element) => element?.click())
-        .catch(() => {});
-    }
-
-    await page.waitForTimeout(3000);
+      'ul.c-mypage-summary-sec__main a[href="/mypage/point-history"]'
+    )
   }
 
   async getCurrentPoint(page: Page): Promise<number> {
-    this.logger.info("getCurrentPoint()");
-    await page.goto("https://www.pointtown.com/ptu/mypage/point_history", {
-      waitUntil: "networkidle2",
-    });
+    this.logger.info('getCurrentPoint()')
+    await page.goto('https://www.pointtown.com/mypage', {
+      waitUntil: 'networkidle2',
+    })
 
-    let nPointText = await page.$eval(
-      "dd.pt-definition-alignment__desc",
-      (el) => el.textContent
-    );
+    const nPointText = await page.$eval(
+      'ul.c-mypage-summary-sec__main a[href="/mypage/point-history"]',
+      (element) => element.textContent
+    )
     if (nPointText == null) {
-      return -1;
+      return -1
     }
-    if (!/^\s*[\d,]+pt/.test(nPointText)) {
-      return -1;
-    }
-    nPointText = nPointText.replace(/pt.*$/, "").replace(/[,\s]/g, "");
-    return parseInt(nPointText, 10);
+    return Number.parseInt(nPointText, 10)
   }
 
   /**
@@ -132,109 +111,106 @@ export default class PointTownCrawler extends BaseCrawler {
    * @param page ページ
    */
   async triangleLot(page: Page): Promise<void> {
-    this.logger.info("triangleLot()");
-    await this.triangleLotRed(page);
-    await this.triangleLotYellow(page);
-    await this.triangleLotPurple(page);
-    await this.triangleLotPink(page);
-    await this.triangleLotBlue(page);
-    await this.triangleLotGreen(page);
+    this.logger.info('triangleLot()')
+    await this.triangleLotRed(page)
+    await this.triangleLotYellow(page)
+    await this.triangleLotPurple(page)
+    await this.triangleLotPink(page)
+    await this.triangleLotBlue(page)
+    await this.triangleLotGreen(page)
   }
 
   async triangleLotRed(page: Page): Promise<void> {
-    this.logger.info("triangleLotRed()");
-    await page.goto("https://www.pointtown.com/ptu/shopping", {
-      waitUntil: "networkidle2",
-    });
+    this.logger.info('triangleLotRed()')
+    await page.goto('https://www.pointtown.com/ptu/shopping', {
+      waitUntil: 'networkidle2',
+    })
 
-    await this.checkTriangleLot(page);
+    await this.checkTriangleLot(page)
   }
 
   async triangleLotYellow(page: Page): Promise<void> {
-    this.logger.info("triangleLotYellow()");
-    await page.goto(
-      "https://www.pointtown.com/ptu/service/category/cmCatId-10001/sort-0",
-      {
-        waitUntil: "networkidle2",
-      }
-    );
+    this.logger.info('triangleLotYellow()')
+    await page.goto('https://www.pointtown.com/enquete', {
+      waitUntil: 'networkidle2',
+    })
 
-    await this.checkTriangleLot(page);
+    await this.checkTriangleLot(page)
   }
 
   async triangleLotPurple(page: Page): Promise<void> {
-    this.logger.info("triangleLotPurple()");
-    await page.goto("https://www.pointtown.com/ptu/creditcard/index.do", {
-      waitUntil: "networkidle2",
-    });
+    this.logger.info('triangleLotPurple()')
+    await page.goto('https://www.pointtown.com/category/service/creditcard', {
+      waitUntil: 'networkidle2',
+    })
 
-    await this.checkTriangleLot(page);
+    await this.checkTriangleLot(page)
   }
 
   async triangleLotPink(page: Page): Promise<void> {
-    this.logger.info("triangleLotPink()");
-    await page.goto("https://www.pointtown.com/ptu/enquete/top", {
-      waitUntil: "networkidle2",
-    });
+    this.logger.info('triangleLotPink()')
+    await page.goto('https://www.pointtown.com/popular/list/occurrence-count', {
+      waitUntil: 'networkidle2',
+    })
 
-    await this.checkTriangleLot(page);
+    await this.checkTriangleLot(page)
   }
 
   async triangleLotBlue(page: Page): Promise<void> {
-    this.logger.info("triangleLotBlue()");
-    await page.goto("https://www.pointtown.com/ptu/top", {
-      waitUntil: "networkidle2",
-    });
+    this.logger.info('triangleLotBlue()')
+    await page.goto('https://www.pointtown.com/recent', {
+      waitUntil: 'networkidle2',
+    })
 
-    await this.checkTriangleLot(page);
+    await this.checkTriangleLot(page)
   }
 
   async triangleLotGreen(page: Page): Promise<void> {
-    this.logger.info("triangleLotBlue()");
-    await page.goto("https://www.pointtown.com/ptu/forum/index", {
-      waitUntil: "networkidle2",
-    });
-    await page
-      .waitForSelector(".tit_topic a")
-      .then((element) => element?.click());
-    await page.waitForNavigation({ waitUntil: "networkidle2" });
+    this.logger.info('triangleLotBlue()')
+    await page.goto('https://www.pointtown.com/feature', {
+      waitUntil: 'networkidle2',
+    })
 
-    await this.checkTriangleLot(page);
+    await this.checkTriangleLot(page)
   }
 
   async checkTriangleLot(page: Page): Promise<void> {
-    await page.waitForTimeout(3000);
+    await scrollToBottom(page)
+    if (!(await isExistsSelector(page, 'button.link-sankaku-kuji'))) {
+      this.logger.info('Already triangleLot')
+      return
+    }
     await page.evaluate(() =>
-      document.querySelector("span.pt-icon__kuji")?.scrollIntoView({
-        block: "center",
-        inline: "center",
+      document.querySelector('button.link-sankaku-kuji')?.scrollIntoView({
+        block: 'center',
+        inline: 'center',
       })
-    );
+    )
     await page
-      .waitForSelector("span.pt-icon__kuji")
-      .then((element) => element?.click());
-    await page.waitForNavigation({ waitUntil: "networkidle2" });
+      .waitForSelector('button.link-sankaku-kuji')
+      .then((element) => element?.click())
+    await page.waitForNavigation({ waitUntil: 'networkidle2' })
 
     const newPage = await getNewTabPageFromSelector(
       this.logger,
       page,
-      "a#clickDailyBanner"
-    );
+      'a#js-click-banner'
+    )
     if (newPage == null) {
-      this.logger.error("newPage not found.");
-      return;
+      this.logger.error('newPage not found.')
+      return
     } else {
-      await newPage.waitForTimeout(5000);
-      await newPage.close();
+      await sleep(5000)
+      await newPage.close()
     }
-    await page.waitForTimeout(3000);
+    await sleep(3000)
 
     // Wチャンス
     await page
-      .waitForSelector("span.pt-icon__kuji")
+      .waitForSelector('img.double-kuji-link')
       .then((element) => element?.click())
-      .catch(() => {});
-    await page.waitForTimeout(3000);
+      .catch(() => {})
+    await sleep(3000)
   }
 
   /**
@@ -242,87 +218,100 @@ export default class PointTownCrawler extends BaseCrawler {
    * @param page ページ
    */
   async pointQ(page: Page): Promise<void> {
-    this.logger.info("pointQ()");
-    for (let i = 0; i < 4; i++) {
-      await page.goto("https://www.pointtown.com/ptu/quiz/input.do", {
-        waitUntil: "networkidle2",
-      });
+    this.logger.info('pointQ()')
+    await page.goto('https://www.pointtown.com/pointq/input', {
+      waitUntil: 'networkidle2',
+    })
+    if (!(await isExistsSelector(page, 'form#js-quiz-form h3'))) {
+      this.logger.info('Already pointQ')
+      return
+    }
 
-      try {
-        await page.waitForSelector(".today_Qtxt", {
-          timeout: 5000,
-        });
-      } catch (e) {
-        this.logger.info(`today already answered: ${(e as Error).message}`);
-        return;
-      }
+    while (true) {
       const question = await page.evaluate(
-        () => document.getElementsByClassName("today_Qtxt")[0].textContent
-      );
+        () => document.querySelector('form#js-quiz-form h3')?.textContent
+      )
       if (question == null) {
-        this.logger.error("question not found.");
-        return;
+        this.logger.error('question not found.')
+        return
       }
-      this.logger.info(`question: ${question}`);
-      let labels = await page.$$("form label p");
-      const json = fs.existsSync("data/pointq.json")
-        ? JSON.parse(fs.readFileSync(`data/pointq.json`, "utf8"))
-        : {};
-      if (json[question] != undefined) {
-        let answer = json[question];
-        this.logger.info(`know answer: ${answer}`);
-        let choicebool = false;
-        for (let l = 0; l < labels.length; l++) {
-          let choice = await page.evaluate(
-            (l) =>
-              document.querySelectorAll("form label p")[l].textContent?.trim(),
-            l
-          );
-          this.logger.info(`choice ${l}: ${choice}`);
-          if (choice == answer) {
-            this.logger.info(`this!`);
-            await labels[l].click();
-            choicebool = true;
-            break;
+      this.logger.info(`question: ${question}`)
+      const labels = await page.$$(
+        'form#js-quiz-form li.pointq-radio-item label'
+      )
+      const json = fs.existsSync('/data/pointq.json')
+        ? JSON.parse(fs.readFileSync(`/data/pointq.json`, 'utf8'))
+        : {}
+      if (json[question] === undefined) {
+        this.logger.info(`dont know answer...`)
+        let index
+        if (labels.length > 0) {
+          index = Math.floor(Math.random() * labels.length)
+          await labels[index].click()
+        }
+      } else {
+        const answer = json[question]
+        this.logger.info(`know answer: ${answer}`)
+        let choicebool = false
+        for (const [l, label] of labels.entries()) {
+          const choice = await page.evaluate(
+            (label) => label.textContent,
+            label
+          )
+          this.logger.info(`choice ${l}: ${choice}`)
+          if (choice === answer) {
+            this.logger.info(`this!`)
+            await label.click()
+            choicebool = true
+            break
           }
         }
         if (!choicebool) {
-          this.logger.info(`choice error...`);
-          delete json[question];
-          let i;
-          if (labels.length >= 1) {
-            i = Math.floor(Math.random() * labels.length);
-            await labels[i].click();
+          this.logger.info(`choice error...`)
+          delete json[question]
+          let index_
+          if (labels.length > 0) {
+            index_ = Math.floor(Math.random() * labels.length)
+            await labels[index_].click()
           }
-        }
-      } else {
-        this.logger.info(`dont know answer...`);
-        let i;
-        if (labels.length >= 1) {
-          i = Math.floor(Math.random() * labels.length);
-          await labels[i].click();
         }
       }
 
       await page
-        .waitForSelector("#main2c > div > p.answer_btn.clear > a", {
+        .waitForSelector('button#js-pointq-submit', {
           visible: true,
-          timeout: 10000,
+          timeout: 10_000,
         })
-        .then((element) => element?.click());
+        .then((element) => element?.click())
 
-      await page.waitForTimeout(10000);
-      await page.waitForSelector(".answer", {
-        timeout: 5000,
-      });
-      let trueanswer = await page.evaluate(
-        () => document.getElementsByClassName("answer")[0].textContent
-      );
-      this.logger.info(`trueanswer: ${trueanswer}`);
-      json[question] = trueanswer;
-      fs.writeFileSync(`data/pointq.json`, JSON.stringify(json));
+      await page.waitForSelector('p.pointq-correct-answer')
+      const trueanswer = await page.evaluate(
+        () =>
+          document
+            .querySelector('p.pointq-correct-answer')
+            ?.textContent?.split('：')[1] ?? ''
+      )
+      this.logger.info(`trueanswer: ${trueanswer}`)
+      json[question] = trueanswer
+      fs.writeFileSync(`/data/pointq.json`, JSON.stringify(json))
 
-      if (i != 4) await page.waitForTimeout(190000);
+      if (await isExistsSelector(page, 'a[href="/pointq/input"]')) {
+        await Promise.all([
+          page
+            .waitForSelector('a[href="/pointq/input"]')
+            .then((element) => element?.click()),
+          page.waitForNavigation({ waitUntil: 'networkidle2' }),
+        ])
+      } else if (await isExistsSelector(page, 'div.rewardResumebutton')) {
+        await Promise.all([
+          page
+            .waitForSelector('div.rewardResumebutton')
+            .then((element) => element?.click()),
+          page.waitForNavigation({ waitUntil: 'networkidle2' }),
+        ])
+      } else {
+        return
+      }
     }
   }
 
@@ -331,83 +320,86 @@ export default class PointTownCrawler extends BaseCrawler {
    * @param page ページ
    */
   async mailCheck(page: Page): Promise<void> {
-    this.logger.info("mail_check()");
-    await page.goto("https://www.pointtown.com/ptu/mailbox", {
-      waitUntil: "networkidle2",
-    });
+    this.logger.info('mail_check()')
+    await page.goto('https://www.pointtown.com/ptu/mailbox', {
+      waitUntil: 'networkidle2',
+    })
 
-    if (!isExistsSelector(page, ".pt-section__content ul.pt-list")) {
-      this.logger.info('".pt-section__content ul.pt-list" is not found');
-      return;
+    if (!isExistsSelector(page, 'ul.c-point-mail-table__row')) {
+      this.logger.info('"ul.c-point-mail-table__row" is not found')
+      return
     }
-    const mails = await page.$$(".pt-section__content ul.pt-list li");
-    for (let a of mails) {
-      if ((await a.$(".pt-list__badge--point")) == null) {
-        this.logger.log("not point... continue!");
-        continue;
+    const mails = await page.$$('ul.c-point-mail-table__row')
+    for (const a of mails) {
+      if ((await a.$('p.c-coin-label')) == null) {
+        this.logger.info('not point... continue!')
+        continue
       }
-      this.logger.log("point.");
+      this.logger.info('point.')
+      const title = await a.$('a.c-point-mail-table__l-title')
+      if (title == null) {
+        this.logger.error('title not found.')
+        continue
+      }
 
-      let id = await page.evaluate(
-        (element) => element.getAttribute("data-href"),
-        a
-      );
-      id = id.match(/id-([0-9]+)/)[1];
-      //let url = await (await a.getProperty("data-href")).jsonValue();
-      this.logger.info(`id : ${id}`);
-      this.logger.info(
-        `https://www.pointtown.com/ptu/mail_box/mail_body/pt/id-${id}`
-      );
+      const href = await page.evaluate((element) => element.href, title)
+      if (!href) {
+        this.logger.error('url not found.')
+        continue
+      }
+      const regex = /\/mypage\/mail\/(\d+)/
+      const match = href.match(regex)
+      if (match == null) {
+        this.logger.error('match not found.')
+        continue
+      }
+      const mailId = match[1]
+      this.logger.info(`Mail ID: ${mailId}`)
 
-      const newPage = await page.browser().newPage();
+      const newPage = await page.browser().newPage()
       await newPage.goto(
-        `https://www.pointtown.com/ptu/mail_box/mail_body/pt/id-${id}`,
-        { waitUntil: "networkidle2" }
-      );
-      let text = null;
-      for (let b = 0; b < 10; b++) {
-        text = await newPage.evaluate(() => {
-          if (document.querySelector("span#id_mail_body") == null) {
-            return null;
-          }
-          return document.querySelector("span#id_mail_body")?.innerHTML;
-        });
-        if (text == null) {
-          await newPage.waitForTimeout(1000);
-          continue;
+        `https://www.pointtown.com/mypage/mail/body/${mailId}`,
+        {
+          waitUntil: 'networkidle2',
         }
-      }
-      if (text == null) {
-        this.logger.info("text == null. continue");
-        continue;
-      }
+      )
+      const text = await newPage.evaluate(() => {
+        return document.body.innerHTML
+      })
 
-      //this.logger.info(text);
-      let _url = null;
-      const pattern1 = text.match(/\[Point\] ?(https?:\/\/.+)/);
-      const pattern2 = text.match(/\[Point\] ?(http?:\/\/.+)/);
-      const pattern3 = text.match(
-        /https?:\/\/www\.pointtown\.com\/ptu\/r\.g\?rid=[A-Za-z0-9]+/
-      );
+      const patterns = [
+        /\[Point] ?(https?:\/\/.+)/,
+        /href="(https:\/\/www\.pointtown\.com\/mail\/click.+?)"/,
+      ]
+      const matches = patterns
+        .map((pattern) => text.match(pattern))
+        .filter((x) => x != null) as RegExpMatchArray[]
 
-      if (pattern1 != null) {
-        _url = pattern1[1];
-      } else if (pattern2 != null) {
-        _url = pattern2[1];
-      } else if (pattern3 != null) {
-        _url = pattern3[0];
+      const url = matches[0][1].replace(/&amp;/g, '&')
+      if (url == null) {
+        this.logger.info('url not found.')
+        await newPage.close()
+        continue
       }
-      if (_url == null) {
-        this.logger.info("url not found.");
-        await newPage.close();
-        continue;
-      }
-      this.logger.info(`Url: ${_url}`);
-      const newPage2 = await page.browser().newPage();
-      await newPage2.goto(_url, { waitUntil: "networkidle2" });
-      await newPage2.waitForTimeout(10000);
-      await newPage2.close();
-      await newPage.close();
+      this.logger.info(`Url: ${url}`)
+      const newPage2 = await page.browser().newPage()
+      await newPage2.emulate(KnownDevices['iPhone 13 Pro'])
+      await newPage2.goto(url, { waitUntil: 'networkidle2' })
+      await newPage2
+        .waitForSelector('label.itp-form__label', {
+          timeout: 10_000,
+        })
+        .then((element) => element?.click())
+        .catch(() => {})
+      await newPage2
+        .waitForSelector('button.btn-default', {
+          timeout: 3000,
+        })
+        .then((element) => element?.click())
+        .catch(() => {})
+      await sleep(10_000)
+      await newPage2.close()
+      await newPage.close()
     }
   }
 
@@ -416,19 +408,32 @@ export default class PointTownCrawler extends BaseCrawler {
    * @param page ページ
    */
   async pointChance(page: Page): Promise<void> {
-    this.logger.info("pointchance()");
+    this.logger.info('pointchance()')
     await page.goto(
-      "https://www.pointtown.com/ptu/monitor/top.do#pointChance",
-      { waitUntil: "networkidle2" }
-    );
-    const anchors = await page.$$("li.pointchanceItem");
-    for (let a of anchors) {
-      const newPage = await getNewTabPage(this.logger, page, a);
+      'https://www.pointtown.com/monitor/fancrew/real-shop#link-coin-chance',
+      { waitUntil: 'networkidle2' }
+    )
+    const cards = await page.$$('li.c-coin-chance-card')
+    for (const card of cards) {
+      const button = await card.$('button')
+      const anchor = await card.$('a')
+      if (button == null || anchor == null) {
+        continue
+      }
+      const anchorClass = await page.evaluate(
+        (element) => element.className,
+        anchor
+      )
+      if (!anchorClass.includes('c-coin-chance-card__active-btn')) {
+        continue
+      }
+
+      const newPage = await getNewTabPage(this.logger, page, button)
       if (newPage == null) {
-        this.logger.error("newPage not found.");
+        this.logger.error('newPage not found.')
       } else {
-        await newPage.waitForTimeout(10000);
-        await newPage.close();
+        await sleep(5000)
+        await newPage.close()
       }
     }
   }
@@ -438,305 +443,187 @@ export default class PointTownCrawler extends BaseCrawler {
    * @param page ページ
    */
   async competition(page: Page): Promise<void> {
-    this.logger.info("competition()");
-    await page.goto("https://www.pointtown.com/ptu/competition/entry.do", {
-      waitUntil: "networkidle2",
-    });
+    this.logger.info('competition()')
+    await page.goto('https://www.pointtown.com/soudatsu', {
+      waitUntil: 'networkidle2',
+    })
     try {
-      await page
-        .waitForSelector('.competitionArea a[href*="complete.do"]', {
-          visible: true,
-          timeout: 10000,
-        })
-        .then((element) => element?.click());
-    } catch (e) {
-      this.logger.info((e as Error).message);
-    }
-  }
-
-  /**
-   * ベジモンコレクション
-   * @param page ページ
-   */
-  async collection(page: Page): Promise<void> {
-    this.logger.info("collection()");
-    try {
-      await page.goto("https://www.pointtown.com/ptu/collection/index.do", {
-        waitUntil: "networkidle2",
-      });
-      const anchors = await page.$$(".bnArea a");
-      for (let a of anchors) {
-        const newPage = await getNewTabPage(this.logger, page, a);
-        if (newPage == null) {
-          this.logger.error("newPage not found.");
-          continue;
-        }
-        await newPage.waitForTimeout(10000);
-        await newPage.close();
-      }
-      await page.goto(
-        "https://www.pointtown.com/ptu/collection/collection.do",
-        {
-          waitUntil: "networkidle2",
-        }
-      );
-      await page.waitForTimeout(5000);
-
-      const entryBtns = await page.$$(".entryBtn");
-      const random = Math.floor(Math.random() * 100);
-      this.logger.info(`random: ${random} / ${entryBtns.length}`);
-      if (random <= 30) {
-        this.logger.info(`random <= 30 -> [0]`);
-        entryBtns[0].click();
-      } else {
-        this.logger.info(`random > 30 -> [3]`);
-        entryBtns[3].click();
-      }
-      await page.waitForTimeout(5000);
-    } catch (e) {
-      this.logger.info(`Error: ${(e as Error).message} / Skip`);
-    }
-  }
-
-  /**
-   * ウサポ
-   * @param page ページ
-   */
-  async usapo(page: Page): Promise<void> {
-    this.logger.info("usapo()");
-
-    await page.goto("https://www.pointtown.com/ptu/travel", {
-      waitUntil: "networkidle2",
-    });
-    try {
-      await page
-        .waitForSelector('img[src*="kuji_usapo.gif"]', {
-          visible: true,
-          timeout: 10000,
-        })
-        .then((img) => img?.click());
-
-      const newPage = await getNewTabPageFromSelector(
-        this.logger,
-        page,
-        "#clickBx2 a img"
-      );
-      if (newPage == null) {
-        this.logger.error("newPage not found.");
-        return;
-      } else {
-        await newPage.waitForTimeout(10000);
-        await newPage.close();
-      }
-
-      await page
-        .waitForSelector('img[src*="kuji_kumapo.gif"]', {
-          visible: true,
-          timeout: 10000,
-        })
-        .then((img) => img?.click());
-    } catch (e) {
-      this.logger.info((e as Error).message);
-    }
-    await page.waitForTimeout(15000);
-  }
-
-  /**
-   * ポイントナンバー
-   * @param page ページ
-   */
-  async pointNumbers(page: Page): Promise<void> {
-    try {
-      this.logger.info("pointNumbers()");
-      let dayOfWeek = new Date().getDay();
-      if (dayOfWeek == 0 || dayOfWeek == 1) {
-        this.logger.info(`Today is ${dayOfWeek}. return.`);
-        return;
-      }
-      this.logger.info(`Today is ${dayOfWeek}. continue`);
-
-      await page.goto(
-        "https://www.pointtown.com/ptu/pointpark/game/numbers/top.do",
-        {
-          waitUntil: "networkidle2",
-        }
-      );
-      this.logger.info("click #main2c > div.numbersEntryBtn > a > img");
-      await page
-        .waitForSelector(`#main2c > div.numbersEntryBtn > a > img`, {
-          visible: true,
-        })
-        .then((element) => element?.click());
-      await page.waitForTimeout(5000);
-      this.logger.info("wait select");
-      await page.waitForSelector("select", {
-        visible: true,
-        timeout: 10000,
-      });
-      this.logger.info("select chosenNumber 1");
-      await page.evaluate(() => {
-        const chosenNumber = document.querySelector(
-          'select[name="chosenNumber"]'
-        );
-        if (chosenNumber == null) {
-          return;
-        }
-        (chosenNumber as HTMLSelectElement).selectedIndex = Math.floor(
-          Math.random() * 10
-        );
-      });
-      this.logger.info("select chosenNumber 2");
-      await page.evaluate(() => {
-        const chosenNumber = document.querySelector(
-          'select[name="chosenNumber"]'
-        );
-        if (chosenNumber == null) {
-          return;
-        }
-        (chosenNumber as HTMLSelectElement).selectedIndex = Math.floor(
-          Math.random() * 10
-        );
-      });
-      await page.waitForTimeout(5000);
-      this.logger.info("click numbersSelect");
-      await page
-        .waitForSelector(
-          `#numbersSelect > form > table > tbody > tr:nth-child(2) > td:nth-child(2) > input[type=image]`,
-          {
+      await Promise.all([
+        page
+          .waitForSelector('main form button[type="submit"]', {
             visible: true,
-          }
-        )
-        .then((element) => element?.click());
-      await page.waitForTimeout(5000);
-    } catch (e) {
-      this.logger.info((e as Error).message);
+            timeout: 3000,
+          })
+          .then((element) => element?.click()),
+        page.waitForNavigation({ waitUntil: 'networkidle2' }),
+      ])
+    } catch (error) {
+      this.logger.info((error as Error).message)
     }
   }
 
-  /**
-   * かんたんゲームボックス
-   * @param page ページ
-   */
   async easyGame(page: Page): Promise<void> {
-    this.logger.info("easyGame()");
+    this.logger.info('easyGame()')
+    await page.goto('https://www.pointtown.com/game/redirect/easygame', {
+      waitUntil: 'networkidle2',
+    })
 
-    await page.goto("https://www.pointtown.com/ptu/game/easygame2.do", {
-      waitUntil: "networkidle2",
-    });
     await page
-      .waitForSelector("button.btn-receive")
+      .waitForSelector('button.btn-receive')
       .then((element) => element?.click())
-      .catch(() => {});
+      .catch(() => {})
   }
 
   /**
-   * 宝くじ
+   * ゲソてん
    * @param page ページ
    */
-  async lottery(page: Page): Promise<void> {
-    this.logger.info("lottery()");
+  async gesoten(page: Page): Promise<void> {
+    this.logger.info('easyGame()')
 
-    await page.goto("https://www.pointtown.com/ptu/lottery", {
-      waitUntil: "networkidle2",
-    });
-    await page.waitForTimeout(5000);
-    try {
-      this.logger.info("モーダルウィンドウ開く");
-      await page
-        .waitForSelector("#modal-opener", {
-          visible: true,
-          timeout: 10000,
-        })
-        .then((a) => a?.click());
-      this.logger.info("枚数選択のselect存在確認");
-      await page.waitForSelector(
-        "#ex > table > tbody > tr:nth-child(1) > td > select",
-        {
-          visible: true,
-          timeout: 10000,
-        }
-      );
-      this.logger.info("全枚数選択");
-      await page.evaluate(() => {
-        const select = document.querySelector(
-          "#ex > table > tbody > tr:nth-child(1) > td > select"
-        );
-        if (select == null) {
-          return;
-        }
-        (select as HTMLSelectElement).selectedIndex =
-          (select as HTMLSelectElement).length - 1;
-      });
-      this.logger.info("交換");
-      await page
-        .waitForSelector("#btn-exchange", {
-          visible: true,
-          timeout: 10000,
-        })
-        .then((a) => a?.click());
-      await page.waitForTimeout(5000);
+    await page.goto('https://www.pointtown.com/gesoten/redirect', {
+      waitUntil: 'networkidle2',
+    })
 
-      this.logger.info("当選確認をする");
-      await page.evaluate(() => {
-        if (document.getElementsByClassName("pt-body")[0] != null) {
-          document.getElementsByClassName("pt-body")[0].scrollIntoView({
-            block: "center",
-            inline: "center",
-          });
-        }
-      });
-      await page
-        .waitForSelector("#check-tosen", {
-          visible: true,
-          timeout: 1000,
-        })
-        .then((a) => a?.click());
-      await page.waitForTimeout(10000);
-
-      this.logger.info("当選申請をする");
-      await page.evaluate(() => {
-        if (document.getElementsByClassName("pt-body")[0] != null) {
-          document.getElementsByClassName("pt-body")[0].scrollIntoView();
-        }
-      });
-      await page
-        .waitForSelector("#check-tosen", {
-          visible: true,
-          timeout: 10000,
-        })
-        .then((a) => a?.click());
-      await page.waitForTimeout(5000);
-
-      this.logger.info("バナークリック");
-      await page
-        .waitForSelector(".center img", {
-          visible: true,
-        })
-        .then((a) => a?.click());
-      await page.waitForTimeout(5000);
-    } catch (e) {
-      this.logger.info((e as Error).message);
+    const games = await page.$$('li.c-card-game a')
+    for (const game of games) {
+      const url = await page.evaluate((element) => element.href, game)
+      if (!url) {
+        this.logger.error('url not found.')
+        continue
+      }
+      const newPage = await page.browser().newPage()
+      newPage.on('dialog', (dialog) => {
+        dialog.accept()
+      })
+      await newPage.goto(url, { waitUntil: 'networkidle2' })
+      await newPage.close()
     }
+  }
+
+  async news(page: Page): Promise<void> {
+    this.logger.info('news()')
+
+    await page.goto('https://www.pointtown.com/news/infoseek', {
+      waitUntil: 'networkidle2',
+    })
+
+    if ((await this.checkNewsCoin(page)) === 0) {
+      this.logger.info('news coin is 0.')
+      return
+    }
+
+    const links = await page.$$(
+      'a.js-news-infoseek-article-link[data-is-completed="false"]'
+    )
+    for (const link of links.slice(0, 20)) {
+      const url = await page.evaluate((element) => element.href, link)
+      if (!url) {
+        this.logger.error('url not found.')
+        continue
+      }
+      const newPage = await page.browser().newPage()
+      await newPage.goto(url, { waitUntil: 'networkidle2' })
+      await newPage.close()
+    }
+
+    const buttons = await page.$$('button.js-news-infoseek-article-submit')
+    this.logger.info(`buttons.length: ${buttons.length}`)
+
+    for (let index = 0; index < buttons.length; index++) {
+      this.logger.info(`click index: ${index}`)
+      const buttonList = await page.$$(`button.js-news-infoseek-article-submit`)
+      const button = buttonList[index]
+      if (button == null) {
+        continue
+      }
+      // styleがnoneではないこと
+      const style = await page.evaluate(
+        (element) => element.style.display,
+        button
+      )
+      if (style === 'none') {
+        continue
+      }
+      await button.evaluate((element) => element.scrollIntoView(), button)
+      await Promise.all([
+        button.click(),
+        page.waitForNavigation({ waitUntil: 'networkidle2' }),
+      ]).catch(() => {})
+
+      if ((await this.checkNewsCoin(page)) === 0) {
+        this.logger.info('news coin is 0.')
+        return
+      }
+    }
+  }
+
+  async checkNewsCoin(page: Page) {
+    return await page
+      .waitForSelector('header.c-sec__l-header p.c-coin-label')
+      .then(async (element) => {
+        const coin = await page.evaluate(
+          (element) => element?.textContent,
+          element
+        )
+        return Number(coin?.replace(/,/g, ''))
+      })
+      .catch(() => null)
+  }
+
+  async gacha(page: Page): Promise<void> {
+    this.logger.info('gacha()')
+
+    await page.emulate(KnownDevices['iPhone 12 Pro'])
+
+    await page.goto('https://www.pointtown.com/gacha/play', {
+      waitUntil: 'networkidle2',
+    })
+    await sleep(10_000)
+  }
+
+  async omikuji(page: Page): Promise<void> {
+    this.logger.info('omikuji()')
+
+    await page.emulate(KnownDevices['iPhone 12 Pro'])
+
+    await page.goto('https://www.pointtown.com/fortune/omikuji/drawing', {
+      waitUntil: 'networkidle2',
+    })
+    await sleep(10_000)
+  }
+
+  async horoscope(page: Page): Promise<void> {
+    this.logger.info('horoscope()')
+
+    await page.emulate(KnownDevices['iPhone 12 Pro'])
+
+    await page.goto('https://www.pointtown.com/fortune/horoscope/detail', {
+      waitUntil: 'networkidle2',
+    })
+    await page
+      .waitForSelector('button.horoscope-btn[type="submit"]')
+      .then((element) => element?.click())
   }
 
   async stamprally(page: Page): Promise<void> {
-    this.logger.info("stamprally()");
+    this.logger.info('stamprally()')
 
-    await page.goto("https://www.pointtown.com/ptu/mypage/top", {
-      waitUntil: "networkidle2",
-    });
+    await page.goto('https://www.pointtown.com/ptu/mypage/top', {
+      waitUntil: 'networkidle2',
+    })
     try {
       await page
-        .waitForSelector("a.stamp-cl-btn", {
+        .waitForSelector('a.stamp-cl-btn', {
           visible: true,
-          timeout: 10000,
+          timeout: 10_000,
         })
-        .then((element) => element?.click());
-    } catch (e) {
+        .then((element) => element?.click())
+    } catch (error) {
       /*
        */
       // タイムアウトの場合は次の処理へ進む
-      this.logger.info((e as Error).message);
+      this.logger.info((error as Error).message)
     }
   }
 }
