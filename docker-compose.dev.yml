@@ -3,5 +3,7 @@ services:
     build: .
     volumes:
       - ./data:/data
+    ports:
+      - 5900:5900
     environment:
       ENABLE_LOGIN: true
