@@ -1,8 +1,6 @@
 services:
   app:
     build: .
-    ports:
-      - 5900:5900
     volumes:
       - ./data:/data
     environment:
