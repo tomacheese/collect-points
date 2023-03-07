@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 import PointTownCrawler from './providers/pointtown'
-;(async () => {
+
+async function main() {
   if (!fs.existsSync('data')) {
     fs.mkdirSync('data')
   }
@@ -10,4 +11,8 @@ import PointTownCrawler from './providers/pointtown'
   const crawler = new PointTownCrawler()
   // await crawler.run(PointTownCrawler.prototype.triangleLot)
   await crawler.run()
+}
+
+;(async () => {
+  main()
 })()

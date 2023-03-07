@@ -65,10 +65,10 @@ export default class PointTownCrawler extends BaseCrawler {
     await this.easyGame(page)
     await this.gesoten(page)
     await this.news(page)
-    await this.gacha(page)
 
     // スマホ系
     const mobilePage = await page.browser().newPage()
+    await this.gacha(mobilePage)
     await this.omikuji(mobilePage)
     await this.horoscope(mobilePage)
     await mobilePage.close()

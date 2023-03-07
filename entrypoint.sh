@@ -6,7 +6,15 @@ x11vnc -shared -forever -noxdamage -display :99 -nopw -loop -xkb &
 
 rm -rf /data/userdata/*/Singleton* || true
 
-yarn start
+while :
+do
+  rm -rf /data/userdata/Singleton* || true
+
+  yarn start || true
+
+  # wait 3 hour
+  sleep 10800
+done
 
 kill -9 "$(pgrep -f "Xvfb" | awk '{print $2}')"
 kill -9 "$(pgrep -f "x11vnc" | awk '{print $2}')"

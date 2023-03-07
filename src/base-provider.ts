@@ -61,29 +61,33 @@ export abstract class BaseCrawler implements Crawler {
     )
 
     const isEnableLogin = process.env.ENABLE_LOGIN === 'true'
-    if (method === null) {
-      this.logger.info('Main mode')
+    try {
+      if (method === null) {
+        this.logger.info('Main mode')
 
-      if (!(await this.checkAlreadyLogin(page))) {
-        if (!isEnableLogin) {
-          this.logger.info('Login is disabled')
-          return
+        if (!(await this.checkAlreadyLogin(page))) {
+          if (!isEnableLogin) {
+            this.logger.info('Login is disabled')
+            return
+          }
+          this.logger.info('is not login')
+          await this.login(page)
         }
-        this.logger.info('is not login')
-        await this.login(page)
-      }
-      await this.crawl(browser, page)
-    } else {
-      this.logger.info('Target mode')
-      if (!(await this.checkAlreadyLogin(page))) {
-        if (!isEnableLogin) {
-          this.logger.info('Login is disabled')
-          return
+        await this.crawl(browser, page)
+      } else {
+        this.logger.info('Target mode')
+        if (!(await this.checkAlreadyLogin(page))) {
+          if (!isEnableLogin) {
+            this.logger.info('Login is disabled')
+            return
+          }
+          this.logger.info('is not login')
+          await this.login(page)
         }
-        this.logger.info('is not login')
-        await this.login(page)
+        await Reflect.apply(method, this, [page])
       }
-      await Reflect.apply(method, this, [page])
+    } catch (error) {
+      this.logger.error('Error', error as Error)
     }
     this.logger.info('close browser')
     await browser.close()
