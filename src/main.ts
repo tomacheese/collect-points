@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 import EcNaviCrawler from './providers/ecnavi'
+import PointTownCrawler from './providers/pointtown'
 
 async function main() {
   if (!fs.existsSync('data')) {
@@ -8,7 +9,7 @@ async function main() {
   // eslint-disable-next-line no-console
   process.on('unhandledRejection', console.dir)
 
-  const crawlers = [/* new PointTownCrawler(), */ new EcNaviCrawler()]
+  const crawlers = [new PointTownCrawler(), new EcNaviCrawler()]
 
   // ログイン処理だけ先に済ませる
   if (process.env.ENABLE_LOGIN === 'true') {
