@@ -413,6 +413,26 @@ export default class PointTownCrawler extends BaseCrawler {
       'https://www.pointtown.com/monitor/fancrew/real-shop#link-coin-chance',
       { waitUntil: 'networkidle2' }
     )
+    const notObtainedElement = await page.$(
+      'div.c-coin-chance-sec__status p.c-coin-label'
+    )
+    if (notObtainedElement == null) {
+      this.logger.info('notObtainedElement not found.')
+      return
+    }
+    const notObtained = await page.evaluate(
+      (element) => element.textContent,
+      notObtainedElement
+    )
+    if (notObtained == null) {
+      this.logger.info('notObtained not found.')
+      return
+    }
+    if (Number(notObtained) === 0) {
+      this.logger.info('notObtained is 0.')
+      return
+    }
+
     const cards = await page.$$('li.c-coin-chance-card')
     for (const card of cards) {
       const button = await card.$('button')

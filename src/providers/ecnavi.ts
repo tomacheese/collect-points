@@ -163,11 +163,9 @@ export default class EcNaviCrawler extends BaseCrawler {
     }
 
     const hintElement = await page.$('a.king-of-quiz__button')
-    const hintPath = await page.evaluate(
-      (element) => element?.href,
-      hintElement
-    )
-    const hintUrl = `https://ecnavi.jp/contents/quiz/${hintPath}`
+    const hintUrl =
+      (await page.evaluate((element) => element?.href, hintElement)) ??
+      'about:blank'
     this.logger.info(`hint: ${hintUrl}`)
     const hintPage = await page.browser().newPage()
     await hintPage.goto(hintUrl, {
