@@ -117,6 +117,10 @@ export default class EcNaviCrawler extends BaseCrawler {
     await page.goto('https://ecnavi.jp/research/chinju_lesson/', {
       waitUntil: 'networkidle2',
     })
+    if (await isExistsSelector(page, 'div.chinju-lesson-finished')) {
+      this.logger.info('chinju() today finished')
+      return
+    }
     if (await isExistsSelector(page, 'div.chinju-lesson-interbal')) {
       /* await new Promise<void>((resolve) => {
         setInterval(async () => {
