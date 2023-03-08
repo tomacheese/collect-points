@@ -6,6 +6,10 @@ export interface CollectConfiguration {
     password: string
     answer: string
   }
+  ecnavi: {
+    email: string
+    password: string
+  }
   /** Discord webhook URL or bot token */
   discord: {
     /** Discord webhook URL (required if using webhook) */

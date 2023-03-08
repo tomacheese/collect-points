@@ -4,6 +4,7 @@ import puppeteer, { Browser, Page } from 'puppeteer-core'
 
 export interface Crawler {
   run(): Promise<void>
+  loginOnly(): Promise<void>
 }
 
 export abstract class BaseCrawler implements Crawler {
@@ -13,11 +14,7 @@ export abstract class BaseCrawler implements Crawler {
     this.logger = Logger.configure(this.constructor.name)
   }
 
-  /**
-   * クローリングを実施する
-   * @param method 実行対象のメソッド
-   */
-  async run(method: any = null): Promise<void> {
+  private async initBrowser(): Promise<Browser> {
     const userDataBaseDirectory = process.env.USER_DATA_BASE || 'userdata'
     if (!fs.existsSync(userDataBaseDirectory)) {
       fs.mkdirSync(userDataBaseDirectory)
@@ -44,7 +41,10 @@ export abstract class BaseCrawler implements Crawler {
       ],
     }
 
-    const browser = await puppeteer.launch(launchOptions)
+    return await puppeteer.launch(launchOptions)
+  }
+
+  private async initPage(browser: Browser): Promise<Page> {
     const page = await browser.newPage()
     page.setDefaultNavigationTimeout(120 * 1000)
 
@@ -59,6 +59,17 @@ export abstract class BaseCrawler implements Crawler {
     await page.setUserAgent(
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:93.0) Gecko/20100101 Firefox/93.0'
     )
+
+    return page
+  }
+
+  /**
+   * クローリングを実施する
+   * @param method 実行対象のメソッド
+   */
+  async run(method: any = null): Promise<void> {
+    const browser = await this.initBrowser()
+    const page = await this.initPage(browser)
 
     const isEnableLogin = process.env.ENABLE_LOGIN === 'true'
     try {
@@ -85,6 +96,21 @@ export abstract class BaseCrawler implements Crawler {
           await this.login(page)
         }
         await Reflect.apply(method, this, [page])
+      }
+    } catch (error) {
+      this.logger.error('Error', error as Error)
+    }
+    this.logger.info('close browser')
+    await browser.close()
+  }
+
+  public async loginOnly(): Promise<void> {
+    const browser = await this.initBrowser()
+    const page = await this.initPage(browser)
+
+    try {
+      if (!(await this.checkAlreadyLogin(page))) {
+        await this.login(page)
       }
     } catch (error) {
       this.logger.error('Error', error as Error)

@@ -52,7 +52,7 @@ export default class PointTownCrawler extends BaseCrawler {
     await waitForUrl(page, 'equal', 'https://www.pointtown.com/')
   }
 
-  protected async crawl(_: Browser, page: Page) {
+  protected async crawl(browser: Browser, page: Page) {
     this.logger.info('crawl()')
     const beforePoint = await this.getCurrentPoint(page)
     this.logger.info(`beforePoint: ${beforePoint}`)
@@ -67,7 +67,7 @@ export default class PointTownCrawler extends BaseCrawler {
     await this.news(page)
 
     // スマホ系
-    const mobilePage = await page.browser().newPage()
+    const mobilePage = await browser.newPage()
     await this.gacha(mobilePage)
     await this.omikuji(mobilePage)
     await this.horoscope(mobilePage)
