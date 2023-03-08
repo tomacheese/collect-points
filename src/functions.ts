@@ -32,9 +32,20 @@ export async function getNewTabPageFromSelector(
   return getNewTabPage(logger, page, await page.$(elementSelector))
 }
 
-export async function getPageCount(browser: Browser) {
-  const pages = await browser.pages()
-  return pages.length
+export function getPageCount(browser: Browser) {
+  return new Promise<number>((resolve, reject) => {
+    setTimeout(() => {
+      reject(new Error('Timeout'))
+    }, 30_000)
+    browser
+      .pages()
+      .then((pages) => {
+        resolve(pages.length)
+      })
+      .catch((error) => {
+        reject(error)
+      })
+  })
 }
 
 export async function getNewTabPage(
