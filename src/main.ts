@@ -1,6 +1,8 @@
 import fs from 'node:fs'
+import { getGitHash } from './git'
 import EcNaviCrawler from './providers/ecnavi'
 import PointTownCrawler from './providers/pointtown'
+import rollbar from 'rollbar'
 
 async function main() {
   if (!fs.existsSync('data')) {
@@ -8,6 +10,14 @@ async function main() {
   }
   // eslint-disable-next-line no-console
   process.on('unhandledRejection', console.dir)
+
+  rollbar.init({
+    accessToken: '0ca82974fc6d490f82337f06f9bf2751',
+    environment: process.env.NODE_ENV,
+    codeVersion: getGitHash(),
+    captureUncaught: true,
+    captureUnhandledRejections: true,
+  })
 
   const crawlers = [new PointTownCrawler(), new EcNaviCrawler()]
 

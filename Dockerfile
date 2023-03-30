@@ -1,3 +1,15 @@
+FROM alpine:3.17.2 as version-getter
+
+# Git からバージョンとしてハッシュ値を取得
+
+# hadolint ignore=DL3018
+RUN apk update && \
+  apk add --no-cache git
+
+WORKDIR /app
+COPY .git/ .git/
+RUN git rev-parse --short HEAD > /app/VERSION
+
 FROM node:18-slim
 
 # hadolint ignore=DL3008
@@ -34,6 +46,8 @@ COPY tsconfig.json .
 
 COPY entrypoint.sh .
 RUN chmod +x entrypoint.sh
+
+COPY --from=version-getter /app/VERSION /app/VERSION
 
 ENV DISPLAY :99
 ENV CONFIG_PATH=/data/config.json
