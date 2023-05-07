@@ -61,7 +61,6 @@ ENV TZ Asia/Tokyo
 ENV DISPLAY :99
 ENV CHROMIUM_PATH /usr/bin/chromium-browser
 ENV CONFIG_PATH /data/config.json
-ENV CHROMIUM_PATH /usr/bin/chromium
 ENV USER_DATA_BASE /data/userdata
 
 ENTRYPOINT ["tini", "--"]
