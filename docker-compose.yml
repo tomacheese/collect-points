@@ -5,3 +5,4 @@ services:
       - ./data:/data
     ports:
       - 5930:5900
+    restart: on-failure:5
