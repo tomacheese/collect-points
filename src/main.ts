@@ -2,22 +2,23 @@ import fs from 'node:fs'
 import { getGitHash } from './git'
 import EcNaviCrawler from './providers/ecnavi'
 import PointTownCrawler from './providers/pointtown'
-import rollbar from 'rollbar'
+import { Logger } from '@book000/node-utils'
+import * as Sentry from '@sentry/node'
 
 async function main() {
+  const logger = Logger.configure('main')
   if (!fs.existsSync('data')) {
     fs.mkdirSync('data')
   }
-  // eslint-disable-next-line no-console
-  process.on('unhandledRejection', console.dir)
 
-  rollbar.init({
-    accessToken: '0ca82974fc6d490f82337f06f9bf2751',
-    environment: process.env.NODE_ENV,
-    codeVersion: getGitHash(),
-    captureUncaught: true,
-    captureUnhandledRejections: true,
-  })
+  if (!process.env.SENTRY_DSN) {
+    logger.info('🔄 Initializing Sentry...')
+    Sentry.init({
+      dsn: process.env.SENTRY_DSN,
+      environment: process.env.NODE_ENV,
+      release: getGitHash(),
+    })
+  }
 
   const crawlers = [new PointTownCrawler(), new EcNaviCrawler()]
 
@@ -35,5 +36,11 @@ async function main() {
 }
 
 ;(async () => {
-  main()
+  await main().catch((error) => {
+    const logger = Logger.configure('main')
+    logger.error('Error', error as Error)
+    Sentry.captureException(error)
+    // eslint-disable-next-line unicorn/no-process-exit
+    process.exit(1)
+  })
 })()
