@@ -89,7 +89,7 @@ export default class PointTownCrawler extends BaseCrawler {
 
     const afterPoint = await this.getCurrentPoint(page)
     this.logger.info(`afterPoint: ${afterPoint}`)
-    finishedNotify(this.constructor.name, beforePoint, afterPoint, 0.05)
+    await finishedNotify(this.constructor.name, beforePoint, afterPoint, 0.05)
   }
 
   protected async checkAlreadyLogin(page: Page): Promise<boolean> {
@@ -532,7 +532,10 @@ export default class PointTownCrawler extends BaseCrawler {
       }
       const newPage = await page.browser().newPage()
       newPage.on('dialog', (dialog) => {
-        dialog.accept()
+        // eslint-disable-next-line @typescript-eslint/no-floating-promises
+        dialog.accept().then(() => {
+          this.logger.info('dialog accepted.')
+        })
       })
       try {
         await newPage.goto(url, { waitUntil: 'networkidle2' })

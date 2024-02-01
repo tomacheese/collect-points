@@ -60,6 +60,7 @@ export async function getNewTabPage(
 
   await sleep(1000)
   logger.info(`click element`)
+  // eslint-disable-next-line @typescript-eslint/no-floating-promises
   element?.click()
 
   let successful = false
@@ -83,7 +84,7 @@ export async function getNewTabPage(
   }
   logger.info(`afterOpenPages: successful`)
   const pages = await browser.pages()
-  return pages[pages.length - 1]
+  return pages.at(-1) || null
 }
 
 type EqualType = 'equal' | 'includes' | 'startsWith'
@@ -125,7 +126,7 @@ export function scrollToBottom(page: Page) {
   })
 }
 
-export function finishedNotify(
+export async function finishedNotify(
   targetScript: string,
   beforePt: number,
   afterPt: number,
@@ -135,7 +136,7 @@ export function finishedNotify(
   const earnedPt = calcEarnedPoint(beforePt, afterPt)
   const earnedYen = rate === undefined ? null : calcEarnedYen(earnedPt, rate)
   // saveCurrentPoint(targetScript, afterPt, earnedPt, earnedYen);
-  sendDiscordMessage(
+  await sendDiscordMessage(
     config,
     `:ballot_box_with_check: Finished script: \`${targetScript}\` (\`${beforePt}\`pt -> \`${afterPt}\`pt | Earned: \`${earnedPt}\`pt, \`${earnedYen}\`yen)`
   )
