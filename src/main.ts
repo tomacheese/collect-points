@@ -33,6 +33,9 @@ async function main() {
   for (const crawler of crawlers) {
     await crawler.run()
   }
+
+  // eslint-disable-next-line unicorn/no-process-exit
+  process.exit(0)
 }
 
 ;(async () => {

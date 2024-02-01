@@ -13,6 +13,7 @@ do
   yarn start || true
 
   # wait 3 hour
+  echo "Waiting 3 hours to restart"
   sleep 10800
 done
 
