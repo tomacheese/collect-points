@@ -119,6 +119,14 @@ export abstract class BaseCrawler implements Crawler {
     await browser.close()
   }
 
+  public async runMethod(page: Page, method: (page: Page) => Promise<void>): Promise<void> {
+    try {
+      await method(page)
+    } catch (error) {
+      this.logger.error('Error', error as Error)
+    }
+  }
+
   /**
    * クローリングメインプログラム
    * @param browser ブラウザー
