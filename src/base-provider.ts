@@ -119,7 +119,11 @@ export abstract class BaseCrawler implements Crawler {
     await browser.close()
   }
 
-  public async runMethod(page: Page, method: (page: Page) => Promise<void>): Promise<void> {
+  public async runMethod(
+    page: Page,
+    method: (page: Page) => Promise<void>
+  ): Promise<void> {
+    await page.bringToFront()
     try {
       await method(page)
     } catch (error) {

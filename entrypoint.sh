@@ -10,7 +10,7 @@ while :
 do
   rm -rf /data/userdata/Singleton* || true
 
-  yarn start || true
+  pnpm start || true
 
   # wait 3 hour
   echo "Waiting 3 hours to restart"
