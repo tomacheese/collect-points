@@ -32,20 +32,20 @@ export default class EcNaviCrawler extends BaseCrawler {
     this.logger.info('crawl()')
 
     // 一番最初にエントリー
-    await this.entryLottery(page)
+    await this.runMethod(page, this.entryLottery.bind(this))
 
-    await this.gesoten(page)
-    await this.chirashi(page)
-    await this.chinju(page)
-    await this.quiz(page)
-    await this.divination(page)
-    await this.fishing(page)
-    await this.choice(page)
-    await this.news(page)
-    await this.garapon(page)
-    await this.doron(page)
-    await this.ticketingLottery(page)
-    await this.fund(page)
+    await this.runMethod(page, this.gesoten.bind(this))
+    await this.runMethod(page, this.chirashi.bind(this))
+    await this.runMethod(page, this.chinju.bind(this))
+    await this.runMethod(page, this.quiz.bind(this))
+    await this.runMethod(page, this.divination.bind(this))
+    await this.runMethod(page, this.fishing.bind(this))
+    await this.runMethod(page, this.choice.bind(this))
+    await this.runMethod(page, this.news.bind(this))
+    await this.runMethod(page, this.garapon.bind(this))
+    await this.runMethod(page, this.doron.bind(this))
+    await this.runMethod(page, this.ticketingLottery.bind(this))
+    await this.runMethod(page, this.fund.bind(this))
   }
 
   protected async gesoten(page: Page) {
