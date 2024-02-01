@@ -29,25 +29,38 @@ export default class PointTownCrawler extends BaseCrawler {
         await page
           .waitForSelector('input[type="email"]')
           .then((element) => element?.type(config.pointtown.email))
+        await new Promise((resolve) => setTimeout(resolve, 1000))
         await page
           .waitForSelector('input[type="password"]')
           .then((element) => element?.type(config.pointtown.password))
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+        await page
+          .waitForSelector('button[type="submit"]')
+          .then((element) => element?.focus())
+        await new Promise((resolve) => setTimeout(resolve, 1000))
         await page
           .waitForSelector('button[type="submit"]')
           .then((element) => element?.click())
       })
       .catch(() => {})
+    await new Promise((resolve) => setTimeout(resolve, 1000))
 
     await waitForUrl(page, 'equal', 'https://www.pointtown.com/secure/question')
       .then(async () => {
         await page
           .waitForSelector('input[name="answerText"]')
           .then((element) => element?.type(config.pointtown.answer))
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+        await page
+          .waitForSelector('button[type="submit"]')
+          .then((element) => element?.focus())
+        await new Promise((resolve) => setTimeout(resolve, 1000))
         await page
           .waitForSelector('button[type="submit"]')
           .then((element) => element?.click())
       })
       .catch(() => {})
+    await new Promise((resolve) => setTimeout(resolve, 1000))
 
     await waitForUrl(page, 'equal', 'https://www.pointtown.com/')
   }
@@ -112,12 +125,13 @@ export default class PointTownCrawler extends BaseCrawler {
    */
   async triangleLot(page: Page): Promise<void> {
     this.logger.info('triangleLot()')
-    await this.triangleLotRed(page)
-    await this.triangleLotYellow(page)
-    await this.triangleLotPurple(page)
-    await this.triangleLotPink(page)
-    await this.triangleLotBlue(page)
-    await this.triangleLotGreen(page)
+
+    await this.runMethod(page, this.triangleLotRed.bind(this))
+    await this.runMethod(page, this.triangleLotYellow.bind(this))
+    await this.runMethod(page, this.triangleLotPurple.bind(this))
+    await this.runMethod(page, this.triangleLotPink.bind(this))
+    await this.runMethod(page, this.triangleLotBlue.bind(this))
+    await this.runMethod(page, this.triangleLotGreen.bind(this))
   }
 
   async triangleLotRed(page: Page): Promise<void> {
@@ -186,10 +200,14 @@ export default class PointTownCrawler extends BaseCrawler {
         inline: 'center',
       })
     )
+
+    const waitNavigationPromise = page.waitForNavigation({
+      waitUntil: 'networkidle2',
+    })
     await page
       .waitForSelector('button.link-sankaku-kuji')
       .then((element) => element?.click())
-    await page.waitForNavigation({ waitUntil: 'networkidle2' })
+    await waitNavigationPromise
 
     const newPage = await getNewTabPageFromSelector(
       this.logger,
@@ -375,7 +393,7 @@ export default class PointTownCrawler extends BaseCrawler {
         .map((pattern) => text.match(pattern))
         .filter((x) => x != null) as RegExpMatchArray[]
 
-      const url = matches[0][1].replace(/&amp;/g, '&')
+      const url = matches[0][1].replaceAll('&amp;', '&')
       if (url == null) {
         this.logger.info('url not found.')
         await newPage.close()
@@ -516,7 +534,11 @@ export default class PointTownCrawler extends BaseCrawler {
       newPage.on('dialog', (dialog) => {
         dialog.accept()
       })
-      await newPage.goto(url, { waitUntil: 'networkidle2' })
+      try {
+        await newPage.goto(url, { waitUntil: 'networkidle2' })
+      } catch (error) {
+        this.logger.error('Error', error as Error)
+      }
       await newPage.close()
     }
   }
@@ -543,7 +565,11 @@ export default class PointTownCrawler extends BaseCrawler {
         continue
       }
       const newPage = await page.browser().newPage()
-      await newPage.goto(url, { waitUntil: 'networkidle2' })
+      try {
+        await newPage.goto(url, { waitUntil: 'networkidle2' })
+      } catch (error) {
+        this.logger.error('Error', error as Error)
+      }
       await newPage.close()
     }
 

@@ -120,6 +120,7 @@ export abstract class BaseCrawler implements Crawler {
   }
 
   public async runMethod(page: Page, method: (page: Page) => Promise<void>): Promise<void> {
+    await page.bringToFront()
     try {
       await method(page)
     } catch (error) {
