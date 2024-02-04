@@ -250,6 +250,7 @@ export default class EcNaviCrawler extends BaseCrawler {
     await page
       .waitForSelector('#home .function button.gacha')
       .then((element) => element?.click())
+    await sleep(5000)
 
     await page
       .waitForSelector('#home .gacha div.scene_1 button.common')
@@ -277,7 +278,7 @@ export default class EcNaviCrawler extends BaseCrawler {
   protected async news(page: Page) {
     this.logger.info('news()')
 
-    await page.goto('https://ecnavi.jp/mainichi_news/', {
+    await page.goto('https://ecnavi.jp/mainichi_news/#goog_rewarded', {
       waitUntil: 'networkidle2',
     })
     const items = await page.$$(
