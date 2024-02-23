@@ -28,7 +28,7 @@
   },
   "devDependencies": {
     "@book000/node-utils": "1.12.67",
-    "@sentry/node": "7.99.0",
+    "@sentry/node": "7.102.0",
     "@types/node": "20.11.19",
     "@typescript-eslint/eslint-plugin": "6.21.0",
     "@typescript-eslint/parser": "6.21.0",
