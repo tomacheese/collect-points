@@ -6,8 +6,8 @@ settings:
 
 devDependencies:
   '@book000/node-utils':
-    specifier: 1.12.77
-    version: 1.12.77
+    specifier: 1.12.82
+    version: 1.12.82
   '@sentry/node':
     specifier: 7.104.0
     version: 7.104.0
@@ -92,8 +92,8 @@ packages:
       js-tokens: 4.0.0
     dev: true
 
-  /@book000/node-utils@1.12.77:
-    resolution: {integrity: sha512-s6pKu6qStZ3c8OwSmRuMtYscdOSyRBz4ArG/OoY4boE5LqNpac52YOeDL6ZvG/ghqK28DWcbmKXB658kN2f+kw==}
+  /@book000/node-utils@1.12.82:
+    resolution: {integrity: sha512-b3P+DlFwUbCGwXRVSWToD9IQ3uPCWcePgdigNeOws0/JV4wYSiAvQ2GdqnqHOVDKn2gey/T7HkOjWwAMSA9UxA==}
     dependencies:
       axios: 1.6.7
       cycle: 1.0.3
@@ -101,8 +101,8 @@ packages:
       jsonc-parser: 3.2.1
       logform: 2.6.0
       moment-timezone: 0.5.45
-      winston: 3.11.0
-      winston-daily-rotate-file: 5.0.0(winston@3.11.0)
+      winston: 3.12.0
+      winston-daily-rotate-file: 5.0.0(winston@3.12.0)
     transitivePeerDependencies:
       - debug
     dev: true
@@ -3507,7 +3507,7 @@ packages:
       isexe: 2.0.0
     dev: true
 
-  /winston-daily-rotate-file@5.0.0(winston@3.11.0):
+  /winston-daily-rotate-file@5.0.0(winston@3.12.0):
     resolution: {integrity: sha512-JDjiXXkM5qvwY06733vf09I2wnMXpZEhxEVOSPenZMii+g7pcDcTBt2MRugnoi8BwVSuCT2jfRXBUy+n1Zz/Yw==}
     engines: {node: '>=8'}
     peerDependencies:
@@ -3516,7 +3516,7 @@ packages:
       file-stream-rotator: 0.6.1
       object-hash: 3.0.0
       triple-beam: 1.4.1
-      winston: 3.11.0
+      winston: 3.12.0
       winston-transport: 4.7.0
     dev: true
 
@@ -3529,8 +3529,8 @@ packages:
       triple-beam: 1.4.1
     dev: true
 
-  /winston@3.11.0:
-    resolution: {integrity: sha512-L3yR6/MzZAOl0DsysUXHVjOwv8mKZ71TrA/41EIduGpOOV5LQVodqN+QdQ6BS6PJ/RdIshZhq84P/fStEZkk7g==}
+  /winston@3.12.0:
+    resolution: {integrity: sha512-OwbxKaOlESDi01mC9rkM0dQqQt2I8DAUMRLZ/HpbwvDXm85IryEHgoogy5fziQy38PntgZsLlhAYHz//UPHZ5w==}
     engines: {node: '>= 12.0.0'}
     dependencies:
       '@colors/colors': 1.6.0
