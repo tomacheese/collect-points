@@ -42,7 +42,7 @@ export default class PointTownCrawler extends BaseCrawler {
           .waitForSelector('button[type="submit"]')
           .then((element) => element?.click())
       })
-      .catch(() => {})
+      .catch(() => null)
     await new Promise((resolve) => setTimeout(resolve, 1000))
 
     await waitForUrl(page, 'equal', 'https://www.pointtown.com/secure/question')
@@ -59,7 +59,7 @@ export default class PointTownCrawler extends BaseCrawler {
           .waitForSelector('button[type="submit"]')
           .then((element) => element?.click())
       })
-      .catch(() => {})
+      .catch(() => null)
     await new Promise((resolve) => setTimeout(resolve, 1000))
 
     await waitForUrl(page, 'equal', 'https://www.pointtown.com/')
@@ -227,7 +227,7 @@ export default class PointTownCrawler extends BaseCrawler {
     await page
       .waitForSelector('img.double-kuji-link')
       .then((element) => element?.click())
-      .catch(() => {})
+      .catch(() => null)
     await sleep(3000)
   }
 
@@ -257,7 +257,9 @@ export default class PointTownCrawler extends BaseCrawler {
       const labels = await page.$$(
         'form#js-quiz-form li.pointq-radio-item label'
       )
-      const json = fs.existsSync('/data/pointq.json')
+      const json: Record<string, string | undefined> = fs.existsSync(
+        '/data/pointq.json'
+      )
         ? JSON.parse(fs.readFileSync(`/data/pointq.json`, 'utf8'))
         : {}
       if (json[question] === undefined) {
@@ -286,11 +288,12 @@ export default class PointTownCrawler extends BaseCrawler {
         }
         if (!choicebool) {
           this.logger.info(`choice error...`)
+          // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
           delete json[question]
-          let index_
+          let index
           if (labels.length > 0) {
-            index_ = Math.floor(Math.random() * labels.length)
-            await labels[index_].click()
+            index = Math.floor(Math.random() * labels.length)
+            await labels[index].click()
           }
         }
       }
@@ -343,7 +346,7 @@ export default class PointTownCrawler extends BaseCrawler {
       waitUntil: 'networkidle2',
     })
 
-    if (!isExistsSelector(page, 'ul.c-point-mail-table__row')) {
+    if (!(await isExistsSelector(page, 'ul.c-point-mail-table__row'))) {
       this.logger.info('"ul.c-point-mail-table__row" is not found')
       return
     }
@@ -394,7 +397,7 @@ export default class PointTownCrawler extends BaseCrawler {
         .filter((x) => x != null) as RegExpMatchArray[]
 
       const url = matches[0][1].replaceAll('&amp;', '&')
-      if (url == null) {
+      if (url === '') {
         this.logger.info('url not found.')
         await newPage.close()
         continue
@@ -408,13 +411,13 @@ export default class PointTownCrawler extends BaseCrawler {
           timeout: 10_000,
         })
         .then((element) => element?.click())
-        .catch(() => {})
+        .catch(() => null)
       await newPage2
         .waitForSelector('button.btn-default', {
           timeout: 3000,
         })
         .then((element) => element?.click())
-        .catch(() => {})
+        .catch(() => null)
       await sleep(10_000)
       await newPage2.close()
       await newPage.close()
@@ -509,7 +512,7 @@ export default class PointTownCrawler extends BaseCrawler {
     await page
       .waitForSelector('button.btn-receive')
       .then((element) => element?.click())
-      .catch(() => {})
+      .catch(() => null)
   }
 
   /**
@@ -583,9 +586,6 @@ export default class PointTownCrawler extends BaseCrawler {
       this.logger.info(`click index: ${index}`)
       const buttonList = await page.$$(`button.js-news-infoseek-article-submit`)
       const button = buttonList[index]
-      if (button == null) {
-        continue
-      }
       // styleがnoneではないこと
       const style = await page.evaluate(
         (element) => element.style.display,
@@ -594,11 +594,13 @@ export default class PointTownCrawler extends BaseCrawler {
       if (style === 'none') {
         continue
       }
-      await button.evaluate((element) => element.scrollIntoView(), button)
+      await button.evaluate((element) => {
+        element.scrollIntoView()
+      }, button)
       await Promise.all([
         button.click(),
         page.waitForNavigation({ waitUntil: 'networkidle2' }),
-      ]).catch(() => {})
+      ]).catch(() => null)
 
       if ((await this.checkNewsCoin(page)) === 0) {
         this.logger.info('news coin is 0.')

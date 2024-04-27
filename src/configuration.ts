@@ -22,7 +22,7 @@ export interface CollectConfiguration {
 }
 
 export function getConfig() {
-  const path = process.env.CONFIG_PATH || './config.json'
+  const path = process.env.CONFIG_PATH ?? './config.json'
   const config = JSON.parse(
     fs.readFileSync(path).toString()
   ) as CollectConfiguration

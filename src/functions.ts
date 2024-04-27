@@ -42,8 +42,8 @@ export function getPageCount(browser: Browser) {
       .then((pages) => {
         resolve(pages.length)
       })
-      .catch((error) => {
-        reject(error)
+      .catch((error: unknown) => {
+        reject(error as Error)
       })
   })
 }
@@ -51,7 +51,7 @@ export function getPageCount(browser: Browser) {
 export async function getNewTabPage(
   logger: Logger,
   page: Page,
-  element: ElementHandle<Element> | null
+  element: ElementHandle | null
 ): Promise<Page | null> {
   logger.info(`getNewTabPage()`)
   const browser = page.browser()
@@ -84,7 +84,7 @@ export async function getNewTabPage(
   }
   logger.info(`afterOpenPages: successful`)
   const pages = await browser.pages()
-  return pages.at(-1) || null
+  return pages.at(-1) ?? null
 }
 
 type EqualType = 'equal' | 'includes' | 'startsWith'
@@ -96,7 +96,7 @@ export async function waitForUrl(
   timeout = 60_000
 ) {
   return new Promise<void>((resolve, reject) => {
-    const interval = setInterval(async () => {
+    const interval = setInterval(() => {
       const currentUrl = page.url()
       if (type === 'equal' && currentUrl === url) {
         clearInterval(interval)
@@ -130,7 +130,7 @@ export async function finishedNotify(
   targetScript: string,
   beforePt: number,
   afterPt: number,
-  rate: number
+  rate: number | undefined
 ) {
   const config = getConfig()
   const earnedPt = calcEarnedPoint(beforePt, afterPt)
