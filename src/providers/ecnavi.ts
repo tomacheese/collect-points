@@ -178,10 +178,7 @@ export default class EcNaviCrawler extends BaseCrawler {
     const answers = await page.$$('ul.choices__list button')
     let isFoundAnswer = false
     for (const answer of answers) {
-      const text = await page.evaluate(
-        (element) => element.textContent,
-        answer
-      )
+      const text = await page.evaluate((element) => element.textContent, answer)
       if (!text) {
         continue
       }
