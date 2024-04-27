@@ -15,7 +15,7 @@ export abstract class BaseCrawler implements Crawler {
   }
 
   private async initBrowser(): Promise<Browser> {
-    const userDataBaseDirectory = process.env.USER_DATA_BASE || 'userdata'
+    const userDataBaseDirectory = process.env.USER_DATA_BASE ?? 'userdata'
     if (!fs.existsSync(userDataBaseDirectory)) {
       fs.mkdirSync(userDataBaseDirectory)
     }
@@ -49,11 +49,9 @@ export abstract class BaseCrawler implements Crawler {
     page.setDefaultNavigationTimeout(120 * 1000)
 
     await page.evaluateOnNewDocument(() => {
-      // eslint-disable-next-line @typescript-eslint/no-empty-function
-      Object.defineProperty(navigator, 'webdriver', () => {})
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      // eslint-disable-next-line no-proto
+      Object.defineProperty(navigator, 'webdriver', () => null)
+      // @ts-expect-error navigator.__proto__ is not defined
+      // eslint-disable-next-line no-proto, @typescript-eslint/no-unsafe-member-access
       delete navigator.__proto__.webdriver
     })
     await page.setUserAgent(

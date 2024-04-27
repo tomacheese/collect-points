@@ -39,7 +39,7 @@ async function main() {
 }
 
 ;(async () => {
-  await main().catch((error) => {
+  await main().catch((error: unknown) => {
     const logger = Logger.configure('main')
     logger.error('Error', error as Error)
     Sentry.captureException(error)

@@ -67,6 +67,7 @@ export async function sendDiscordMessage(
   text: string,
   embed?: DiscordEmbed
 ): Promise<void> {
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   if (!config.discord) {
     return
   }
@@ -74,7 +75,7 @@ export async function sendDiscordMessage(
   if (config.discord.webhook_url) {
     // webhook
     const response = await axios.post(config.discord.webhook_url, {
-      content: `${text}`,
+      content: text,
       embeds: embed ? [embed] : undefined,
     })
     if (response.status !== 204) {
@@ -87,7 +88,7 @@ export async function sendDiscordMessage(
     const response = await axios.post(
       `https://discord.com/api/channels/${config.discord.channel_id}/messages`,
       {
-        content: `${text}`,
+        content: text,
         embeds: embed ? [embed] : undefined,
       },
       {

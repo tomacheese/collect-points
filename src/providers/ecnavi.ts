@@ -179,7 +179,7 @@ export default class EcNaviCrawler extends BaseCrawler {
     let isFoundAnswer = false
     for (const answer of answers) {
       const text = await page.evaluate(
-        (element) => element?.textContent,
+        (element) => element.textContent,
         answer
       )
       if (!text) {
@@ -285,7 +285,7 @@ export default class EcNaviCrawler extends BaseCrawler {
       'li.article-latest-item a.article-latest-item__link'
     )
     for (const item of items.slice(0, 5)) {
-      const url = await page.evaluate((element) => element?.href, item)
+      const url = await page.evaluate((element) => element.href, item)
       const newsPage = await page.browser().newPage()
       await newsPage.goto(url, {
         waitUntil: 'networkidle2',
@@ -300,7 +300,7 @@ export default class EcNaviCrawler extends BaseCrawler {
       await newsPage
         .waitForSelector('button.article-reaction__feeling-button')
         .then((element) => element?.click())
-        .catch(() => {})
+        .catch(() => null)
       await sleep(3000)
       await newsPage.close()
     }
@@ -383,7 +383,7 @@ export default class EcNaviCrawler extends BaseCrawler {
     await page
       .waitForSelector('p.btn_ikkatsu')
       .then((element) => element?.click())
-      .catch(() => {})
+      .catch(() => null)
     await sleep(1000)
   }
 
