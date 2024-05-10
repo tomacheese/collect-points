@@ -3,7 +3,7 @@
     "onAutoForward": "silent"
   },
   "postCreateCommand": "pnpm install",
-  "image": "mcr.microsoft.com/devcontainers/typescript-node:0-18",
+  "image": "mcr.microsoft.com/devcontainers/typescript-node:1-18",
   "waitFor": "postCreateCommand",
   "name": "collect-points",
   "customizations": {
