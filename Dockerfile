@@ -1,4 +1,4 @@
-FROM alpine:3.20.0 as version-getter
+FROM alpine:3.20.1 as version-getter
 
 # Git からバージョンとしてハッシュ値を取得
 
