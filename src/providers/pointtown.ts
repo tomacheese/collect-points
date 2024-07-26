@@ -394,9 +394,15 @@ export default class PointTownCrawler extends BaseCrawler {
       ]
       const matches = patterns
         .map((pattern) => text.match(pattern))
-        .filter((x) => x != null) as RegExpMatchArray[]
+        .find((x) => x != null)
 
-      const url = matches[0][1].replaceAll('&amp;', '&')
+      if (matches == null) {
+        this.logger.info('matches not found.')
+        await newPage.close()
+        continue
+      }
+
+      const url = matches[1].replaceAll('&amp;', '&')
       if (url === '') {
         this.logger.info('url not found.')
         await newPage.close()
