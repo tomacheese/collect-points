@@ -369,7 +369,7 @@ export default class PointTownCrawler extends BaseCrawler {
         continue
       }
       const regex = /\/mypage\/mail\/(\d+)/
-      const match = href.match(regex)
+      const match = regex.exec(href)
       if (match == null) {
         this.logger.error('match not found.')
         continue
