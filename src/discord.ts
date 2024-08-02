@@ -65,12 +65,18 @@ export interface DiscordEmbed {
 export async function sendDiscordMessage(
   config: CollectConfiguration,
   text: string,
-  embed?: DiscordEmbed
+  embed?: DiscordEmbed,
+  isMention = false
 ): Promise<void> {
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   if (!config.discord) {
     return
   }
+
+  if (isMention && config.discord.user_id) {
+    text = `<@${config.discord.user_id}> ${text}`
+  }
+
   // webhook or bot
   if (config.discord.webhook_url) {
     // webhook

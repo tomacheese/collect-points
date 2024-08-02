@@ -18,6 +18,8 @@ export interface CollectConfiguration {
     token?: string
     /** Discord channel ID (required if using bot) */
     channel_id?: string
+    /** Discord user ID */
+    user_id?: string
   }
 }
 

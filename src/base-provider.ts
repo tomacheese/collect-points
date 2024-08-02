@@ -1,6 +1,8 @@
 import { Logger } from '@book000/node-utils'
 import fs from 'node:fs'
 import puppeteer, { Browser, Page } from 'puppeteer-core'
+import { sendDiscordMessage } from './discord'
+import { getConfig } from './configuration'
 
 export interface Crawler {
   run(): Promise<void>
@@ -69,6 +71,8 @@ export abstract class BaseCrawler implements Crawler {
     const browser = await this.initBrowser()
     const page = await this.initPage(browser)
 
+    const config = getConfig()
+
     const isEnableLogin = process.env.ENABLE_LOGIN === 'true'
     try {
       if (method === null) {
@@ -77,6 +81,13 @@ export abstract class BaseCrawler implements Crawler {
         if (!(await this.checkAlreadyLogin(page))) {
           if (!isEnableLogin) {
             this.logger.info('Login is disabled')
+
+            await sendDiscordMessage(
+              config,
+              'Need login but login is disabled (main mode)',
+              undefined,
+              true
+            )
             return
           }
           this.logger.info('is not login')
@@ -88,6 +99,13 @@ export abstract class BaseCrawler implements Crawler {
         if (!(await this.checkAlreadyLogin(page))) {
           if (!isEnableLogin) {
             this.logger.info('Login is disabled')
+
+            await sendDiscordMessage(
+              config,
+              'Need login but login is disabled (target mode)',
+              undefined,
+              true
+            )
             return
           }
           this.logger.info('is not login')
