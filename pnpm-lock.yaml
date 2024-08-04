@@ -9,11 +9,11 @@ importers:
   .:
     devDependencies:
       '@book000/eslint-config':
-        specifier: 1.7.30
-        version: 1.7.30(eslint-config-standard@17.1.0(eslint-plugin-import@2.29.1(@typescript-eslint/parser@8.0.0(eslint@9.8.0)(typescript@5.5.4))(eslint@9.8.0))(eslint-plugin-n@17.10.1(eslint@9.8.0))(eslint-plugin-promise@7.0.0(eslint@9.8.0))(eslint@9.8.0))(eslint@9.8.0)(typescript@5.5.4)
+        specifier: 1.7.31
+        version: 1.7.31(eslint-config-standard@17.1.0(eslint-plugin-import@2.29.1(@typescript-eslint/parser@8.0.0(eslint@9.8.0)(typescript@5.5.4))(eslint@9.8.0))(eslint-plugin-n@17.10.1(eslint@9.8.0))(eslint-plugin-promise@7.0.0(eslint@9.8.0))(eslint@9.8.0))(eslint@9.8.0)(typescript@5.5.4)
       '@book000/node-utils':
-        specifier: 1.13.203
-        version: 1.13.203
+        specifier: 1.13.204
+        version: 1.13.204
       '@sentry/node':
         specifier: 8.22.0
         version: 8.22.0
@@ -74,14 +74,14 @@ packages:
     resolution: {integrity: sha512-EStJpq4OuY8xYfhGVXngigBJRWxftKX9ksiGDnmlY3o7B/V7KIAc9X4oiK87uPJSc/vs5L869bem5fhZa8caZw==}
     engines: {node: '>=6.9.0'}
 
-  '@book000/eslint-config@1.7.30':
-    resolution: {integrity: sha512-JVADi8v9intbjnmsbv500G541F9s3hRFC+HXNM943Yg8XW2uO3Y1z0a+dF/H0cOzz8Ejy/SfGGEtAFuofb7pDQ==}
+  '@book000/eslint-config@1.7.31':
+    resolution: {integrity: sha512-fCwsHpybVL9ImDVmoK81OVG0cXgscgs6gm51GCirTOHcafQfKDpjG7OmkTJREG8rCb4JHI32FsqDMhXHfUD/Dg==}
     peerDependencies:
       eslint: 9.8.0
       eslint-config-standard: 17.1.0
 
-  '@book000/node-utils@1.13.203':
-    resolution: {integrity: sha512-kWjju30vDD9MNFBL7iNSc9EzVlcSAAzKSMQlQsjICzbZrLwBYJJBn0RgTrUB0gazdavxbRDLVG1VFPKo/bHtAg==}
+  '@book000/node-utils@1.13.204':
+    resolution: {integrity: sha512-OMJ1ozqTTAETK5/QZnhgv91sI+UxTXy5BPKBEtqAtBd2BeDieH6BWtQ5/By4QIHCaWMefvOsH7Oux2yGZZ0dgQ==}
 
   '@colors/colors@1.6.0':
     resolution: {integrity: sha512-Ir+AOibqzrIsL6ajt3Rz3LskB7OiMVHqltZmspbW/TJuTVuyOMirVqAkjfY6JISiLHgyNqicAC8AyHHGzNd/dA==}
@@ -2242,7 +2242,7 @@ snapshots:
       js-tokens: 4.0.0
       picocolors: 1.0.1
 
-  '@book000/eslint-config@1.7.30(eslint-config-standard@17.1.0(eslint-plugin-import@2.29.1(@typescript-eslint/parser@8.0.0(eslint@9.8.0)(typescript@5.5.4))(eslint@9.8.0))(eslint-plugin-n@17.10.1(eslint@9.8.0))(eslint-plugin-promise@7.0.0(eslint@9.8.0))(eslint@9.8.0))(eslint@9.8.0)(typescript@5.5.4)':
+  '@book000/eslint-config@1.7.31(eslint-config-standard@17.1.0(eslint-plugin-import@2.29.1(@typescript-eslint/parser@8.0.0(eslint@9.8.0)(typescript@5.5.4))(eslint@9.8.0))(eslint-plugin-n@17.10.1(eslint@9.8.0))(eslint-plugin-promise@7.0.0(eslint@9.8.0))(eslint@9.8.0))(eslint@9.8.0)(typescript@5.5.4)':
     dependencies:
       '@eslint/eslintrc': 3.1.0
       '@typescript-eslint/parser': 8.0.0(eslint@9.8.0)(typescript@5.5.4)
@@ -2256,7 +2256,7 @@ snapshots:
       - supports-color
       - typescript
 
-  '@book000/node-utils@1.13.203':
+  '@book000/node-utils@1.13.204':
     dependencies:
       axios: 1.7.3
       cycle: 1.0.3
