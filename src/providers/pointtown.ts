@@ -137,7 +137,8 @@ export default class PointTownCrawler extends BaseCrawler {
     if (nPointText == null) {
       return -1
     }
-    return Number.parseInt(nPointText, 10)
+    const replaced = nPointText.replaceAll(',', '')
+    return Number.parseInt(replaced, 10)
   }
 
   /**
