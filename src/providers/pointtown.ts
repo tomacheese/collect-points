@@ -97,6 +97,25 @@ export default class PointTownCrawler extends BaseCrawler {
     await page.goto('https://www.pointtown.com/mypage', {
       waitUntil: 'networkidle2',
     })
+
+    // 秘密の質問が出ることがある。待ちは不要
+    const config = getConfig()
+    waitForUrl(page, 'equal', 'https://www.pointtown.com/secure/question')
+      .then(async () => {
+        await page
+          .waitForSelector('input[name="answerText"]')
+          .then((element) => element?.type(config.pointtown.answer))
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+        await page
+          .waitForSelector('button[type="submit"]')
+          .then((element) => element?.focus())
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+        await page
+          .waitForSelector('button[type="submit"]')
+          .then((element) => element?.click())
+      })
+      .catch(() => null)
+
     return await isExistsSelector(
       page,
       'ul.c-mypage-summary-sec__main a[href="/mypage/point-history"]'
