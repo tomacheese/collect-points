@@ -78,6 +78,8 @@ export default class PointTownCrawler extends BaseCrawler {
     await this.runMethod(page, this.easyGame.bind(this))
     await this.runMethod(page, this.gesoten.bind(this))
     await this.runMethod(page, this.news.bind(this))
+    await this.runMethod(page, this.chocoRead.bind(this))
+    await this.runMethod(page, this.questionnaire.bind(this))
 
     // スマホ系
     const mobilePage = await browser.newPage()
@@ -632,6 +634,72 @@ export default class PointTownCrawler extends BaseCrawler {
         return
       }
     }
+  }
+
+  async chocoRead(page: Page): Promise<void> {
+    this.logger.info('chocoRead()')
+
+    await page.goto('https://ecnavi.jp/contents/chocoyomi/', {
+      waitUntil: 'networkidle2',
+    })
+
+    await Promise.all([
+      page
+        .waitForSelector('a.chocoyomi-direct-link__button')
+        .then((element) => element?.click()),
+      page.waitForNavigation({ waitUntil: 'networkidle2' }),
+    ])
+
+    // 無料チケットで読む
+    await page
+      .waitForSelector('button.chocoyomi-ad-page__button.button-rental')
+      .then((element) => element?.click())
+
+    // チェットの使用確認: はい
+    await page
+      .waitForSelector('button.p_dialog__button.c_red')
+      .then((element) => element?.click())
+
+    // 左側をクリック。なくなるまで
+    while (
+      await isExistsSelector(
+        page,
+        'button[data-testid="TestId__LEFT_PAGE_NAVIGATION"]'
+      )
+    ) {
+      await page
+        .waitForSelector('button[data-testid="TestId__LEFT_PAGE_NAVIGATION"]')
+        .then((element) => element?.click())
+
+      await sleep(1000)
+    }
+
+    await page
+      .waitForSelector('button.chocoyomi-ad-page__button.button-point')
+      .then((element) => element?.click())
+
+    await sleep(1000)
+  }
+
+  async questionnaire(page: Page): Promise<void> {
+    this.logger.info('questionnaire()')
+
+    await page.goto('https://ecnavi.jp/contents/enquete_rally/', {
+      waitUntil: 'networkidle2',
+    })
+
+    // input[name="enquete_fields"] のいずれかをクリック
+    const elements = await page.$$('input[name="enquete_fields"]')
+    for (const element of elements) {
+      await element.click()
+    }
+
+    // 回答する
+    await page
+      .waitForSelector('button.question-area__button.c_red')
+      .then((element) => element?.click())
+
+    await sleep(1000)
   }
 
   async checkNewsCoin(page: Page) {
