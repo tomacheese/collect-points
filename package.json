@@ -27,23 +27,23 @@
     "generate-schema": "typescript-json-schema --required src/config.ts ConfigInterface -o schema/Configuration.json"
   },
   "devDependencies": {
-    "@book000/eslint-config": "1.7.31",
-    "@book000/node-utils": "1.13.204",
-    "@sentry/node": "8.22.0",
+    "@book000/eslint-config": "1.7.33",
+    "@book000/node-utils": "1.13.210",
+    "@sentry/node": "8.25.0",
     "@types/node": "22.1.0",
     "axios": "1.7.3",
     "eslint": "9.8.0",
     "eslint-config-standard": "17.1.0",
     "eslint-plugin-import": "2.29.1",
-    "eslint-plugin-n": "17.10.1",
-    "eslint-plugin-promise": "7.0.0",
+    "eslint-plugin-n": "17.10.2",
+    "eslint-plugin-promise": "7.1.0",
     "prettier": "3.3.3",
     "puppeteer-core": "22.15.0",
     "run-z": "2.0.0",
     "rxjs": "7.8.1",
-    "tsx": "4.16.5",
+    "tsx": "4.17.0",
     "typescript": "5.5.4",
     "typescript-json-schema": "0.64.0"
   },
-  "packageManager": "pnpm@9.6.0"
+  "packageManager": "pnpm@9.7.0"
 }
