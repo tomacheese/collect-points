@@ -67,6 +67,7 @@ export default class PointTownCrawler extends BaseCrawler {
 
   protected async crawl(browser: Browser, page: Page) {
     this.logger.info('crawl()')
+
     const beforePoint = await this.getCurrentPoint(page)
     this.logger.info(`beforePoint: ${beforePoint}`)
 
