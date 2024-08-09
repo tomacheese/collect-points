@@ -1,6 +1,12 @@
 import { BaseCrawler } from '@/base-provider'
 import { getConfig } from '@/configuration'
-import { finishedNotify, getNewTabPage, isExistsSelector, sleep, waitForUrl } from '@/functions'
+import {
+  finishedNotify,
+  getNewTabPage,
+  isExistsSelector,
+  sleep,
+  waitForUrl,
+} from '@/functions'
 import { Browser, Page } from 'puppeteer-core'
 
 export default class EcNaviCrawler extends BaseCrawler {
