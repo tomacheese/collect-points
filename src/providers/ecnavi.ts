@@ -1,6 +1,6 @@
 import { BaseCrawler } from '@/base-provider'
 import { getConfig } from '@/configuration'
-import { getNewTabPage, isExistsSelector, sleep, waitForUrl } from '@/functions'
+import { finishedNotify, getNewTabPage, isExistsSelector, sleep, waitForUrl } from '@/functions'
 import { Browser, Page } from 'puppeteer-core'
 
 export default class EcNaviCrawler extends BaseCrawler {
@@ -31,6 +31,9 @@ export default class EcNaviCrawler extends BaseCrawler {
   protected async crawl(_: Browser, page: Page): Promise<void> {
     this.logger.info('crawl()')
 
+    const beforePoint = await this.getCurrentPoint(page)
+    this.logger.info(`beforePoint: ${beforePoint}`)
+
     // 一番最初にエントリー
     await this.runMethod(page, this.entryLottery.bind(this))
 
@@ -46,6 +49,27 @@ export default class EcNaviCrawler extends BaseCrawler {
     await this.runMethod(page, this.doron.bind(this))
     await this.runMethod(page, this.ticketingLottery.bind(this))
     await this.runMethod(page, this.fund.bind(this))
+
+    const afterPoint = await this.getCurrentPoint(page)
+    this.logger.info(`afterPoint: ${afterPoint}`)
+    await finishedNotify(this.constructor.name, beforePoint, afterPoint, 0.1)
+  }
+
+  async getCurrentPoint(page: Page): Promise<number> {
+    this.logger.info('getCurrentPoint()')
+    await page.goto('https://ecnavi.jp/mypage/', {
+      waitUntil: 'networkidle2',
+    })
+
+    const nPointText = await page.$eval(
+      'span.c_point',
+      (element) => element.textContent
+    )
+    if (nPointText == null) {
+      return -1
+    }
+    const replaced = nPointText.replaceAll(',', '')
+    return Number.parseInt(replaced, 10)
   }
 
   protected async gesoten(page: Page) {

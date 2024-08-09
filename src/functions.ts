@@ -136,6 +136,11 @@ export async function finishedNotify(
   const earnedPt = calcEarnedPoint(beforePt, afterPt)
   const earnedYen = rate === undefined ? null : calcEarnedYen(earnedPt, rate)
   // saveCurrentPoint(targetScript, afterPt, earnedPt, earnedYen);
+
+  if (beforePt === afterPt) {
+    return
+  }
+
   await sendDiscordMessage(
     config,
     `:ballot_box_with_check: Finished script: \`${targetScript}\` (\`${beforePt}\`pt -> \`${afterPt}\`pt | Earned: \`${earnedPt}\`pt, \`${earnedYen}\`yen)`
