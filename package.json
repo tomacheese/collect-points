@@ -27,10 +27,10 @@
     "generate-schema": "typescript-json-schema --required src/config.ts ConfigInterface -o schema/Configuration.json"
   },
   "devDependencies": {
-    "@book000/eslint-config": "1.7.118",
-    "@book000/node-utils": "1.13.402",
+    "@book000/eslint-config": "1.7.121",
+    "@book000/node-utils": "1.13.409",
     "@sentry/node": "8.47.0",
-    "@types/node": "22.10.2",
+    "@types/node": "22.10.5",
     "axios": "1.7.9",
     "eslint": "9.17.0",
     "eslint-config-standard": "17.1.0",
@@ -45,5 +45,5 @@
     "typescript": "5.7.2",
     "typescript-json-schema": "0.65.1"
   },
-  "packageManager": "pnpm@9.15.1"
+  "packageManager": "pnpm@9.15.2"
 }
