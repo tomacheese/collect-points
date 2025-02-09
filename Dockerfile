@@ -25,7 +25,8 @@ RUN apk upgrade --no-cache --available && \
   cp /usr/share/zoneinfo/Asia/Tokyo /etc/localtime && \
   echo "Asia/Tokyo" > /etc/timezone && \
   apk del tzdata && \
-  npm install -g corepack && \
+  npm install -g corepack@latest && \
+  pnpm approve-builds && \
   corepack enable
 
 WORKDIR /app
@@ -37,7 +38,8 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm fetch
 COPY package.json tsconfig.json ./
 COPY src src
 
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile --offline
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile --offline && \
+  pnpm approve-builds
 
 COPY entrypoint.sh ./
 RUN chmod +x ./entrypoint.sh
