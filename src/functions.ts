@@ -7,6 +7,14 @@ export async function sleep(msec: number) {
   return new Promise((resolve) => setTimeout(resolve, msec))
 }
 
+export function calcEarnedPoint(previousPoint: number, currentPoint: number) {
+  return +(currentPoint - previousPoint).toFixed(2)
+}
+
+export function calcEarnedYen(earnedPoint: number, rate: number) {
+  return +(earnedPoint * rate).toFixed(2)
+}
+
 export async function isExistsSelector(
   page: Page,
   selector: string
@@ -21,15 +29,6 @@ export async function isExistsSelector(
         resolve(false)
       })
   })
-}
-
-export async function getNewTabPageFromSelector(
-  logger: Logger,
-  page: Page,
-  elementSelector: string
-): Promise<Page | null> {
-  await page.waitForSelector(elementSelector)
-  return getNewTabPage(logger, page, await page.$(elementSelector))
 }
 
 export function getPageCount(browser: Browser) {
@@ -85,6 +84,15 @@ export async function getNewTabPage(
   logger.info(`afterOpenPages: successful`)
   const pages = await browser.pages()
   return pages.at(-1) ?? null
+}
+
+export async function getNewTabPageFromSelector(
+  logger: Logger,
+  page: Page,
+  elementSelector: string
+): Promise<Page | null> {
+  await page.waitForSelector(elementSelector)
+  return getNewTabPage(logger, page, await page.$(elementSelector))
 }
 
 type EqualType = 'equal' | 'includes' | 'startsWith'
@@ -145,11 +153,4 @@ export async function finishedNotify(
     config,
     `:ballot_box_with_check: Finished script: \`${targetScript}\` (\`${beforePt}\`pt -> \`${afterPt}\`pt | Earned: \`${earnedPt}\`pt, \`${earnedYen}\`yen)`
   )
-}
-
-export function calcEarnedPoint(previousPoint: number, currentPoint: number) {
-  return +(currentPoint - previousPoint).toFixed(2)
-}
-export function calcEarnedYen(earnedPoint: number, rate: number) {
-  return +(earnedPoint * rate).toFixed(2)
 }
