@@ -27,25 +27,25 @@
     "generate-schema": "typescript-json-schema --required src/config.ts ConfigInterface -o schema/Configuration.json"
   },
   "devDependencies": {
-    "@book000/eslint-config": "1.8.7",
-    "@book000/node-utils": "1.13.478",
-    "@sentry/node": "9.1.0",
+    "@book000/eslint-config": "1.8.14",
+    "@book000/node-utils": "1.14.5",
+    "@sentry/node": "9.2.0",
     "@types/node": "22.13.5",
-    "axios": "1.7.9",
+    "axios": "1.8.1",
     "eslint": "9.21.0",
     "eslint-config-standard": "17.1.0",
     "eslint-plugin-import": "2.31.0",
     "eslint-plugin-n": "17.15.1",
     "eslint-plugin-promise": "7.2.1",
-    "prettier": "3.5.1",
-    "puppeteer-core": "24.2.1",
+    "prettier": "3.5.2",
+    "puppeteer-core": "24.3.0",
     "run-z": "2.1.0",
-    "rxjs": "7.8.1",
+    "rxjs": "7.8.2",
     "tsx": "4.19.3",
     "typescript": "5.7.3",
     "typescript-json-schema": "0.65.1"
   },
-  "packageManager": "pnpm@10.4.1+sha512.c753b6c3ad7afa13af388fa6d808035a008e30ea9993f58c6663e2bc5ff21679aa834db094987129aa4d488b86df57f7b634981b2f827cdcacc698cc0cfb88af",
+  "packageManager": "pnpm@10.5.2+sha512.da9dc28cd3ff40d0592188235ab25d3202add8a207afbedc682220e4a0029ffbff4562102b9e6e46b4e3f9e8bd53e6d05de48544b0c57d4b0179e22c76d1199b",
   "pnpm": {
     "onlyBuiltDependencies": [
       "esbuild"
