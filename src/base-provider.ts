@@ -56,6 +56,7 @@ export abstract class BaseCrawler implements Crawler {
       // eslint-disable-next-line no-proto, @typescript-eslint/no-unsafe-member-access
       delete navigator.__proto__.webdriver
     })
+    // eslint-disable-next-line @typescript-eslint/no-deprecated
     await page.setUserAgent(
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:93.0) Gecko/20100101 Firefox/93.0'
     )

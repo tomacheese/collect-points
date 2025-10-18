@@ -67,15 +67,12 @@ export default class EcNaviCrawler extends BaseCrawler {
       waitUntil: 'networkidle2',
     })
 
-    const nPointText = await page.$eval(
-      'span.c_point',
-      (element) => element.textContent
-    )
-    if (nPointText == null) {
-      return -1
-    }
-    const replaced = nPointText.replaceAll(',', '')
-    return Number.parseInt(replaced, 10)
+    const nPointText = await page.$eval('span.c_point', (element) => {
+      const text = element.textContent
+      if (!text) return ''
+      return text.replaceAll(',', '')
+    })
+    return Number.parseInt(nPointText, 10)
   }
 
   protected async gesoten(page: Page) {
@@ -201,8 +198,9 @@ export default class EcNaviCrawler extends BaseCrawler {
     await hintPage.goto(hintUrl, {
       waitUntil: 'networkidle2',
     })
-    const hint =
-      (await hintPage.$eval('body', (element) => element.textContent)) ?? ''
+    const hint = await hintPage.$eval('body', (element) => {
+      return element.textContent || ''
+    })
     await hintPage.close()
 
     const answers = await page.$$('ul.choices__list button')

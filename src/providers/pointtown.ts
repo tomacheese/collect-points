@@ -133,13 +133,13 @@ export default class PointTownCrawler extends BaseCrawler {
 
     const nPointText = await page.$eval(
       'ul.c-mypage-summary-sec__main a[href="/mypage/point-history"]',
-      (element) => element.textContent
+      (element) => {
+        const text = element.textContent
+        if (!text) return ''
+        return text.replaceAll(',', '')
+      }
     )
-    if (nPointText == null) {
-      return -1
-    }
-    const replaced = nPointText.replaceAll(',', '')
-    return Number.parseInt(replaced, 10)
+    return Number.parseInt(nPointText, 10)
   }
 
   /**
@@ -329,12 +329,12 @@ export default class PointTownCrawler extends BaseCrawler {
         .then((element) => element?.click())
 
       await page.waitForSelector('p.pointq-correct-answer')
-      const trueanswer = await page.evaluate(
-        () =>
-          document
-            .querySelector('p.pointq-correct-answer')
-            ?.textContent?.split('：')[1] ?? ''
-      )
+      const trueanswer = await page.evaluate(() => {
+        const element = document.querySelector('p.pointq-correct-answer')
+        if (!element?.textContent) return ''
+        const parts = element.textContent.split('：')
+        return parts[1] || ''
+      })
       this.logger.info(`trueanswer: ${trueanswer}`)
       json[question] = trueanswer
       fs.writeFileSync(`/data/pointq.json`, JSON.stringify(json))
@@ -474,10 +474,6 @@ export default class PointTownCrawler extends BaseCrawler {
       (element) => element.textContent,
       notObtainedElement
     )
-    if (notObtained == null) {
-      this.logger.info('notObtained not found.')
-      return
-    }
     if (Number(notObtained) === 0) {
       this.logger.info('notObtained is 0.')
       return
@@ -712,7 +708,7 @@ export default class PointTownCrawler extends BaseCrawler {
           (element) => element?.textContent,
           element
         )
-        return Number(coin?.replace(/,/g, ''))
+        return Number(coin?.replaceAll(',', ''))
       })
       .catch(() => null)
   }
