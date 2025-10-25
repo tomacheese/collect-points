@@ -131,10 +131,12 @@ export default class PointTownCrawler extends BaseCrawler {
       waitUntil: 'networkidle2',
     })
 
-    const nPointText = await page.$eval(
-      'ul.c-mypage-summary-sec__main a[href="/mypage/point-history"]',
-      (element) => element.textContent
-    )
+    const nPointText = await page.evaluate((): string | null => {
+      const element = document.querySelector(
+        'ul.c-mypage-summary-sec__main a[href="/mypage/point-history"]'
+      )
+      return element?.textContent ?? null
+    })
     if (nPointText == null) {
       return -1
     }
@@ -329,12 +331,12 @@ export default class PointTownCrawler extends BaseCrawler {
         .then((element) => element?.click())
 
       await page.waitForSelector('p.pointq-correct-answer')
-      const trueanswer = await page.evaluate(
-        () =>
-          document
-            .querySelector('p.pointq-correct-answer')
-            ?.textContent?.split('：')[1] ?? ''
-      )
+      const trueanswer = await page.evaluate(() => {
+        const text =
+          document.querySelector('p.pointq-correct-answer')?.textContent ?? ''
+        const segments = text.split('：')
+        return segments.length > 1 ? segments[1] : ''
+      })
       this.logger.info(`trueanswer: ${trueanswer}`)
       json[question] = trueanswer
       fs.writeFileSync(`/data/pointq.json`, JSON.stringify(json))
@@ -470,9 +472,8 @@ export default class PointTownCrawler extends BaseCrawler {
       this.logger.info('notObtainedElement not found.')
       return
     }
-    const notObtained = await page.evaluate(
-      (element) => element.textContent,
-      notObtainedElement
+    const notObtained = await notObtainedElement.evaluate(
+      (element): string | null => element.textContent
     )
     if (notObtained == null) {
       this.logger.info('notObtained not found.')
@@ -712,7 +713,7 @@ export default class PointTownCrawler extends BaseCrawler {
           (element) => element?.textContent,
           element
         )
-        return Number(coin?.replace(/,/g, ''))
+        return Number(coin?.replaceAll(',', ''))
       })
       .catch(() => null)
   }
