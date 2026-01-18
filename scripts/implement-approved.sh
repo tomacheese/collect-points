@@ -45,6 +45,7 @@ claude -p "CLAUDE.md と .claude/commands/implement-approved.md を読んで、�
 7. 「🔀 PR 作成中...」
 8. 「✅ 完了: 実装結果のサマリー」" \
   --verbose \
+  --chrome \
   --output-format stream-json \
   --allowedTools "Read,Write,Edit,Glob,Grep,Bash,WebFetch,mcp__claude-in-chrome__*" \
   2>&1 | tee /dev/null | jq --unbuffered -r '

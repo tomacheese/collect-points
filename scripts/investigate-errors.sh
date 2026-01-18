@@ -32,6 +32,7 @@ claude -p "CLAUDE.md と .claude/commands/investigate-errors.md を読んで、�
 4. 「📝 Issue 作成中...」（作成する場合）
 5. 「✅ 完了: 調査結果のサマリー」" \
   --verbose \
+  --chrome \
   --output-format stream-json \
   --allowedTools "Read,Glob,Grep,Bash,WebFetch,mcp__claude-in-chrome__*" \
   2>&1 | tee /dev/null | jq --unbuffered -r '
