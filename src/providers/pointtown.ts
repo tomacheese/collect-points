@@ -10,7 +10,7 @@ import {
   waitForUrl,
 } from '@/functions'
 import fs from 'node:fs'
-import { Browser, Page, KnownDevices } from 'puppeteer-core'
+import { Browser, Page, KnownDevices } from 'rebrowser-puppeteer-core'
 
 export default class PointTownCrawler extends BaseCrawler {
   protected async login(page: Page): Promise<void> {

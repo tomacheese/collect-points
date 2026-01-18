@@ -1,5 +1,5 @@
 import { Logger } from '@book000/node-utils'
-import { Browser, ElementHandle, Page } from 'puppeteer-core'
+import { Browser, ElementHandle, Page } from 'rebrowser-puppeteer-core'
 import { getConfig } from './configuration'
 import { sendDiscordMessage } from './discord'
 

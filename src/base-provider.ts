@@ -1,6 +1,6 @@
 import { Logger } from '@book000/node-utils'
 import fs from 'node:fs'
-import puppeteer, { Browser, Page } from 'puppeteer-core'
+import puppeteer, { Browser, Page } from 'rebrowser-puppeteer-core'
 import { sendDiscordMessage } from './discord'
 import { getConfig } from './configuration'
 
@@ -35,12 +35,15 @@ export abstract class BaseCrawler implements Crawler {
         '--no-sandbox',
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
-        '--disable-accelerated-2d-canvas',
         '--no-first-run',
-        '--no-zygote',
-        '--disable-gpu',
         '--window-size=1920,1080',
+        // Cloudflare 検出回避のための追加引数
+        '--disable-blink-features=AutomationControlled',
+        '--disable-features=IsolateOrigins,site-per-process',
+        '--disable-infobars',
       ],
+      // automation 警告バーを非表示
+      ignoreDefaultArgs: ['--enable-automation'],
     }
 
     return await puppeteer.launch(launchOptions)
@@ -50,16 +53,10 @@ export abstract class BaseCrawler implements Crawler {
     const page = await browser.newPage()
     page.setDefaultNavigationTimeout(120 * 1000)
 
-    await page.evaluateOnNewDocument(() => {
-      Object.defineProperty(navigator, 'webdriver', () => null)
-      // @ts-expect-error navigator.__proto__ is not defined
-      // eslint-disable-next-line no-proto, @typescript-eslint/no-unsafe-member-access
-      delete navigator.__proto__.webdriver
-    })
-    await page.setUserAgent({
-      userAgent:
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:93.0) Gecko/20100101 Firefox/93.0',
-    })
+    // User-Agent を最新の Chrome に設定
+    await page.setUserAgent(
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
+    )
 
     return page
   }
