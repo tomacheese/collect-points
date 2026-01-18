@@ -11,6 +11,12 @@ LOG_FILE="$LOG_DIR/implement-approved-$(date +%Y%m%d-%H%M%S).log"
 
 cd "$PROJECT_DIR"
 
+# 必要なコマンドの確認
+if ! command -v jq &> /dev/null; then
+  echo "❌ エラー: jq コマンドが見つかりません。インストールしてください。" >&2
+  exit 1
+fi
+
 # ログディレクトリがなければ作成
 mkdir -p "$LOG_DIR"
 
@@ -41,7 +47,7 @@ claude -p "CLAUDE.md と .claude/commands/implement-approved.md を読んで、�
   --verbose \
   --output-format stream-json \
   --allowedTools "Read,Write,Edit,Glob,Grep,Bash,WebFetch,mcp__claude-in-chrome__*" \
-  2>&1 | tee -a "$LOG_FILE.raw" | jq --unbuffered -r '
+  2>&1 | tee /dev/null | jq --unbuffered -r '
     (select(.type == "assistant") | .message.content[]? | select(.type == "text") | .text),
     (select(.type == "assistant") | .message.content[]? | select(.type == "tool_use") | "🔧 ツール実行: " + .name),
     (select(.type == "result") | "\n=== 結果 ===\n" + (.result // "完了"))
