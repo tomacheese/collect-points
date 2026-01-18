@@ -71,6 +71,7 @@ export default class PointTownCrawler extends BaseCrawler {
     const beforePoint = await this.getCurrentPoint(page)
     this.logger.info(`beforePoint: ${beforePoint}`)
 
+    await this.runMethod(page, this.loginBonus.bind(this))
     await this.runMethod(page, this.triangleLot.bind(this))
     await this.runMethod(page, this.pointQ.bind(this))
     await this.runMethod(page, this.mailCheck.bind(this))
@@ -82,13 +83,24 @@ export default class PointTownCrawler extends BaseCrawler {
     await this.runMethod(page, this.chocoRead.bind(this))
     await this.runMethod(page, this.questionnaire.bind(this))
 
+    // 新ゲーム
+    await this.runMethod(page, this.brainTraining.bind(this))
+    await this.runMethod(page, this.nazotore.bind(this))
+    await this.runMethod(page, this.spotdiff.bind(this))
+    await this.runMethod(page, this.puzzle.bind(this))
+    await this.runMethod(page, this.sugoroku.bind(this))
+    await this.runMethod(page, this.dropgame.bind(this))
+    await this.runMethod(page, this.cmkuji.bind(this))
+
     // スマホ系
     const mobilePage = await browser.newPage()
     await this.runMethod(mobilePage, this.gacha.bind(this))
     await this.runMethod(mobilePage, this.omikuji.bind(this))
     await this.runMethod(mobilePage, this.horoscope.bind(this))
     await mobilePage.close()
-    // await this.stamprally(page)
+
+    // スタンプラリーの進捗確認
+    await this.runMethod(page, this.stamprally.bind(this))
 
     const afterPoint = await this.getCurrentPoint(page)
     this.logger.info(`afterPoint: ${afterPoint}`)
@@ -142,6 +154,49 @@ export default class PointTownCrawler extends BaseCrawler {
     }
     const replaced = nPointText.replaceAll(',', '')
     return Number.parseInt(replaced, 10)
+  }
+
+  /**
+   * ログインボーナス
+   * @param page ページ
+   */
+  async loginBonus(page: Page): Promise<void> {
+    this.logger.info('loginBonus()')
+
+    await page.goto('https://www.pointtown.com/', {
+      waitUntil: 'networkidle2',
+    })
+
+    // ログインボーナスのポップアップが表示されるまで待つ
+    const rewardButton = await page
+      .waitForSelector('a[href="/login-bonus/"]', {
+        visible: true,
+        timeout: 5000,
+      })
+      .catch(() => null)
+
+    if (rewardButton === null) {
+      this.logger.info('ログインボーナスのポップアップが表示されていません')
+      return
+    }
+
+    // 「報酬を受け取る」ボタンをクリック
+    await rewardButton.click()
+    await sleep(3000)
+
+    // 宝箱選択画面が表示された場合、閉じる（広告が必要なためスキップ）
+    const closeButton = await page
+      .waitForSelector('button.c-modal__close, a[href="/"]', {
+        visible: true,
+        timeout: 3000,
+      })
+      .catch(() => null)
+
+    if (closeButton !== null) {
+      await closeButton.click().catch(() => null)
+    }
+
+    this.logger.info('ログインボーナス完了')
   }
 
   /**
@@ -457,10 +512,14 @@ export default class PointTownCrawler extends BaseCrawler {
 
   /**
    * ポイントチャンス (モニター下部)
+   *
+   * 注意: 2024年以降、この機能はサイトから削除された可能性があります。
+   * 要素が見つからない場合は早期リターンします。
+   *
    * @param page ページ
    */
   async pointChance(page: Page): Promise<void> {
-    this.logger.info('pointchance()')
+    this.logger.info('pointChance()')
     await page.goto(
       'https://www.pointtown.com/monitor/fancrew/real-shop#link-coin-chance',
       { waitUntil: 'networkidle2' }
@@ -469,7 +528,9 @@ export default class PointTownCrawler extends BaseCrawler {
       'div.c-coin-chance-sec__status p.c-coin-label'
     )
     if (notObtainedElement == null) {
-      this.logger.info('notObtainedElement not found.')
+      this.logger.info(
+        'コインチャンスセクションが見つかりません（この機能は廃止された可能性があります）'
+      )
       return
     }
     const notObtained = await notObtainedElement.evaluate(
@@ -539,8 +600,12 @@ export default class PointTownCrawler extends BaseCrawler {
       waitUntil: 'networkidle2',
     })
 
+    // 抽選に参加できるボタンをクリック（サイトリニューアル後のセレクタ）
     await page
-      .waitForSelector('button.btn-receive')
+      .waitForSelector('a.c-n-side-profile__pop', {
+        visible: true,
+        timeout: 5000,
+      })
       .then((element) => element?.click())
       .catch(() => null)
   }
@@ -706,8 +771,11 @@ export default class PointTownCrawler extends BaseCrawler {
   }
 
   async checkNewsCoin(page: Page) {
+    // サイトリニューアル後のセレクタに対応
     return await page
-      .waitForSelector('header.c-sec__l-header p.c-coin-label')
+      .waitForSelector('.c-poitto-sec-header p.c-coin-label', {
+        timeout: 5000,
+      })
       .then(async (element) => {
         const coin = await page.evaluate(
           (element) => element?.textContent,
@@ -753,24 +821,394 @@ export default class PointTownCrawler extends BaseCrawler {
       .then((element) => element?.click())
   }
 
+  /**
+   * スタンプラリー
+   *
+   * スタンプラリーは /game ページにあり、他の活動（easyGame, gesoten, pointQ 等）を
+   * 完了することでスタンプが貯まります。このメソッドは進捗状況のログ出力を行います。
+   *
+   * 注意: スタンプは他のメソッド（easyGame, gesoten, pointQ など）の実行時に
+   * 自動的に獲得されるため、このメソッドは主に進捗確認用です。
+   *
+   * @param page ページ
+   */
   async stamprally(page: Page): Promise<void> {
     this.logger.info('stamprally()')
 
-    await page.goto('https://www.pointtown.com/ptu/mypage/top', {
+    await page.goto('https://www.pointtown.com/game#link-stamp-sec', {
       waitUntil: 'networkidle2',
     })
-    try {
-      await page
-        .waitForSelector('a.stamp-cl-btn', {
-          visible: true,
-          timeout: 10_000,
-        })
-        .then((element) => element?.click())
-    } catch (error) {
-      /*
-       */
-      // タイムアウトの場合は次の処理へ進む
-      this.logger.info((error as Error).message)
+
+    // スタンプラリーの進捗を確認
+    const stampSection = await page.$('#link-stamp-sec')
+    if (stampSection === null) {
+      this.logger.info('スタンプラリーセクションが見つかりません')
+      return
     }
+
+    // デイリーミッションの進捗を取得
+    const progressSections = await page.$$('.c-game-progress-sec')
+    for (const section of progressSections) {
+      const reward = await section
+        .$eval('.c-game-progress-sec__reward', (el) =>
+          el.textContent ? el.textContent.trim().replaceAll(/\s+/g, ' ') : ''
+        )
+        .catch(() => '')
+      const note = await section
+        .$eval('.c-game-progress-sec__note', (el) =>
+          el.textContent ? el.textContent.trim() : ''
+        )
+        .catch(() => '')
+      if (reward || note) {
+        this.logger.info(`スタンプラリー: ${reward} (${note})`)
+      }
+    }
+  }
+
+  /**
+   * 脳トレクイズ
+   *
+   * gamebox.pointtown.com/quiz にリダイレクトされ、クイズに回答してスタンプを集める。
+   * 12個スタンプを集めると抽選でコインが当たる。
+   *
+   * @param page ページ
+   */
+  async brainTraining(page: Page): Promise<void> {
+    this.logger.info('brainTraining()')
+
+    await page.goto('https://www.pointtown.com/quiz/redirect/brain-training', {
+      waitUntil: 'networkidle2',
+    })
+
+    // 「つづきから」または「はじめる」ボタンをクリック
+    const startButton = await page
+      .waitForSelector(
+        'a[href*="/quiz/question"], button:has-text("つづきから"), button:has-text("はじめる")',
+        { timeout: 5000 }
+      )
+      .catch(() => null)
+
+    if (startButton) {
+      await startButton.click()
+      await sleep(3000)
+    }
+
+    // クイズに回答（最大10問）
+    for (let i = 0; i < 10; i++) {
+      // 回答ボタンを探す
+      const answerButtons = await page.$$(
+        'button[class*="answer"], li[class*="choice"] button'
+      )
+      if (answerButtons.length === 0) {
+        this.logger.info('回答ボタンが見つかりません。クイズ終了または未開始。')
+        break
+      }
+
+      // ランダムに回答を選択
+      const randomIndex = Math.floor(Math.random() * answerButtons.length)
+      await answerButtons[randomIndex].click()
+      await sleep(2000)
+
+      // 次の問題へ進むボタンがあればクリック
+      const nextButton = await page
+        .$(
+          'button:has-text("次へ"), button:has-text("次の問題"), a:has-text("次へ")'
+        )
+        .catch(() => null)
+      if (nextButton) {
+        await nextButton.click()
+        await sleep(2000)
+      }
+    }
+
+    await sleep(3000)
+  }
+
+  /**
+   * 今夜はナゾトレ
+   *
+   * gamebox.pointtown.com/nazotore にリダイレクトされる。
+   * 謎解きクイズに回答してスタンプを獲得する。
+   *
+   * @param page ページ
+   */
+  async nazotore(page: Page): Promise<void> {
+    this.logger.info('nazotore()')
+
+    await page.goto('https://www.pointtown.com/nazotore/redirect', {
+      waitUntil: 'networkidle2',
+    })
+
+    // 開始ボタンをクリック
+    const startButton = await page
+      .waitForSelector(
+        'button:has-text("挑戦"), button:has-text("はじめる"), a:has-text("挑戦")',
+        { timeout: 5000 }
+      )
+      .catch(() => null)
+
+    if (startButton) {
+      await startButton.click()
+      await sleep(3000)
+    }
+
+    // 広告があれば視聴
+    await this.watchAdIfExists(page)
+
+    // クイズに回答（回答ボタンがあれば）
+    for (let i = 0; i < 5; i++) {
+      const answerButtons = await page.$$(
+        'button[class*="answer"], button[class*="choice"]'
+      )
+      if (answerButtons.length === 0) break
+
+      const randomIndex = Math.floor(Math.random() * answerButtons.length)
+      await answerButtons[randomIndex].click()
+      await sleep(3000)
+    }
+
+    await sleep(3000)
+  }
+
+  /**
+   * 広告があれば視聴する共通処理
+   */
+  private async watchAdIfExists(page: Page): Promise<void> {
+    const adButton = await page
+      .waitForSelector(
+        'button:has-text("広告を再生"), button:has-text("広告を見て"), button:has-text("動画を見る")',
+        { timeout: 3000 }
+      )
+      .catch(() => null)
+
+    if (adButton) {
+      await adButton.click()
+      this.logger.info('広告再生開始、30秒待機')
+      await sleep(30_000)
+
+      const closeButton = await page
+        .waitForSelector(
+          'button:has-text("閉じる"), button:has-text("スキップ"), button[class*="close"], [class*="close-button"]',
+          { timeout: 10_000 }
+        )
+        .catch(() => null)
+
+      if (closeButton) {
+        await closeButton.click()
+        await sleep(2000)
+      }
+    }
+  }
+
+  /**
+   * まちがい探し
+   *
+   * gamebox.pointtown.com/spotdiff にリダイレクトされる。
+   * 「挑戦する」→ 広告視聴 → ゲームプレイでルーペを獲得。
+   * 100個ルーペを集めると抽選でコインが当たる。
+   *
+   * @param page ページ
+   */
+  async spotdiff(page: Page): Promise<void> {
+    this.logger.info('spotdiff()')
+
+    await page.goto('https://www.pointtown.com/game/redirect/spotdiff', {
+      waitUntil: 'networkidle2',
+    })
+
+    // 「挑戦する」ボタンをクリック
+    const challengeButton = await page
+      .waitForSelector('button:has-text("挑戦する"), a:has-text("挑戦する")', {
+        timeout: 5000,
+      })
+      .catch(() => null)
+
+    if (challengeButton) {
+      await challengeButton.click()
+      await sleep(3000)
+    }
+
+    // 広告を再生して開始するボタンがあればクリック
+    const adButton = await page
+      .waitForSelector(
+        'button:has-text("広告を再生"), button:has-text("広告を見て")',
+        {
+          timeout: 5000,
+        }
+      )
+      .catch(() => null)
+
+    if (adButton) {
+      await adButton.click()
+      this.logger.info('広告再生開始、30秒待機')
+      await sleep(30_000) // 広告視聴待機
+
+      // 広告終了後の閉じるボタン
+      const closeButton = await page
+        .waitForSelector(
+          'button:has-text("閉じる"), button:has-text("スキップ"), button[class*="close"]',
+          { timeout: 10_000 }
+        )
+        .catch(() => null)
+
+      if (closeButton) {
+        await closeButton.click()
+        await sleep(2000)
+      }
+    }
+
+    // ゲーム画面でスタンプ獲得（訪問だけでもスタンプが貯まる場合がある）
+    await sleep(5000)
+  }
+
+  /**
+   * クラッシュアイス（パズル）
+   *
+   * gamebox.pointtown.com/puzzle にリダイレクトされる。
+   * パズルゲームをプレイしてスタンプを獲得する。
+   *
+   * @param page ページ
+   */
+  async puzzle(page: Page): Promise<void> {
+    this.logger.info('puzzle()')
+
+    await page.goto('https://www.pointtown.com/game/redirect/puzzle', {
+      waitUntil: 'networkidle2',
+    })
+
+    // 開始ボタンをクリック
+    const startButton = await page
+      .waitForSelector(
+        'button:has-text("挑戦"), button:has-text("はじめる"), button:has-text("スタート")',
+        { timeout: 5000 }
+      )
+      .catch(() => null)
+
+    if (startButton) {
+      await startButton.click()
+      await sleep(3000)
+    }
+
+    // 広告があれば視聴
+    await this.watchAdIfExists(page)
+
+    // ゲーム画面で待機（参加するだけでスタンプが貯まる）
+    await sleep(10_000)
+  }
+
+  /**
+   * たびろく（すごろく）
+   *
+   * gamebox.pointtown.com/sugoroku にリダイレクトされる。
+   * すごろくゲームでサイコロを振ってスタンプを獲得する。
+   *
+   * @param page ページ
+   */
+  async sugoroku(page: Page): Promise<void> {
+    this.logger.info('sugoroku()')
+
+    await page.goto('https://www.pointtown.com/game/redirect/sugoroku', {
+      waitUntil: 'networkidle2',
+    })
+
+    // 広告があれば視聴
+    await this.watchAdIfExists(page)
+
+    // サイコロを振るボタンをクリック
+    const diceButton = await page
+      .waitForSelector(
+        'button:has-text("サイコロ"), button:has-text("振る"), button:has-text("スタート")',
+        { timeout: 5000 }
+      )
+      .catch(() => null)
+
+    if (diceButton) {
+      await diceButton.click()
+      await sleep(5000) // アニメーション待機
+    }
+
+    await sleep(5000)
+  }
+
+  /**
+   * ふるふるパニック
+   *
+   * pointtown.dropgame.jp にリダイレクトされる。
+   * 落ちものゲームをプレイしてポイントを獲得する。
+   *
+   * @param page ページ
+   */
+  async dropgame(page: Page): Promise<void> {
+    this.logger.info('dropgame()')
+
+    await page.goto(
+      'https://www.pointtown.com/game/redirect/marketplace/dropgame',
+      {
+        waitUntil: 'networkidle2',
+      }
+    )
+
+    // 広告があれば視聴
+    await this.watchAdIfExists(page)
+
+    // ゲーム開始ボタンをクリック
+    const startButton = await page
+      .waitForSelector(
+        'button:has-text("スタート"), button:has-text("はじめる"), button:has-text("プレイ")',
+        { timeout: 5000 }
+      )
+      .catch(() => null)
+
+    if (startButton) {
+      await startButton.click()
+      await sleep(10_000) // ゲームプレイ待機
+    }
+
+    await sleep(5000)
+  }
+
+  /**
+   * CMくじ
+   *
+   * pointtown.cmnw.jp にリダイレクトされる。
+   * CM動画を視聴してくじを引き、ポイントを獲得する。
+   *
+   * @param page ページ
+   */
+  async cmkuji(page: Page): Promise<void> {
+    this.logger.info('cmkuji()')
+
+    await page.goto('https://www.pointtown.com/cmkuji/redirect', {
+      waitUntil: 'networkidle2',
+    })
+
+    // くじを引くボタンをクリック
+    const drawButton = await page
+      .waitForSelector(
+        'button:has-text("くじを引く"), button:has-text("動画を見る"), a:has-text("くじを引く")',
+        { timeout: 5000 }
+      )
+      .catch(() => null)
+
+    if (drawButton) {
+      await drawButton.click()
+      this.logger.info('CM動画再生開始、30秒待機')
+      await sleep(30_000) // CM視聴待機
+
+      // 動画終了後の閉じるボタン
+      const closeButton = await page
+        .waitForSelector(
+          'button:has-text("閉じる"), button:has-text("結果を見る"), button[class*="close"]',
+          { timeout: 10_000 }
+        )
+        .catch(() => null)
+
+      if (closeButton) {
+        await closeButton.click()
+        await sleep(3000)
+      }
+    }
+
+    await sleep(3000)
   }
 }
