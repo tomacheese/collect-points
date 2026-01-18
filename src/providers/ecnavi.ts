@@ -56,6 +56,15 @@ export default class EcNaviCrawler extends BaseCrawler {
     await this.runMethod(page, this.ticketingLottery.bind(this))
     await this.runMethod(page, this.fund.bind(this))
 
+    // 新ゲーム
+    await this.runMethod(page, this.natsupoi.bind(this))
+    await this.runMethod(page, this.spotdiffBox.bind(this))
+    await this.runMethod(page, this.languageTravel.bind(this))
+    await this.runMethod(page, this.brainExerciseGame.bind(this))
+    await this.runMethod(page, this.easyGame.bind(this))
+    await this.runMethod(page, this.brainTraining.bind(this))
+    await this.runMethod(page, this.vegetable.bind(this))
+
     const afterPoint = await this.getCurrentPoint(page)
     this.logger.info(`afterPoint: ${afterPoint}`)
     await finishedNotify(this.constructor.name, beforePoint, afterPoint, 0.1)
@@ -446,5 +455,302 @@ export default class EcNaviCrawler extends BaseCrawler {
         await newPage.close()
         await sleep(1000)
       })
+  }
+
+  /**
+   * 広告があれば視聴する共通処理
+   */
+  private async watchAdIfExists(page: Page): Promise<void> {
+    const adButton = await page
+      .waitForSelector(
+        'button:has-text("広告を再生"), button:has-text("広告を見て"), button:has-text("動画を見る")',
+        { timeout: 3000 }
+      )
+      .catch(() => null)
+
+    if (adButton) {
+      await adButton.click()
+      this.logger.info('広告再生開始、30秒待機')
+      await sleep(30_000)
+
+      const closeButton = await page
+        .waitForSelector(
+          'button:has-text("閉じる"), button:has-text("スキップ"), button[class*="close"], [class*="close-button"]',
+          { timeout: 10_000 }
+        )
+        .catch(() => null)
+
+      if (closeButton) {
+        await closeButton.click()
+        await sleep(2000)
+      }
+    }
+  }
+
+  /**
+   * ナツポイ
+   *
+   * ecnavi.natsupoi.com にリダイレクトされる。
+   * ゲームをプレイしてポイントを獲得する。
+   */
+  protected async natsupoi(page: Page) {
+    this.logger.info('natsupoi()')
+
+    await page.goto('https://ecnavi.jp/natsupoi/redirect/', {
+      waitUntil: 'networkidle2',
+    })
+
+    // 広告があれば視聴
+    await this.watchAdIfExists(page)
+
+    // ゲーム開始ボタンをクリック
+    const startButton = await page
+      .waitForSelector(
+        'button:has-text("スタート"), button:has-text("はじめる"), button:has-text("プレイ")',
+        { timeout: 5000 }
+      )
+      .catch(() => null)
+
+    if (startButton) {
+      await startButton.click()
+      await sleep(10_000)
+    }
+
+    await sleep(5000)
+  }
+
+  /**
+   * まちがい探し
+   *
+   * ecnavi.kantangame.com/spotdiff にリダイレクトされる。
+   * 間違い探しゲームをプレイしてスタンプを獲得する。
+   */
+  protected async spotdiffBox(page: Page) {
+    this.logger.info('spotdiffBox()')
+
+    await page.goto('https://ecnavi.jp/spotdiff_box/redirect/', {
+      waitUntil: 'networkidle2',
+    })
+
+    // 挑戦ボタンをクリック
+    const challengeButton = await page
+      .waitForSelector('button:has-text("挑戦"), a:has-text("挑戦")', {
+        timeout: 5000,
+      })
+      .catch(() => null)
+
+    if (challengeButton) {
+      await challengeButton.click()
+      await sleep(3000)
+    }
+
+    // 広告があれば視聴
+    await this.watchAdIfExists(page)
+
+    // ゲーム画面で待機
+    await sleep(10_000)
+  }
+
+  /**
+   * 語学トラベル
+   *
+   * 英語学習クイズでポイントを獲得する。
+   */
+  protected async languageTravel(page: Page) {
+    this.logger.info('languageTravel()')
+
+    await page.goto('https://ecnavi.jp/contents/language_travel/', {
+      waitUntil: 'networkidle2',
+    })
+
+    // クイズ開始ボタンをクリック
+    const startButton = await page
+      .waitForSelector(
+        'button:has-text("スタート"), button:has-text("はじめる"), a:has-text("挑戦")',
+        { timeout: 5000 }
+      )
+      .catch(() => null)
+
+    if (startButton) {
+      await startButton.click()
+      await sleep(3000)
+    }
+
+    // クイズに回答
+    for (let i = 0; i < 5; i++) {
+      const answerButtons = await page.$$(
+        'button[class*="answer"], button[class*="choice"]'
+      )
+      if (answerButtons.length === 0) break
+
+      const randomIndex = Math.floor(Math.random() * answerButtons.length)
+      await answerButtons[randomIndex].click()
+      await sleep(3000)
+    }
+
+    await sleep(3000)
+  }
+
+  /**
+   * 頭の体操ゲーム
+   *
+   * ecnavi.ib-game.jp/stamp にリダイレクトされる。
+   * 脳トレゲームをプレイしてスタンプを獲得する。
+   */
+  protected async brainExerciseGame(page: Page) {
+    this.logger.info('brainExerciseGame()')
+
+    await page.goto('https://ecnavi.jp/brain_exercise_game/redirect/', {
+      waitUntil: 'networkidle2',
+    })
+
+    // 広告があれば視聴
+    await this.watchAdIfExists(page)
+
+    // ゲーム開始ボタンをクリック
+    const startButton = await page
+      .waitForSelector(
+        'button:has-text("スタート"), button:has-text("はじめる"), button:has-text("プレイ")',
+        { timeout: 5000 }
+      )
+      .catch(() => null)
+
+    if (startButton) {
+      await startButton.click()
+      await sleep(10_000)
+    }
+
+    await sleep(5000)
+  }
+
+  /**
+   * かんたんゲーム
+   *
+   * ecnavi.kantangame.com/easygame にリダイレクトされる。
+   * シンプルなゲームをプレイしてスタンプを獲得する。
+   */
+  protected async easyGame(page: Page) {
+    this.logger.info('easyGame()')
+
+    await page.goto('https://ecnavi.jp/easy_game/redirect/', {
+      waitUntil: 'networkidle2',
+    })
+
+    // 広告があれば視聴
+    await this.watchAdIfExists(page)
+
+    // ゲーム開始ボタンをクリック
+    const startButton = await page
+      .waitForSelector(
+        'button:has-text("スタート"), button:has-text("はじめる"), button:has-text("挑戦")',
+        { timeout: 5000 }
+      )
+      .catch(() => null)
+
+    if (startButton) {
+      await startButton.click()
+      await sleep(10_000)
+    }
+
+    await sleep(5000)
+  }
+
+  /**
+   * 脳トレクイズ
+   *
+   * ecnavi.kantangame.com/quiz にリダイレクトされる。
+   * クイズに回答してスタンプを獲得する。
+   */
+  protected async brainTraining(page: Page) {
+    this.logger.info('brainTraining()')
+
+    await page.goto('https://ecnavi.jp/brain_training/redirect/', {
+      waitUntil: 'networkidle2',
+    })
+
+    // 開始ボタンをクリック
+    const startButton = await page
+      .waitForSelector(
+        'button:has-text("つづきから"), button:has-text("はじめる"), a:has-text("挑戦")',
+        { timeout: 5000 }
+      )
+      .catch(() => null)
+
+    if (startButton) {
+      await startButton.click()
+      await sleep(3000)
+    }
+
+    // 広告があれば視聴
+    await this.watchAdIfExists(page)
+
+    // クイズに回答
+    for (let i = 0; i < 10; i++) {
+      const answerButtons = await page.$$(
+        'button[class*="answer"], li[class*="choice"] button'
+      )
+      if (answerButtons.length === 0) break
+
+      const randomIndex = Math.floor(Math.random() * answerButtons.length)
+      await answerButtons[randomIndex].click()
+      await sleep(2000)
+
+      // 次へボタン
+      const nextButton = await page
+        .$('button:has-text("次へ"), a:has-text("次へ")')
+        .catch(() => null)
+      if (nextButton) {
+        await nextButton.click()
+        await sleep(2000)
+      }
+    }
+
+    await sleep(3000)
+  }
+
+  /**
+   * ポイント畑
+   *
+   * クレーンゲーム形式で野菜を収穫してポイントを獲得する。
+   * ①右 →②下 の順でアームを操作する。
+   */
+  protected async vegetable(page: Page) {
+    this.logger.info('vegetable()')
+
+    await page.goto('https://ecnavi.jp/game/vegetable/', {
+      waitUntil: 'networkidle2',
+    })
+
+    // はじめるボタンをクリック
+    const startButton = await page
+      .waitForSelector('img[alt*="はじめる"], a:has-text("はじめる")', {
+        timeout: 5000,
+      })
+      .catch(() => null)
+
+    if (startButton) {
+      await startButton.click()
+      await sleep(2000)
+
+      // クレーンゲーム操作：右方向に移動（長押し）
+      // ゲーム画面内をクリック・ホールドして操作
+      const gameArea = await page.$('.game_box, #game, [class*="game"]')
+      if (gameArea) {
+        // 右移動（クリックして少し待つ）
+        await page.mouse.down()
+        await sleep(2000) // 適度な位置まで移動
+        await page.mouse.up()
+        await sleep(1000)
+
+        // 下移動（再度クリックして少し待つ）
+        await page.mouse.down()
+        await sleep(1500)
+        await page.mouse.up()
+      }
+
+      await sleep(5000)
+    }
+
+    await sleep(3000)
   }
 }
