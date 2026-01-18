@@ -342,6 +342,7 @@ await screenshot(); // 状態確認
 | `easyGame` | 広告視聴型 | かんたんゲーム |
 | `brainTraining` | クイズ回答型 | 脳トレクイズ |
 | `vegetable` | 操作型 | ポイント畑（クレーンゲーム）|
+| `chocoRead` | ページめくり | ちょこ読み（雑誌閲覧）|
 
 ### PointTown 実装済み機能
 
@@ -356,7 +357,6 @@ await screenshot(); // 状態確認
 | `easyGame` | ボタンクリック | かんたんゲーム |
 | `gesoten` | 新規タブ | ゲソてん |
 | `news` | 記事閲覧 | ニュース閲覧 |
-| `chocoRead` | ページめくり | チョコ読み |
 | `questionnaire` | 回答選択 | アンケート |
 | `gacha` | スマホエミュレート | ガチャ |
 | `omikuji` | スマホエミュレート | おみくじ |
