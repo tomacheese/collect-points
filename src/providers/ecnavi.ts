@@ -64,6 +64,7 @@ export default class EcNaviCrawler extends BaseCrawler {
     await this.runMethod(page, this.easyGame.bind(this))
     await this.runMethod(page, this.brainTraining.bind(this))
     await this.runMethod(page, this.vegetable.bind(this))
+    await this.runMethod(page, this.chocoRead.bind(this))
 
     const afterPoint = await this.getCurrentPoint(page)
     this.logger.info(`afterPoint: ${afterPoint}`)
@@ -752,5 +753,96 @@ export default class EcNaviCrawler extends BaseCrawler {
     }
 
     await sleep(3000)
+  }
+
+  /**
+   * ちょこ読み
+   *
+   * 雑誌を読んでポイントを獲得する。
+   * 無料チケットで読み、ページをめくって最後までいくとポイントが獲得できる。
+   */
+  protected async chocoRead(page: Page) {
+    this.logger.info('chocoRead()')
+
+    await page.goto('https://ecnavi.jp/contents/chocoyomi/', {
+      waitUntil: 'networkidle2',
+    })
+
+    // 「今すぐ読んでポイントゲット」ボタンをクリック
+    const directLinkButton = await page
+      .waitForSelector('a.chocoyomi-direct-link__button', { timeout: 5000 })
+      .catch(() => null)
+
+    if (!directLinkButton) {
+      this.logger.info('ちょこ読みのボタンが見つかりません')
+      return
+    }
+
+    await Promise.all([
+      directLinkButton.click(),
+      page.waitForNavigation({ waitUntil: 'networkidle2' }),
+    ])
+
+    // 無料チケットで読む
+    const rentalButton = await page
+      .waitForSelector('button.chocoyomi-ad-page__button.button-rental', {
+        timeout: 5000,
+      })
+      .catch(() => null)
+
+    if (!rentalButton) {
+      this.logger.info('無料チケットボタンが見つかりません')
+      return
+    }
+
+    await rentalButton.click()
+    await sleep(1000)
+
+    // チケットの使用確認: はい
+    const confirmButton = await page
+      .waitForSelector('button.p_dialog__button.c_red', { timeout: 5000 })
+      .catch(() => null)
+
+    if (confirmButton) {
+      await confirmButton.click()
+      await sleep(2000)
+    }
+
+    // 左側をクリックしてページをめくる（なくなるまで）
+    let pageCount = 0
+    const maxPages = 50 // 無限ループ防止
+    while (
+      pageCount < maxPages &&
+      (await isExistsSelector(
+        page,
+        'button[data-testid="TestId__LEFT_PAGE_NAVIGATION"]'
+      ))
+    ) {
+      const leftButton = await page
+        .waitForSelector('button[data-testid="TestId__LEFT_PAGE_NAVIGATION"]', {
+          timeout: 3000,
+        })
+        .catch(() => null)
+
+      if (!leftButton) break
+
+      await leftButton.click()
+      await sleep(1000)
+      pageCount++
+    }
+
+    this.logger.info(`ページをめくりました: ${pageCount} ページ`)
+
+    // ポイント獲得ボタンをクリック
+    const pointButton = await page
+      .waitForSelector('button.chocoyomi-ad-page__button.button-point', {
+        timeout: 5000,
+      })
+      .catch(() => null)
+
+    if (pointButton) {
+      await pointButton.click()
+      await sleep(1000)
+    }
   }
 }
