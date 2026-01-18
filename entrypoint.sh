@@ -4,6 +4,9 @@ rm /tmp/.X99-lock || true
 Xvfb :99 -ac -screen 0 1920x1080x16 -listen tcp &
 x11vnc -shared -forever -noxdamage -display :99 -nopw -loop -xkb &
 
+# Xvfb のディスプレイを使用するよう設定
+export DISPLAY=:99
+
 rm -rf /data/userdata/*/Singleton* || true
 
 while :

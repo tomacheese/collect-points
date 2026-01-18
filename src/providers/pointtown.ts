@@ -112,23 +112,14 @@ export default class PointTownCrawler extends BaseCrawler {
       waitUntil: 'networkidle2',
     })
 
-    // 秘密の質問が出ることがある。待ちは不要
-    const config = getConfig()
-    waitForUrl(page, 'equal', 'https://www.pointtown.com/secure/question')
-      .then(async () => {
-        await page
-          .waitForSelector('input[name="answerText"]')
-          .then((element) => element?.type(config.pointtown.answer))
-        await new Promise((resolve) => setTimeout(resolve, 1000))
-        await page
-          .waitForSelector('button[type="submit"]')
-          .then((element) => element?.focus())
-        await new Promise((resolve) => setTimeout(resolve, 1000))
-        await page
-          .waitForSelector('button[type="submit"]')
-          .then((element) => element?.click())
-      })
-      .catch(() => null)
+    // 秘密の質問ページにリダイレクトされた場合は未ログインと判定
+    // 秘密の質問の入力は login() で行う
+    if (page.url() === 'https://www.pointtown.com/secure/question') {
+      this.logger.info(
+        '秘密の質問ページにリダイレクトされたため、未ログインと判定'
+      )
+      return false
+    }
 
     return await isExistsSelector(
       page,
