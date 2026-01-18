@@ -50,8 +50,8 @@
       "esbuild"
     ],
     "overrides": {
-      "puppeteer": "npm:rebrowser-puppeteer-core@*",
-      "puppeteer-core": "npm:rebrowser-puppeteer-core@*"
+      "puppeteer": "npm:rebrowser-puppeteer-core@^24.8.1",
+      "puppeteer-core": "npm:rebrowser-puppeteer-core@^24.8.1"
     }
   },
   "dependencies": {

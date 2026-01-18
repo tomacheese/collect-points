@@ -53,10 +53,10 @@ export abstract class BaseCrawler implements Crawler {
     const page = await browser.newPage()
     page.setDefaultNavigationTimeout(120 * 1000)
 
-    // User-Agent を最新の Chrome に設定
-    await page.setUserAgent(
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
-    )
+    // User-Agent をブラウザのデフォルト値、もしくは環境変数から設定
+    const defaultUserAgent = await browser.userAgent()
+    const userAgent = process.env.USER_AGENT ?? defaultUserAgent
+    await page.setUserAgent(userAgent)
 
     return page
   }
