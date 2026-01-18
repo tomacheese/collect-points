@@ -7,7 +7,7 @@ import {
   sleep,
   waitForUrl,
 } from '@/functions'
-import { Browser, Page } from 'puppeteer-core'
+import { Browser, Page } from 'rebrowser-puppeteer-core'
 
 export default class EcNaviCrawler extends BaseCrawler {
   protected async login(page: Page): Promise<void> {
