@@ -990,7 +990,7 @@ export default class EcNaviCrawler extends BaseCrawler {
     const selectedValue = options[randomIndex]
     this.logger.info(`選択: ${selectedValue}`)
 
-    await selectElement.select(selectedValue)
+    await page.select('select.c_select', selectedValue)
     await sleep(1000)
 
     // 回答するボタンをクリック
