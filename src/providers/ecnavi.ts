@@ -10,6 +10,19 @@ import {
 import { Browser, Page } from 'rebrowser-puppeteer-core'
 
 export default class EcNaviCrawler extends BaseCrawler {
+  /**
+   * runMethod をオーバーライドして、各メソッド実行後に Google Rewarded Ads をチェックする
+   */
+  public override async runMethod(
+    page: Page,
+    method: (page: Page) => Promise<void>
+  ): Promise<void> {
+    await super.runMethod(page, method)
+
+    // 各メソッド実行後に Google Rewarded Ads をチェック
+    await this.handleRewardedAd(page)
+  }
+
   protected async login(page: Page): Promise<void> {
     this.logger.info('login()')
     const config = getConfig()
@@ -459,7 +472,7 @@ export default class EcNaviCrawler extends BaseCrawler {
   }
 
   /**
-   * 広告があれば視聴する共通処理
+   * 広告があれば視聴する共通処理（ゲーム内広告向け）
    */
   private async watchAdIfExists(page: Page): Promise<void> {
     const adButton = await page
@@ -486,6 +499,85 @@ export default class EcNaviCrawler extends BaseCrawler {
         await sleep(2000)
       }
     }
+  }
+
+  /**
+   * Google Rewarded Ads（短い広告を見る）に対応する
+   *
+   * ECNavi では Google Rewarded Ads のポップアップが表示されることがある。
+   * Issue #216 の要件:
+   * 1. ページアクセス後、10秒間の間広告が表示されるかどうか待つ
+   * 2. 表示された場合、再生を開始
+   * 3. 終了ボタンが表示されるまで待機
+   * 4. 終了ボタンを押下
+   *
+   * @param page ページ
+   */
+  private async handleRewardedAd(page: Page): Promise<void> {
+    // 「短い広告を見る」ボタンを 10 秒間待機
+    const rewardedAdButton = await page
+      .waitForSelector('button.fc-rewarded-ad-button', { timeout: 10_000 })
+      .catch(() => null)
+
+    if (!rewardedAdButton) {
+      return
+    }
+
+    this.logger.info('Google Rewarded Ads のポップアップを検出')
+
+    // 「短い広告を見る」ボタンをクリック
+    await rewardedAdButton.click()
+    this.logger.info('広告再生開始')
+
+    // 広告視聴を待機（最大 60 秒）
+    // 広告終了後、ポップアップが閉じるか、閉じるボタンが表示されるまで待つ
+    const startTime = Date.now()
+    const maxWaitTime = 60_000 // 60 秒
+
+    while (Date.now() - startTime < maxWaitTime) {
+      // ポップアップが閉じたかチェック
+      const popupExists = await isExistsSelector(
+        page,
+        '.fc-monetization-dialog-container'
+      )
+      if (!popupExists) {
+        this.logger.info('広告ポップアップが閉じました')
+        break
+      }
+
+      // 閉じるボタンを探す
+      const closeButton = await page
+        .$(
+          'button.fc-close, button[aria-label="close"], button[aria-label="閉じる"]'
+        )
+        .catch(() => null)
+      if (closeButton) {
+        await closeButton.click()
+        this.logger.info('閉じるボタンをクリック')
+        await sleep(2000)
+        break
+      }
+
+      // URL から #goog_rewarded を削除してリロードする方法も試す
+      const currentUrl = page.url()
+      if (currentUrl.includes('#goog_rewarded')) {
+        // 5 秒ごとに確認
+        await sleep(5000)
+        continue
+      }
+
+      await sleep(1000)
+    }
+
+    // URL に #goog_rewarded が残っている場合は除去
+    const finalUrl = page.url()
+    if (finalUrl.includes('#goog_rewarded')) {
+      const cleanUrl = finalUrl.replace('#goog_rewarded', '')
+      this.logger.info(`URL から #goog_rewarded を除去: ${cleanUrl}`)
+      await page.goto(cleanUrl, { waitUntil: 'networkidle2' })
+    }
+
+    await sleep(2000)
   }
 
   /**
