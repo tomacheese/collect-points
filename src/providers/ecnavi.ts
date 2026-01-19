@@ -541,7 +541,6 @@ export default class EcNaviCrawler extends BaseCrawler {
 
     while (Date.now() - startTime < maxWaitTime) {
       loopCount++
-      const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000)
 
       // ポップアップが閉じたかチェック
       const popupExists = await isExistsSelector(
@@ -560,14 +559,20 @@ export default class EcNaviCrawler extends BaseCrawler {
         )
         .catch(() => null)
       if (closeButton) {
-        await closeButton.click()
-        this.logger.info('閉じるボタンをクリック')
-        await sleep(2000)
-        break
+        try {
+          await closeButton.click()
+          this.logger.info('閉じるボタンをクリック')
+          await sleep(2000)
+          break
+        } catch {
+          // 閉じるボタンが既に消えている場合は継続
+          this.logger.warn('閉じるボタンのクリックに失敗')
+        }
       }
 
       // 10 回ごとに進捗ログを出力
       if (loopCount % 10 === 0) {
+        const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000)
         this.logger.info(`広告視聴待機中... ${elapsedSeconds}秒経過`)
       }
 
