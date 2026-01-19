@@ -262,6 +262,10 @@ export default class EcNaviCrawler extends BaseCrawler {
         }
       }
       if (!isFoundAnswer) {
+        if (answers.length === 0) {
+          this.logger.warn('no answer buttons found')
+          return
+        }
         this.logger.info('not found answer, selecting random')
         await Promise.all([
           page.waitForNavigation({ waitUntil: 'networkidle2' }).catch(() => {
