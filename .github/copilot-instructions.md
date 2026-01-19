@@ -128,8 +128,24 @@ npm run fix        # 自動修正
 npm run dev        # 開発実行
 ```
 
-## Git コミット規約
+## Git 規約
 
-- Conventional Commits に従う
+### コミットメッセージ
+
+- [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) に従う
 - `<description>` は日本語で記載
 - 例: `feat: ECNavi にアンケートラリー機能を追加`
+
+### ブランチ名
+
+- [Conventional Branch](https://conventional-branch.github.io) に従う
+- `<type>` は短縮形（feat, fix）で記載
+- 例: `feat/issue-123-ecnavi-quiz`, `fix/issue-456-login-error`
+
+## コード改修時のルール
+
+- 日本語と英数字の間には、半角スペースを挿入しなければならない
+  - 良い例: `ECNavi にアンケートラリー機能を追加`
+  - 悪い例: `ECNaviにアンケートラリー機能を追加`
+- 既存のエラーメッセージで先頭に絵文字がある場合は、全体で統一して絵文字を設定する
+- TypeScript プロジェクトにおいて、`skipLibCheck` を有効にして型エラーを回避することは禁止
