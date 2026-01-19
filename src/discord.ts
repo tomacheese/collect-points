@@ -68,7 +68,7 @@ export interface SendDiscordMessageOptions {
   embed?: DiscordEmbed
   isMention?: boolean
   /** スクリーンショットファイルのパス */
-  screenshotPath?: string
+  screenshotPath?: string | null
 }
 
 export async function sendDiscordMessage(

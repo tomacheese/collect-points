@@ -258,7 +258,7 @@ export abstract class BaseCrawler implements Crawler {
             await sendDiscordMessage(
               config,
               'Need login but login is disabled (main mode)',
-              { isMention: true, screenshotPath: screenshotPath ?? undefined }
+              { isMention: true, screenshotPath }
             )
             return
           }
@@ -288,7 +288,7 @@ export abstract class BaseCrawler implements Crawler {
             await sendDiscordMessage(
               config,
               'Need login but login is disabled (target mode)',
-              { isMention: true, screenshotPath: screenshotPath ?? undefined }
+              { isMention: true, screenshotPath }
             )
             return
           }
