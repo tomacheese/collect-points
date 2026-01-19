@@ -1,9 +1,22 @@
 import { Logger } from '@book000/node-utils'
 import fs from 'node:fs'
+import path from 'node:path'
 import puppeteer, { Browser, Page } from 'rebrowser-puppeteer-core'
 import { sendDiscordMessage } from './discord'
 import { getConfig } from './configuration'
 import { waitForCloudflareChallenge } from './functions'
+
+/**
+ * スクリーンショット設定
+ */
+interface ScreenshotConfig {
+  /** スクリーンショットを有効にするか */
+  enabled: boolean
+  /** スクリーンショットの保存先ディレクトリ */
+  directory: string
+  /** スクリーンショットの保存期間（日数） */
+  retentionDays: number
+}
 
 export interface Crawler {
   run(): Promise<void>
@@ -12,9 +25,18 @@ export interface Crawler {
 
 export abstract class BaseCrawler implements Crawler {
   logger!: Logger
+  protected screenshotConfig: ScreenshotConfig
 
   constructor() {
     this.logger = Logger.configure(this.constructor.name)
+    this.screenshotConfig = {
+      enabled: process.env.ENABLE_SCREENSHOT === 'true',
+      directory: process.env.SCREENSHOT_DIR ?? 'screenshots',
+      retentionDays: Number.parseInt(
+        process.env.SCREENSHOT_RETENTION_DAYS ?? '7',
+        10
+      ),
+    }
   }
 
   private async initBrowser(): Promise<Browser> {
@@ -291,11 +313,120 @@ export abstract class BaseCrawler implements Crawler {
     page: Page,
     method: (page: Page) => Promise<void>
   ): Promise<void> {
+    const methodName = method.name || 'unknown'
     await page.bringToFront()
     try {
+      await this.takeScreenshot(page, methodName, 'before')
       await method(page)
+      await this.takeScreenshot(page, methodName, 'after')
     } catch (error) {
+      await this.takeScreenshot(page, methodName, 'error')
       this.logger.error('Error', error as Error)
+    }
+  }
+
+  /**
+   * スクリーンショットを撮影する
+   *
+   * @param page ページ
+   * @param methodName メソッド名
+   * @param timing タイミング（before/after/error）
+   */
+  protected async takeScreenshot(
+    page: Page,
+    methodName: string,
+    timing: 'before' | 'after' | 'error'
+  ): Promise<void> {
+    if (!this.screenshotConfig.enabled) {
+      return
+    }
+
+    try {
+      // スクリーンショットディレクトリの作成
+      const providerName = this.constructor.name.toLowerCase()
+      const dateDir = new Date().toISOString().split('T')[0] // YYYY-MM-DD
+      const screenshotDir = path.join(
+        this.screenshotConfig.directory,
+        providerName,
+        dateDir
+      )
+
+      if (!fs.existsSync(screenshotDir)) {
+        fs.mkdirSync(screenshotDir, { recursive: true })
+      }
+
+      // ファイル名の生成
+      const timestamp = new Date()
+        .toISOString()
+        .replaceAll(':', '-')
+        .replaceAll('.', '-')
+      const filename = `${timestamp}_${methodName}_${timing}.png`
+      const filepath = path.join(screenshotDir, filename)
+
+      // スクリーンショット撮影
+      await page.screenshot({ path: filepath, fullPage: true })
+      this.logger.info(`Screenshot saved: ${filepath}`)
+
+      // 古いスクリーンショットの削除
+      this.cleanupOldScreenshots()
+    } catch (error) {
+      this.logger.warn(`Failed to take screenshot: ${(error as Error).message}`)
+    }
+  }
+
+  /**
+   * 古いスクリーンショットを削除する
+   */
+  private cleanupOldScreenshots(): void {
+    try {
+      const screenshotBaseDir = this.screenshotConfig.directory
+      if (!fs.existsSync(screenshotBaseDir)) {
+        return
+      }
+
+      const retentionMs =
+        this.screenshotConfig.retentionDays * 24 * 60 * 60 * 1000
+      const now = Date.now()
+
+      // プロバイダーディレクトリを走査
+      const providers = fs.readdirSync(screenshotBaseDir)
+      for (const provider of providers) {
+        const providerDir = path.join(screenshotBaseDir, provider)
+        if (!fs.statSync(providerDir).isDirectory()) {
+          continue
+        }
+
+        // 日付ディレクトリを走査
+        const dateDirs = fs.readdirSync(providerDir)
+        for (const dateDir of dateDirs) {
+          const dateDirPath = path.join(providerDir, dateDir)
+          if (!fs.statSync(dateDirPath).isDirectory()) {
+            continue
+          }
+
+          // 日付ディレクトリ名（YYYY-MM-DD）から日時を取得
+          const dirDate = new Date(dateDir).getTime()
+          if (Number.isNaN(dirDate)) {
+            continue
+          }
+
+          // 保存期間を過ぎている場合は削除
+          if (now - dirDate > retentionMs) {
+            fs.rmSync(dateDirPath, { recursive: true })
+            this.logger.info(`Deleted old screenshots: ${dateDirPath}`)
+          }
+        }
+
+        // 空のプロバイダーディレクトリを削除
+        const remainingDirs = fs.readdirSync(providerDir)
+        if (remainingDirs.length === 0) {
+          fs.rmdirSync(providerDir)
+        }
+      }
+    } catch (error) {
+      this.logger.warn(
+        `Failed to cleanup old screenshots: ${(error as Error).message}`
+      )
     }
   }
 
