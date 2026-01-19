@@ -232,14 +232,20 @@ export default class EcNaviCrawler extends BaseCrawler {
         )) ?? 'about:blank'
       this.logger.info(`hint: ${hintUrl}`)
       const hintPage = await page.browser().newPage()
-      await hintPage.goto(hintUrl, {
-        waitUntil: 'networkidle2',
-      })
-      const hint = await hintPage.evaluate((): string => {
-        const body = document.querySelector('body')
-        return body?.textContent ?? ''
-      })
-      await hintPage.close()
+      let hint = ''
+      try {
+        await hintPage.goto(hintUrl, {
+          waitUntil: 'networkidle2',
+        })
+        hint = await hintPage.evaluate((): string => {
+          const body = document.querySelector('body')
+          return body?.textContent ?? ''
+        })
+      } finally {
+        await hintPage.close().catch(() => {
+          // ページクローズ時のエラーは無視
+        })
+      }
 
       const answers = await page.$$('ul.choices__list button')
       let isFoundAnswer = false
@@ -255,7 +261,9 @@ export default class EcNaviCrawler extends BaseCrawler {
         if (hint.includes(text)) {
           isFoundAnswer = true
           await Promise.all([
-            page.waitForNavigation({ waitUntil: 'networkidle2' }),
+            page.waitForNavigation({ waitUntil: 'networkidle2' }).catch(() => {
+              // ナビゲーションがタイムアウトした場合は無視
+            }),
             answer.click(),
           ])
           break
