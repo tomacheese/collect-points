@@ -23,7 +23,7 @@ mkdir -p "$LOG_DIR"
 echo "=== Approved Issue 実装開始: $(date) ===" | tee -a "$LOG_FILE"
 
 # Approved ラベルの Issue があるか確認
-APPROVED_COUNT=$(gh issue list --repo book000/collect-points --state open --label "Approved" --json number | jq length)
+APPROVED_COUNT=$(gh issue list --repo tomacheese/collect-points --state open --label "Approved" --json number | jq length)
 
 if [ "$APPROVED_COUNT" -eq 0 ]; then
   echo "Approved ラベルの Issue はありません" | tee -a "$LOG_FILE"

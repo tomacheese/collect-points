@@ -7,8 +7,8 @@ PointTown と ECNavi のサイトを探索し、新規機能や既存機能の�
 ### 1. 既存の GitHub Issues を確認
 
 ```bash
-gh issue list --repo book000/collect-points --state all --label "enhancement" --json number,title,state
-gh issue list --repo book000/collect-points --state all --label "bug" --json number,title,state
+gh issue list --repo tomacheese/collect-points --state all --label "enhancement" --json number,title,state
+gh issue list --repo tomacheese/collect-points --state all --label "bug" --json number,title,state
 ```
 
 すでに issue 化されているものは重複して作成しない。
@@ -50,7 +50,7 @@ Claude in Chrome を使用して、以下のサイトを探索する：
 
 ```bash
 gh issue create \
-  --repo book000/collect-points \
+  --repo tomacheese/collect-points \
   --title "[機能追加] {機能名}" \
   --body "## 概要
 {機能の説明}

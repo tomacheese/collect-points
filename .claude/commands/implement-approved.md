@@ -8,7 +8,7 @@ GitHub で「Approved」ラベルが付与された Issue を実装する。
 
 ```bash
 gh issue list \
-  --repo book000/collect-points \
+  --repo tomacheese/collect-points \
   --state open \
   --label "Approved" \
   --json number,title,body,labels
@@ -93,7 +93,7 @@ git push -u origin {ブランチ名}
 
 ```bash
 gh pr create \
-  --repo book000/collect-points \
+  --repo tomacheese/collect-points \
   --title "feat: {機能の説明}" \
   --body "## Summary
 - {変更内容1}
