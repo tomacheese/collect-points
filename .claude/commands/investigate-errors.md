@@ -43,7 +43,7 @@ grep -i -E "(error|failed|exception|timeout)" /data/logs/*.log
 ### 4. 既存の GitHub Issues を確認
 
 ```bash
-gh issue list --repo book000/collect-points --state all --label "bug" --json number,title,body,state
+gh issue list --repo tomacheese/collect-points --state all --label "bug" --json number,title,body,state
 ```
 
 同じエラーがすでに issue 化されていないか確認する。
@@ -63,7 +63,7 @@ gh issue list --repo book000/collect-points --state all --label "bug" --json num
 
 ```bash
 gh issue create \
-  --repo book000/collect-points \
+  --repo tomacheese/collect-points \
   --title "[バグ] {機能名}: {エラー概要}" \
   --body "## エラー概要
 {エラーの説明}
