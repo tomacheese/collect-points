@@ -82,6 +82,7 @@ export default class EcNaviCrawler extends BaseCrawler {
     await this.runMethod(page, this.brainTraining.bind(this))
     await this.runMethod(page, this.vegetable.bind(this))
     await this.runMethod(page, this.chocoRead.bind(this))
+    await this.runMethod(page, this.enqueteRally.bind(this))
 
     const afterPoint = await this.getCurrentPoint(page)
     this.logger.info(`afterPoint: ${afterPoint}`)
@@ -978,6 +979,60 @@ export default class EcNaviCrawler extends BaseCrawler {
     if (pointButton) {
       await pointButton.click()
       await sleep(1000)
+    }
+  }
+
+  /**
+   * アンケートラリー: 毎日アンケートに回答してポイントを獲得
+   * ドロップダウンからランダムに選択して回答
+   */
+  protected async enqueteRally(page: Page) {
+    this.logger.info('enqueteRally()')
+
+    await page.goto('https://ecnavi.jp/contents/enquete_rally/', {
+      waitUntil: 'networkidle2',
+    })
+
+    // ドロップダウンが存在するか確認
+    const selectElement = await page
+      .waitForSelector('select.c_select', { timeout: 5000 })
+      .catch(() => null)
+
+    if (!selectElement) {
+      this.logger.info('アンケートが見つかりません（本日は終了済みの可能性）')
+      return
+    }
+
+    // ドロップダウンの選択肢を取得（最初の「選択してください」を除く）
+    const options = await page.$$eval(
+      'select.c_select option[value]:not([value=""])',
+      (elements) => elements.map((el) => el.getAttribute('value') ?? '')
+    )
+
+    if (options.length === 0) {
+      this.logger.info('選択肢が見つかりません')
+      return
+    }
+
+    // ランダムに選択肢を選ぶ
+    const randomIndex = Math.floor(Math.random() * options.length)
+    const selectedValue = options[randomIndex]
+    this.logger.info(`選択: ${selectedValue}`)
+
+    await page.select('select.c_select', selectedValue)
+    await sleep(1000)
+
+    // 回答するボタンをクリック
+    const submitButton = await page
+      .waitForSelector('button.question-area__button.c_red', { timeout: 5000 })
+      .catch(() => null)
+
+    if (submitButton) {
+      await submitButton.click()
+      this.logger.info('回答を送信しました')
+      await sleep(2000)
+    } else {
+      this.logger.info('回答ボタンが見つかりません')
     }
   }
 }
