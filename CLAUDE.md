@@ -183,7 +183,7 @@ private async watchAdIfExists(page: Page): Promise<void> {
 
 ### 1. 新規機能・既存機能の変更検出（週1回）
 
-**スケジュール**: 毎週月曜 10:00
+**スケジュール**: 毎週土曜 8:00
 
 **処理内容**:
 1. PointTown と ECNavi のサイトを Chrome で探索
@@ -200,9 +200,9 @@ private async watchAdIfExists(page: Page): Promise<void> {
 /detect-changes
 ```
 
-### 2. エラー原因の調査（週5回）
+### 2. エラー原因の調査（週6回）
 
-**スケジュール**: 月曜・土曜以外の毎日 10:00（日・火・水・木・金）
+**スケジュール**: 毎日 8:00（土曜は除く）
 
 **処理内容**:
 1. `/data/logs/` 配下の新しいログファイルを確認
@@ -220,9 +220,9 @@ private async watchAdIfExists(page: Page): Promise<void> {
 /investigate-errors
 ```
 
-### 3. Approved Issue の実装（週1回）
+### 3. Approved Issue の実装（週6回）
 
-**スケジュール**: 毎週土曜 10:00（または手動実行）
+**スケジュール**: 毎日 10:00（土曜は除く）
 
 **処理内容**:
 1. `Approved` ラベルの付いた Issue を取得
@@ -241,9 +241,9 @@ private async watchAdIfExists(page: Page): Promise<void> {
 /implement-approved
 ```
 
-### 4. ブランチ/PR クリーンアップ（月1回）
+### 4. ブランチ/PR クリーンアップ（週1回）
 
-**スケジュール**: 毎月1日 10:00
+**スケジュール**: 毎週月曜 0:00
 
 **処理内容**:
 1. リモートの最新情報を取得（`git fetch --all --prune`）
@@ -268,17 +268,17 @@ private async watchAdIfExists(page: Page): Promise<void> {
 ### crontab 設定例
 
 ```crontab
-# 週次: 新規機能・変更検出（毎週月曜 10:00）
-0 10 * * 1 /home/tomachi/repos/collect-points/scripts/weekly-detect-changes.sh
+# 週次: 新規機能・変更検出（毎週土曜 8:00）
+0 8 * * 6 /home/tomachi/repos/collect-points/scripts/weekly-detect-changes.sh
 
-# 週5回: エラー原因調査（月曜・土曜以外の 10:00）
-0 10 * * 0,2-5 /home/tomachi/repos/collect-points/scripts/investigate-errors.sh
+# 週6回: エラー原因調査（土曜以外の毎日 8:00）
+0 8 * * 0-5 /home/tomachi/repos/collect-points/scripts/investigate-errors.sh
 
-# 週次: Approved Issue 実装（毎週土曜 10:00）
-0 10 * * 6 /home/tomachi/repos/collect-points/scripts/implement-approved.sh
+# 週6回: Approved Issue 実装（土曜以外の毎日 10:00）
+0 10 * * 0-5 /home/tomachi/repos/collect-points/scripts/implement-approved.sh
 
-# 月次: ブランチ/PR クリーンアップ（毎月1日 10:00）
-0 10 1 * * /home/tomachi/repos/collect-points/scripts/cleanup-branches.sh
+# 週次: ブランチ/PR クリーンアップ（毎週月曜 0:00）
+0 0 * * 1 /home/tomachi/repos/collect-points/scripts/cleanup-branches.sh
 ```
 
 ## 開発コマンド
