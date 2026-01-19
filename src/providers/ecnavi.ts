@@ -205,56 +205,73 @@ export default class EcNaviCrawler extends BaseCrawler {
       waitUntil: 'networkidle2',
     })
 
-    if (!(await isExistsSelector(page, 'p.todays-quiz__text'))) {
-      return
-    }
+    // 超難問クイズ王: 2問連続正解でポイント獲得
+    for (let questionNumber = 1; questionNumber <= 2; questionNumber++) {
+      this.logger.info(`question ${questionNumber}`)
 
-    const questionElement = await page.$('p.todays-quiz__text')
-    const question = await page.evaluate(
-      (element) => element?.textContent,
-      questionElement
-    )
-    this.logger.info(`question: ${question}`)
-    if (!question) {
-      return
-    }
-
-    const hintElement = await page.$('a.king-of-quiz__button')
-    const hintUrl =
-      (await page.evaluate((element) => element?.href ?? null, hintElement)) ??
-      'about:blank'
-    this.logger.info(`hint: ${hintUrl}`)
-    const hintPage = await page.browser().newPage()
-    await hintPage.goto(hintUrl, {
-      waitUntil: 'networkidle2',
-    })
-    const hint = await hintPage.evaluate((): string => {
-      const body = document.querySelector('body')
-      return body?.textContent ?? ''
-    })
-    await hintPage.close()
-
-    const answers = await page.$$('ul.choices__list button')
-    let isFoundAnswer = false
-    for (const answer of answers) {
-      const text = await page.evaluate((element) => element.textContent, answer)
-      if (!text) {
-        continue
+      if (!(await isExistsSelector(page, 'p.todays-quiz__text'))) {
+        this.logger.info('no question found')
+        return
       }
-      this.logger.info(`answer: ${text}`)
-      if (hint.includes(text)) {
-        isFoundAnswer = true
+
+      const questionElement = await page.$('p.todays-quiz__text')
+      const question = await page.evaluate(
+        (element) => element?.textContent,
+        questionElement
+      )
+      this.logger.info(`question: ${question}`)
+      if (!question) {
+        return
+      }
+
+      const hintElement = await page.$('a.king-of-quiz__button')
+      const hintUrl =
+        (await page.evaluate(
+          (element) => element?.href ?? null,
+          hintElement
+        )) ?? 'about:blank'
+      this.logger.info(`hint: ${hintUrl}`)
+      const hintPage = await page.browser().newPage()
+      await hintPage.goto(hintUrl, {
+        waitUntil: 'networkidle2',
+      })
+      const hint = await hintPage.evaluate((): string => {
+        const body = document.querySelector('body')
+        return body?.textContent ?? ''
+      })
+      await hintPage.close()
+
+      const answers = await page.$$('ul.choices__list button')
+      let isFoundAnswer = false
+      for (const answer of answers) {
+        const text = await page.evaluate(
+          (element) => element.textContent,
+          answer
+        )
+        if (!text) {
+          continue
+        }
+        this.logger.info(`answer: ${text}`)
+        if (hint.includes(text)) {
+          isFoundAnswer = true
+          await Promise.all([
+            page.waitForNavigation({ waitUntil: 'networkidle2' }),
+            answer.click(),
+          ])
+          break
+        }
+      }
+      if (!isFoundAnswer) {
+        this.logger.info('not found answer, selecting random')
         await Promise.all([
-          page.waitForNavigation({ waitUntil: 'networkidle2' }),
-          answer.click(),
+          page.waitForNavigation({ waitUntil: 'networkidle2' }).catch(() => {
+            // ナビゲーションがタイムアウトした場合は無視
+          }),
+          answers[Math.floor(Math.random() * answers.length)].click(),
         ])
-        break
       }
-    }
-    if (!isFoundAnswer) {
-      this.logger.info('not found answer')
 
-      await answers[Math.floor(Math.random() * answers.length)].click()
+      await sleep(2000)
     }
   }
 
