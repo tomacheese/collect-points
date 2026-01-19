@@ -45,6 +45,7 @@ async gameWithAd(page: Page): Promise<void> {
     waitUntil: 'networkidle2',
   })
 
+  // 開始ボタンをクリック
   const startButton = await page
     .waitForSelector('button.start-button', { timeout: 5000 })
     .catch(() => null)
@@ -54,14 +55,16 @@ async gameWithAd(page: Page): Promise<void> {
     await sleep(3000)
   }
 
+  // 広告視聴
   await this.watchAdIfExists(page)
+
   await sleep(5000)
 }
 ```
 
 ### パターン 2: クイズ/回答型
 
-クイズに回答してポイントを獲得する。
+クイズに回答してポイントを獲得する。正解でなくても参加ポイントが得られることが多い。
 
 ```typescript
 async quizGame(page: Page): Promise<void> {
@@ -69,13 +72,22 @@ async quizGame(page: Page): Promise<void> {
     waitUntil: 'networkidle2',
   })
 
+  // クイズに回答（最大 N 問）
   for (let i = 0; i < 10; i++) {
     const answerButtons = await page.$$('button.answer-choice')
     if (answerButtons.length === 0) break
 
+    // ランダムに回答を選択
     const randomIndex = Math.floor(Math.random() * answerButtons.length)
     await answerButtons[randomIndex].click()
     await sleep(2000)
+
+    // 次の問題へ進むボタンがあればクリック
+    const nextButton = await page.$('button.next').catch(() => null)
+    if (nextButton) {
+      await nextButton.click()
+      await sleep(2000)
+    }
   }
 }
 ```
@@ -83,6 +95,30 @@ async quizGame(page: Page): Promise<void> {
 ### パターン 3: スタンプ収集型
 
 訪問やゲーム参加でスタンプを集め、一定数でくじが引ける。
+
+```typescript
+async stampGame(page: Page): Promise<void> {
+  await page.goto('https://example.com/stamp-game', {
+    waitUntil: 'networkidle2',
+  })
+
+  // 挑戦ボタンをクリック
+  const challengeButton = await page
+    .waitForSelector('button.challenge', { timeout: 5000 })
+    .catch(() => null)
+
+  if (challengeButton) {
+    await challengeButton.click()
+    await sleep(3000)
+  }
+
+  // 広告視聴（必要な場合）
+  await this.watchAdIfExists(page)
+
+  // ゲーム画面で待機（参加するだけでスタンプが貯まる場合）
+  await sleep(10_000)
+}
+```
 
 ## 開発コマンド
 
