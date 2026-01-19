@@ -249,11 +249,16 @@ export abstract class BaseCrawler implements Crawler {
           if (!isEnableLogin) {
             this.logger.info('Login is disabled')
 
+            // スクリーンショットを撮影して Discord に添付
+            const screenshotPath = await this.takeScreenshot(
+              page,
+              'need-login',
+              'error'
+            )
             await sendDiscordMessage(
               config,
               'Need login but login is disabled (main mode)',
-              undefined,
-              true
+              { isMention: true, screenshotPath }
             )
             return
           }
@@ -274,11 +279,16 @@ export abstract class BaseCrawler implements Crawler {
           if (!isEnableLogin) {
             this.logger.info('Login is disabled')
 
+            // スクリーンショットを撮影して Discord に添付
+            const screenshotPath = await this.takeScreenshot(
+              page,
+              'need-login',
+              'error'
+            )
             await sendDiscordMessage(
               config,
               'Need login but login is disabled (target mode)',
-              undefined,
-              true
+              { isMention: true, screenshotPath }
             )
             return
           }
@@ -340,14 +350,15 @@ export abstract class BaseCrawler implements Crawler {
    * @param page ページ
    * @param methodName メソッド名
    * @param timing タイミング（before/after/error）
+   * @returns スクリーンショットのファイルパス（失敗時は null）
    */
   protected async takeScreenshot(
     page: Page,
     methodName: string,
     timing: 'before' | 'after' | 'error'
-  ): Promise<void> {
+  ): Promise<string | null> {
     if (!this.screenshotConfig.enabled) {
-      return
+      return null
     }
 
     try {
@@ -386,8 +397,11 @@ export abstract class BaseCrawler implements Crawler {
           )
         })
       }
+
+      return filepath
     } catch (error) {
       this.logger.warn(`Failed to take screenshot: ${(error as Error).message}`)
+      return null
     }
   }
 

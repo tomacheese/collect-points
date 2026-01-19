@@ -55,6 +55,7 @@
     }
   },
   "dependencies": {
+    "form-data": "^4.0.5",
     "rebrowser-puppeteer-core": "^24.8.1"
   }
 }
