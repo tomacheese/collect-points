@@ -172,6 +172,9 @@ private async watchAdIfExists(page: Page): Promise<void> {
   - `detect-changes.md` - 新規機能・変更検出
   - `investigate-errors.md` - エラー原因調査
   - `implement-approved.md` - Approved Issue 実装
+- `.claude/hooks/` - Claude Code フック
+  - `check-branch-status.sh` - マージ済みブランチでの作業を防止
+  - `pre-commit-check.sh` - git commit/push 前のブランチ状態チェック
 - `scripts/` - crontab 用スクリプト
 
 ## 運用フロー
