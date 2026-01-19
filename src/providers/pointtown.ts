@@ -502,7 +502,7 @@ export default class PointTownCrawler extends BaseCrawler {
   }
 
   /**
-   * ポイントチャンス (モニター下部)
+   * ポイントチャンス (アンケートページ下部)
    *
    * 注意: 2024年以降、この機能はサイトから削除された可能性があります。
    * 要素が見つからない場合は早期リターンします。
@@ -511,10 +511,9 @@ export default class PointTownCrawler extends BaseCrawler {
    */
   async pointChance(page: Page): Promise<void> {
     this.logger.info('pointChance()')
-    await page.goto(
-      'https://www.pointtown.com/monitor/fancrew/real-shop#link-coin-chance',
-      { waitUntil: 'networkidle2' }
-    )
+    await page.goto('https://www.pointtown.com/enquete#link-coin-chance', {
+      waitUntil: 'networkidle2',
+    })
     const notObtainedElement = await page.$(
       'div.c-coin-chance-sec__status p.c-coin-label'
     )
