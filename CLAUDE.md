@@ -238,6 +238,21 @@ private async watchAdIfExists(page: Page): Promise<void> {
 /implement-approved
 ```
 
+### 4. ブランチ/PR クリーンアップ（月1回）
+
+**スケジュール**: 毎月1日 10:00
+
+**処理内容**:
+1. リモートの最新情報を取得（`git fetch --all --prune`）
+2. マージ済みのローカルブランチを削除（master, main, develop は除外）
+3. リモートで削除されたブランチ（`[gone]`）のローカル参照を削除
+4. 30日以上更新がない Open な PR を報告
+
+**実行方法**:
+```bash
+./scripts/cleanup-branches.sh
+```
+
 ### GitHub Issue ラベルの意味
 
 | ラベル | 意味 |
@@ -258,6 +273,9 @@ private async watchAdIfExists(page: Page): Promise<void> {
 
 # 週次: Approved Issue 実装（毎週土曜 10:00）
 0 10 * * 6 /home/tomachi/repos/collect-points/scripts/implement-approved.sh
+
+# 月次: ブランチ/PR クリーンアップ（毎月1日 10:00）
+0 10 1 * * /home/tomachi/repos/collect-points/scripts/cleanup-branches.sh
 ```
 
 ## 開発コマンド
