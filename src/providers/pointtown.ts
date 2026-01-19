@@ -90,6 +90,7 @@ export default class PointTownCrawler extends BaseCrawler {
     await this.runMethod(page, this.sugoroku.bind(this))
     await this.runMethod(page, this.dropgame.bind(this))
     await this.runMethod(page, this.cmkuji.bind(this))
+    await this.runMethod(page, this.movieDeCoin.bind(this))
 
     // スマホ系
     const mobilePage = await browser.newPage()
@@ -1110,6 +1111,85 @@ export default class PointTownCrawler extends BaseCrawler {
     }
 
     await sleep(5000)
+  }
+
+  /**
+   * 動画でコイン
+   *
+   * 動画広告を視聴してコインを獲得する。
+   * 時間帯ごとに最大 3 回視聴可能（0時～8時、8時～16時、16時～24時）
+   * 1回の視聴で 5 コイン獲得、最大 45 コイン/日。
+   *
+   * @param page ページ
+   */
+  async movieDeCoin(page: Page): Promise<void> {
+    this.logger.info('movieDeCoin()')
+
+    await page.goto('https://www.pointtown.com/movie-de-coin', {
+      waitUntil: 'networkidle2',
+    })
+
+    // ダイアログ（音声付き再生確認）を自動承認
+    page.on('dialog', (dialog) => {
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
+      dialog.accept().then(() => {
+        this.logger.info('動画再生確認ダイアログを承認')
+      })
+    })
+
+    // 残り回数を確認
+    const remainingText = await page
+      .$eval('.movie-point-time__title', (el) =>
+        el.textContent ? el.textContent.trim() : ''
+      )
+      .catch(() => '')
+
+    // 「あと、N回見れるよ」から残り回数を抽出
+    const remainingMatch = /(\d+)回/.exec(remainingText)
+    const remainingCount = remainingMatch
+      ? Number.parseInt(remainingMatch[1], 10)
+      : 0
+
+    if (remainingCount === 0) {
+      this.logger.info('この時間帯の動画視聴回数は上限に達しています')
+      return
+    }
+
+    this.logger.info(`残り視聴可能回数: ${remainingCount}`)
+
+    // 動画を視聴（残り回数分繰り返す）
+    for (let i = 0; i < remainingCount; i++) {
+      this.logger.info(`動画視聴 ${i + 1}/${remainingCount} 回目`)
+
+      // 動画再生ボタンをクリック
+      const playButton = await page
+        .waitForSelector('button.js-ad-mov-trigger-btn', {
+          visible: true,
+          timeout: 10_000,
+        })
+        .catch(() => null)
+
+      if (playButton === null) {
+        this.logger.info('動画再生ボタンが見つかりません')
+        break
+      }
+
+      await playButton.click()
+      this.logger.info('動画再生ボタンをクリック、広告視聴待機中...')
+
+      // 広告視聴待機（通常 15-30 秒）
+      await sleep(35_000)
+
+      // ページをリロードして次の動画を視聴
+      await page.goto('https://www.pointtown.com/movie-de-coin', {
+        waitUntil: 'networkidle2',
+      })
+
+      // 次のループの前に少し待機
+      await sleep(3000)
+    }
+
+    this.logger.info('動画でコイン完了')
   }
 
   /**

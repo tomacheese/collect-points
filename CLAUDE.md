@@ -389,6 +389,7 @@ await screenshot(); // 状態確認
 | `sugoroku` | 広告視聴型 | たびろく（すごろく）|
 | `dropgame` | 広告視聴型 | ふるふるパニック |
 | `cmkuji` | 広告視聴型 | CM くじ |
+| `movieDeCoin` | 広告視聴型 | 動画でコイン（時間帯別最大 3 回/日）|
 
 ### ECNavi 固有のセレクター
 
