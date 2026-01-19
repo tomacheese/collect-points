@@ -197,9 +197,9 @@ private async watchAdIfExists(page: Page): Promise<void> {
 /detect-changes
 ```
 
-### 2. エラー原因の調査（3日に1回）
+### 2. エラー原因の調査（毎日）
 
-**スケジュール**: 3日ごと 10:00
+**スケジュール**: 毎日 10:00
 
 **処理内容**:
 1. `/data/logs/` 配下の新しいログファイルを確認
@@ -253,8 +253,8 @@ private async watchAdIfExists(page: Page): Promise<void> {
 # 週次: 新規機能・変更検出（毎週日曜 9:00）
 0 9 * * 0 /home/tomachi/repos/collect-points/scripts/weekly-detect-changes.sh
 
-# 3日ごと: エラー原因調査（10:00）
-0 10 */3 * * /home/tomachi/repos/collect-points/scripts/investigate-errors.sh
+# 毎日: エラー原因調査（10:00）
+0 10 * * * /home/tomachi/repos/collect-points/scripts/investigate-errors.sh
 
 # 週次: Approved Issue 実装（毎週月曜 11:00）
 0 11 * * 1 /home/tomachi/repos/collect-points/scripts/implement-approved.sh
