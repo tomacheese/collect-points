@@ -1126,6 +1126,7 @@ export default class PointTownCrawler extends BaseCrawler {
     this.logger.info('movieDeCoin()')
 
     // ダイアログ（音声付き再生確認）を自動承認するハンドラー
+    // eslint-disable-next-line unicorn/consistent-function-scoping -- this.logger を使用するためメソッド内に定義
     const dialogHandler = (dialog: Dialog) => {
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
       dialog.accept().then(() => {
@@ -1183,7 +1184,7 @@ export default class PointTownCrawler extends BaseCrawler {
 
         // 広告視聴完了を待機（最大 60 秒、再生ボタンが再表示されたら完了）
         const adMaxWaitMs = 60_000
-        const adCheckIntervalMs = 1_000
+        const adCheckIntervalMs = 1000
         const adStartTime = Date.now()
         let adCompleted = false
 
