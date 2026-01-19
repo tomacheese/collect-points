@@ -1,9 +1,22 @@
 import { Logger } from '@book000/node-utils'
 import fs from 'node:fs'
+import path from 'node:path'
 import puppeteer, { Browser, Page } from 'rebrowser-puppeteer-core'
 import { sendDiscordMessage } from './discord'
 import { getConfig } from './configuration'
 import { waitForCloudflareChallenge } from './functions'
+
+/**
+ * スクリーンショット設定
+ */
+interface ScreenshotConfig {
+  /** スクリーンショットを有効にするか */
+  enabled: boolean
+  /** スクリーンショットの保存先ディレクトリ */
+  directory: string
+  /** スクリーンショットの保存期間（日数） */
+  retentionDays: number
+}
 
 export interface Crawler {
   run(): Promise<void>
@@ -12,9 +25,26 @@ export interface Crawler {
 
 export abstract class BaseCrawler implements Crawler {
   logger!: Logger
+  protected screenshotConfig: ScreenshotConfig
+  private screenshotCleanupDone = false
 
   constructor() {
     this.logger = Logger.configure(this.constructor.name)
+
+    // NaN 検証を含むスクリーンショット設定
+    const retentionDaysEnv = process.env.SCREENSHOT_RETENTION_DAYS
+    let retentionDays = Number.parseInt(retentionDaysEnv ?? '7', 10)
+    if (Number.isNaN(retentionDays)) {
+      retentionDays = 7
+    }
+
+    this.screenshotConfig = {
+      // デフォルトで有効（ENABLE_SCREENSHOT=false で無効化）
+      enabled: process.env.ENABLE_SCREENSHOT !== 'false',
+      // data フォルダの下に保存
+      directory: process.env.SCREENSHOT_DIR ?? 'data/screenshots',
+      retentionDays,
+    }
   }
 
   private async initBrowser(): Promise<Browser> {
@@ -291,11 +321,129 @@ export abstract class BaseCrawler implements Crawler {
     page: Page,
     method: (page: Page) => Promise<void>
   ): Promise<void> {
+    const methodName = method.name || 'unknown'
     await page.bringToFront()
     try {
+      await this.takeScreenshot(page, methodName, 'before')
       await method(page)
+      await this.takeScreenshot(page, methodName, 'after')
     } catch (error) {
+      await this.takeScreenshot(page, methodName, 'error')
       this.logger.error('Error', error as Error)
+      throw error
+    }
+  }
+
+  /**
+   * スクリーンショットを撮影する
+   *
+   * @param page ページ
+   * @param methodName メソッド名
+   * @param timing タイミング（before/after/error）
+   */
+  protected async takeScreenshot(
+    page: Page,
+    methodName: string,
+    timing: 'before' | 'after' | 'error'
+  ): Promise<void> {
+    if (!this.screenshotConfig.enabled) {
+      return
+    }
+
+    try {
+      // スクリーンショットディレクトリの作成
+      const providerName = this.constructor.name.toLowerCase()
+      const dateDir = new Date().toISOString().split('T')[0] // YYYY-MM-DD
+      const screenshotDir = path.join(
+        this.screenshotConfig.directory,
+        providerName,
+        dateDir
+      )
+
+      if (!fs.existsSync(screenshotDir)) {
+        fs.mkdirSync(screenshotDir, { recursive: true })
+      }
+
+      // ファイル名の生成（YYYYMMDD-HHmmss-SSS 形式）
+      const timestamp = new Date()
+        .toISOString()
+        .replaceAll(/[:.TZ]/g, '-')
+        .replaceAll(/-$/g, '')
+      const filename = `${timestamp}_${methodName}_${timing}.png`
+      const filepath = path.join(screenshotDir, filename)
+
+      // スクリーンショット撮影
+      await page.screenshot({ path: filepath, fullPage: true })
+      this.logger.info(`Screenshot saved: ${filepath}`)
+
+      // 古いスクリーンショットの削除（セッションごとに1回のみ実行）
+      if (!this.screenshotCleanupDone) {
+        this.screenshotCleanupDone = true
+        // バックグラウンドで非同期実行
+        this.cleanupOldScreenshots().catch((error: unknown) => {
+          this.logger.warn(
+            `Failed to cleanup old screenshots: ${(error as Error).message}`
+          )
+        })
+      }
+    } catch (error) {
+      this.logger.warn(`Failed to take screenshot: ${(error as Error).message}`)
+    }
+  }
+
+  /**
+   * 古いスクリーンショットを削除する（非同期）
+   */
+  private async cleanupOldScreenshots(): Promise<void> {
+    const screenshotBaseDir = this.screenshotConfig.directory
+    if (!fs.existsSync(screenshotBaseDir)) {
+      return
+    }
+
+    const retentionDays = this.screenshotConfig.retentionDays
+    const now = new Date()
+    now.setHours(0, 0, 0, 0) // 今日の 00:00:00
+
+    // プロバイダーディレクトリを走査
+    const providers = await fs.promises.readdir(screenshotBaseDir)
+    for (const provider of providers) {
+      const providerDir = path.join(screenshotBaseDir, provider)
+      const providerStat = await fs.promises.stat(providerDir)
+      if (!providerStat.isDirectory()) {
+        continue
+      }
+
+      // 日付ディレクトリを走査
+      const dateDirs = await fs.promises.readdir(providerDir)
+      for (const dateDir of dateDirs) {
+        const dateDirPath = path.join(providerDir, dateDir)
+        const dateDirStat = await fs.promises.stat(dateDirPath)
+        if (!dateDirStat.isDirectory()) {
+          continue
+        }
+
+        // 日付ディレクトリ名（YYYY-MM-DD）から日時を取得
+        const dirDate = new Date(dateDir)
+        dirDate.setHours(0, 0, 0, 0)
+        if (Number.isNaN(dirDate.getTime())) {
+          continue
+        }
+
+        // 日数で比較（retentionDays より古い場合は削除）
+        const diffDays = Math.floor(
+          (now.getTime() - dirDate.getTime()) / (24 * 60 * 60 * 1000)
+        )
+        if (diffDays > retentionDays) {
+          await fs.promises.rm(dateDirPath, { recursive: true })
+          this.logger.info(`Deleted old screenshots: ${dateDirPath}`)
+        }
+      }
+
+      // 空のプロバイダーディレクトリを削除
+      const remainingDirs = await fs.promises.readdir(providerDir)
+      if (remainingDirs.length === 0) {
+        await fs.promises.rmdir(providerDir)
+      }
     }
   }
 
