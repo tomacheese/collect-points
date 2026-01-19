@@ -19,8 +19,12 @@ export default class EcNaviCrawler extends BaseCrawler {
   ): Promise<void> {
     await super.runMethod(page, method)
 
-    // 各メソッド実行後に Google Rewarded Ads をチェック
-    await this.handleRewardedAd(page)
+    // 各メソッド実行後に Google Rewarded Ads をチェック（エラーは無視）
+    try {
+      await this.handleRewardedAd(page)
+    } catch (error) {
+      this.logger.warn('handleRewardedAd failed', error as Error)
+    }
   }
 
   protected async login(page: Page): Promise<void> {
@@ -506,7 +510,7 @@ export default class EcNaviCrawler extends BaseCrawler {
    *
    * ECNavi では Google Rewarded Ads のポップアップが表示されることがある。
    * Issue #216 の要件:
-   * 1. ページアクセス後、10秒間の間広告が表示されるかどうか待つ
+   * 1. ページアクセス後、広告が表示されるかどうか待つ
    * 2. 表示された場合、再生を開始
    * 3. 終了ボタンが表示されるまで待機
    * 4. 終了ボタンを押下
@@ -514,9 +518,9 @@ export default class EcNaviCrawler extends BaseCrawler {
    * @param page ページ
    */
   private async handleRewardedAd(page: Page): Promise<void> {
-    // 「短い広告を見る」ボタンを 10 秒間待機
+    // 「短い広告を見る」ボタンを 5 秒間待機（広告表示の検出用）
     const rewardedAdButton = await page
-      .waitForSelector('button.fc-rewarded-ad-button', { timeout: 10_000 })
+      .waitForSelector('button.fc-rewarded-ad-button', { timeout: 5000 })
       .catch(() => null)
 
     if (!rewardedAdButton) {
@@ -533,8 +537,12 @@ export default class EcNaviCrawler extends BaseCrawler {
     // 広告終了後、ポップアップが閉じるか、閉じるボタンが表示されるまで待つ
     const startTime = Date.now()
     const maxWaitTime = 60_000 // 60 秒
+    let loopCount = 0
 
     while (Date.now() - startTime < maxWaitTime) {
+      loopCount++
+      const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000)
+
       // ポップアップが閉じたかチェック
       const popupExists = await isExistsSelector(
         page,
@@ -558,23 +566,24 @@ export default class EcNaviCrawler extends BaseCrawler {
         break
       }
 
-      // URL から #goog_rewarded を削除してリロードする方法も試す
-      const currentUrl = page.url()
-      if (currentUrl.includes('#goog_rewarded')) {
-        // 5 秒ごとに確認
-        await sleep(5000)
-        continue
+      // 10 回ごとに進捗ログを出力
+      if (loopCount % 10 === 0) {
+        this.logger.info(`広告視聴待機中... ${elapsedSeconds}秒経過`)
       }
 
       await sleep(1000)
     }
 
-    // URL に #goog_rewarded が残っている場合は除去
+    // URL に #goog_rewarded が残っている場合は history.replaceState で除去（リロード不要）
     const finalUrl = page.url()
     if (finalUrl.includes('#goog_rewarded')) {
-      const cleanUrl = finalUrl.replace('#goog_rewarded', '')
+      const url = new URL(finalUrl)
+      url.hash = ''
+      const cleanUrl = url.toString()
       this.logger.info(`URL から #goog_rewarded を除去: ${cleanUrl}`)
-      await page.goto(cleanUrl, { waitUntil: 'networkidle2' })
+      await page.evaluate((newUrl: string) => {
+        globalThis.history.replaceState(null, '', newUrl)
+      }, cleanUrl)
     }
 
     await sleep(2000)
