@@ -11,6 +11,18 @@ LOG_FILE="$LOG_DIR/investigate-errors-$(date +%Y%m%d-%H%M%S).log"
 
 cd "$PROJECT_DIR"
 
+# NVM 環境のロード（cron 環境では .bashrc が読み込まれないため）
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+# claude コマンドのパスを設定
+if command -v claude &> /dev/null; then
+  CLAUDE_CMD="claude"
+else
+  echo "❌ エラー: claude コマンドが見つかりません。" >&2
+  exit 1
+fi
+
 # 必要なコマンドの確認
 if ! command -v jq &> /dev/null; then
   echo "❌ エラー: jq コマンドが見つかりません。インストールしてください。" >&2
@@ -23,7 +35,8 @@ mkdir -p "$LOG_DIR"
 echo "=== エラー原因調査開始: $(date) ===" | tee -a "$LOG_FILE"
 
 # Claude Code を実行（stream-json でリアルタイム進捗表示）
-claude -p "CLAUDE.md と .claude/commands/investigate-errors.md を読んで、その内容に従ってエラー原因を調査してください。data/logs/ 配下のログファイルを確認し、エラーがあれば Chrome で原因を調査して GitHub Issue を作成してください。
+# --dangerously-skip-permissions: cron 環境での非インタラクティブ実行に必要
+$CLAUDE_CMD --dangerously-skip-permissions -p "CLAUDE.md と .claude/commands/investigate-errors.md を読んで、その内容に従ってエラー原因を調査してください。data/logs/ 配下のログファイルを確認し、エラーがあれば Chrome で原因を調査して GitHub Issue を作成してください。
 
 【重要】各ステップの開始時に進捗を報告してください：
 1. 「📂 ログファイルの検索中...」
