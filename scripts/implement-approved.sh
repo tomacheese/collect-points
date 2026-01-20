@@ -11,6 +11,18 @@ LOG_FILE="$LOG_DIR/implement-approved-$(date +%Y%m%d-%H%M%S).log"
 
 cd "$PROJECT_DIR"
 
+# NVM 環境のロード（cron 環境では .bashrc が読み込まれないため）
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+# claude コマンドのパスを設定
+if command -v claude &> /dev/null; then
+  CLAUDE_CMD="claude"
+else
+  echo "❌ エラー: claude コマンドが見つかりません。" >&2
+  exit 1
+fi
+
 # 必要なコマンドの確認
 if ! command -v jq &> /dev/null; then
   echo "❌ エラー: jq コマンドが見つかりません。インストールしてください。" >&2
@@ -33,7 +45,8 @@ fi
 echo "Approved ラベルの Issue: ${APPROVED_COUNT} 件" | tee -a "$LOG_FILE"
 
 # Claude Code を実行（stream-json でリアルタイム進捗表示）
-claude -p "CLAUDE.md と .claude/commands/implement-approved.md を読んで、その内容に従って Approved ラベルが付いた Issue を実装してください。各 Issue ごとにブランチを作成し、実装して PR を作成してください。
+# --dangerously-skip-permissions: cron 環境での非インタラクティブ実行に必要
+$CLAUDE_CMD --dangerously-skip-permissions -p "CLAUDE.md と .claude/commands/implement-approved.md を読んで、その内容に従って Approved ラベルが付いた Issue を実装してください。各 Issue ごとにブランチを作成し、実装して PR を作成してください。
 
 【重要】各ステップの開始時に進捗を報告してください：
 1. 「📋 Approved Issue の取得中...」
