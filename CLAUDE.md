@@ -188,10 +188,12 @@ private async watchAdIfExists(page: Page): Promise<void> {
 **処理内容**:
 1. PointTown と ECNavi のサイトを Chrome で探索
 2. CLAUDE.md の実装済み機能一覧と比較
-3. 新機能や変更を検出したら GitHub Issue を作成
+3. 既存の実装コード・ドキュメントを確認し、改善ポイントがないかを探索
+4. 新機能や変更、改善ポイントを検出したら GitHub Issue を作成
    - ラベル: `enhancement` または `bug` + `Waiting review`
-   - スクリーンショット添付必須
-4. 既存 Issue（クローズ済み含む）と重複する場合は作成しない
+   - 該当コードへのパーマネントリンク、スクリーンショット添付必須
+   - アサイン: book000
+5. 既存 Issue（クローズ済み含む）と重複する場合は作成しない
 
 **実行方法**:
 ```bash
@@ -205,12 +207,13 @@ private async watchAdIfExists(page: Page): Promise<void> {
 **スケジュール**: 毎日 8:00（土曜は除く）
 
 **処理内容**:
-1. `/data/logs/` 配下の新しいログファイルを確認
+1. `/data/logs/` 配下の新しいログファイルを確認。`/data/screenshots/` も参照する。
 2. エラーパターン（ERROR, failed, timeout 等）を検索
 3. エラーがあれば Chrome で再現確認・原因調査
 4. GitHub Issue を作成
-   - ラベル: `bug` + `Waiting review`
+   - ラベル: `bug` + `waiting-review`
    - ログ、スクリーンショット添付
+   - アサイン: book000
 5. 確認済みログのタイムスタンプを記録（重複確認防止）
 
 **実行方法**:
@@ -225,14 +228,16 @@ private async watchAdIfExists(page: Page): Promise<void> {
 **スケジュール**: 毎日 10:00（土曜は除く）
 
 **処理内容**:
-1. `Approved` ラベルの付いた Issue を取得
+1. `approved` ラベルの付いた Issue を取得。Issue 本文・コメントも確認すること
 2. 各 Issue について:
    - ブランチ作成（`feat/issue-{番号}-{説明}` or `fix/issue-{番号}-{説明}`）
    - Chrome でサイト調査（必要に応じて）
    - 実装パターンに従って実装
    - Lint 確認
+   - CLAUDE.md などのドキュメント更新
    - コミット・プッシュ
-   - PR 作成（`Closes #{Issue番号}` を含める）
+   - PR 作成（`Closes #{Issue番号}` を含める）。レビュアーに book000 を設定
+3. 既存 PR について、レビュー・CIエラー・コメントがあれば、対応を行う
 
 **実行方法**:
 ```bash
@@ -262,8 +267,8 @@ private async watchAdIfExists(page: Page): Promise<void> {
 |--------|------|
 | `enhancement` | 新機能追加 |
 | `bug` | バグ・不具合 |
-| `Waiting review` | レビュー待ち（自動作成直後）|
-| `Approved` | 実装承認済み（実装対象）|
+| `waiting-review` | レビュー待ち（自動作成直後）|
+| `approved` | 実装承認済み（実装対象）|
 
 ### crontab 設定例
 
@@ -284,9 +289,9 @@ private async watchAdIfExists(page: Page): Promise<void> {
 ## 開発コマンド
 
 ```bash
-npm run lint       # Lint チェック（prettier, eslint, tsc）
-npm run fix        # 自動修正
-npm run dev        # 開発実行
+pnpm lint       # Lint チェック（prettier, eslint, tsc）
+pnpm fix        # 自動修正
+pnpm dev        # 開発実行
 ```
 
 ## Claude in Chrome を用いた動作確認の知見
@@ -320,7 +325,7 @@ if (element) {
 
 `target="_blank"` のリンクを JavaScript の `element.click()` でクリックしても、ブラウザのセキュリティ制約により新規タブは開かない。Puppeteer では `getNewTabPage()` 関数でユーザークリックをシミュレートするため、この問題は発生しない。
 
-Claude in Chrome での動作確認時は、セレクターの存在確認のみで十分。
+Claude in Chrome での動作確認時は、`target="_blank"` で開くページリンクを別タブなどで手動で開き、確認すること。
 
 ### ページ読み込み待機
 
