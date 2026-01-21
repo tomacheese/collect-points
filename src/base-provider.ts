@@ -246,6 +246,10 @@ export abstract class BaseCrawler implements Crawler {
         await waitForCloudflareChallenge(page, this.logger)
 
         if (!loginCheckResult) {
+          this.logger.info(
+            `Login check failed. Current URL: ${page.url()}, isEnableLogin: ${isEnableLogin}`
+          )
+
           if (!isEnableLogin) {
             this.logger.info('Login is disabled')
 
@@ -257,7 +261,7 @@ export abstract class BaseCrawler implements Crawler {
             )
             await sendDiscordMessage(
               config,
-              'Need login but login is disabled (main mode)',
+              `[${this.constructor.name}] Need login but login is disabled (main mode)`,
               { isMention: true, screenshotPath }
             )
             return
@@ -276,6 +280,10 @@ export abstract class BaseCrawler implements Crawler {
         await waitForCloudflareChallenge(page, this.logger)
 
         if (!loginCheckResult) {
+          this.logger.info(
+            `Login check failed. Current URL: ${page.url()}, isEnableLogin: ${isEnableLogin}`
+          )
+
           if (!isEnableLogin) {
             this.logger.info('Login is disabled')
 
@@ -287,7 +295,7 @@ export abstract class BaseCrawler implements Crawler {
             )
             await sendDiscordMessage(
               config,
-              'Need login but login is disabled (target mode)',
+              `[${this.constructor.name}] Need login but login is disabled (target mode)`,
               { isMention: true, screenshotPath }
             )
             return
