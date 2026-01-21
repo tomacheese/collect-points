@@ -707,11 +707,21 @@ export default class PointTownCrawler extends BaseCrawler {
       await element.click()
     }
 
-    // 回答する
-    await page
-      .waitForSelector('button.question-area__button.c_red')
-      .then((element) => element?.click())
+    // 回答する（ボタンが見つからない場合は既に回答済みか、回答上限に達した可能性）
+    const submitButton = await page
+      .waitForSelector('button.question-area__button.c_red', {
+        timeout: 10_000,
+      })
+      .catch(() => null)
 
+    if (!submitButton) {
+      this.logger.info(
+        '回答ボタンが見つかりません。既に回答済みか、本日の回答上限に達した可能性があります。'
+      )
+      return
+    }
+
+    await submitButton.click()
     await sleep(1000)
   }
 
