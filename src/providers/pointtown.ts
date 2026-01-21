@@ -369,14 +369,21 @@ export default class PointTownCrawler extends BaseCrawler {
         }
       }
 
-      await page
-        .waitForSelector('button#js-pointq-submit', {
-          visible: true,
-          timeout: 10_000,
-        })
-        .then((element) => element?.click())
+      // 回答ボタンをクリックし、ページ遷移を待機
+      await Promise.all([
+        page
+          .waitForSelector('button#js-pointq-submit', {
+            visible: true,
+            timeout: 10_000,
+          })
+          .then((element) => element?.click()),
+        page.waitForNavigation({ waitUntil: 'networkidle2' }),
+      ])
 
-      await page.waitForSelector('p.pointq-correct-answer')
+      // 結果ページの正解表示を待機（タイムアウトを 60 秒に設定）
+      await page.waitForSelector('p.pointq-correct-answer', {
+        timeout: 60_000,
+      })
       const trueanswer = await page.evaluate(() => {
         const text =
           document.querySelector('p.pointq-correct-answer')?.textContent ?? ''
