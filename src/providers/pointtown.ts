@@ -80,7 +80,6 @@ export default class PointTownCrawler extends BaseCrawler {
     await this.runMethod(page, this.easyGame.bind(this))
     await this.runMethod(page, this.gesoten.bind(this))
     await this.runMethod(page, this.news.bind(this))
-    await this.runMethod(page, this.questionnaire.bind(this))
 
     // 新ゲーム
     await this.runMethod(page, this.brainTraining.bind(this))
@@ -699,37 +698,6 @@ export default class PointTownCrawler extends BaseCrawler {
         return
       }
     }
-  }
-
-  async questionnaire(page: Page): Promise<void> {
-    this.logger.info('questionnaire()')
-
-    await page.goto('https://ecnavi.jp/contents/enquete_rally/', {
-      waitUntil: 'networkidle2',
-    })
-
-    // input[name="enquete_fields"] のいずれかをクリック
-    const elements = await page.$$('input[name="enquete_fields"]')
-    for (const element of elements) {
-      await element.click()
-    }
-
-    // 回答する（ボタンが見つからない場合は既に回答済みか、回答上限に達した可能性）
-    const submitButton = await page
-      .waitForSelector('button.question-area__button.c_red', {
-        timeout: 10_000,
-      })
-      .catch(() => null)
-
-    if (!submitButton) {
-      this.logger.info(
-        '回答ボタンが見つかりません。既に回答済みか、本日の回答上限に達した可能性があります。'
-      )
-      return
-    }
-
-    await submitButton.click()
-    await sleep(1000)
   }
 
   async checkNewsCoin(page: Page) {

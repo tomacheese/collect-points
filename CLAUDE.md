@@ -383,7 +383,6 @@ await screenshot(); // 状態確認
 | `easyGame` | ボタンクリック | かんたんゲーム |
 | `gesoten` | 新規タブ | ゲソてん |
 | `news` | 記事閲覧 | ニュース閲覧 |
-| `questionnaire` | 回答選択 | アンケート |
 | `gacha` | スマホエミュレート | ガチャ |
 | `omikuji` | スマホエミュレート | おみくじ |
 | `horoscope` | スマホエミュレート | 星座占い |
