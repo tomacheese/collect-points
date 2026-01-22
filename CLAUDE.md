@@ -207,7 +207,7 @@ private async watchAdIfExists(page: Page): Promise<void> {
 **スケジュール**: 毎日 8:00（土曜は除く）
 
 **処理内容**:
-1. `/data/logs/` 配下の新しいログファイルを確認。`/data/screenshots/` も参照する。
+1. 本番環境 `data/prod-data/` 配下の新しいログファイルを確認。`data/prod-data/screenshots/` も参照する。
 2. エラーパターン（ERROR, failed, timeout 等）を検索
 3. エラーがあれば Chrome で再現確認・原因調査
 4. GitHub Issue を作成
