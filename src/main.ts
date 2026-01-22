@@ -1,5 +1,5 @@
 import fs from 'node:fs'
-import { getGitHash } from './git'
+import { getGitHash, getVersion } from './git'
 import EcNaviCrawler from './providers/ecnavi'
 import PointTownCrawler from './providers/pointtown'
 import { Logger } from '@book000/node-utils'
@@ -7,6 +7,20 @@ import * as Sentry from '@sentry/node'
 
 async function main() {
   const logger = Logger.configure('main')
+
+  // バージョン情報をログ出力
+  const version = getVersion()
+  const gitHash = getGitHash()
+  const versionInfo = [
+    version ? `v${version}` : null,
+    gitHash ? `(${gitHash})` : null,
+  ]
+    .filter(Boolean)
+    .join(' ')
+  logger.info(
+    `🚀 collect-points ${versionInfo || 'unknown version'} を起動します`
+  )
+
   if (!fs.existsSync('data')) {
     fs.mkdirSync('data')
   }
