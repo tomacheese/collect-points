@@ -361,6 +361,11 @@ export default class EcNaviCrawler extends BaseCrawler {
     await sleep(3000)
   }
 
+  /**
+   * ニュース記事を閲覧してリアクションボタンをクリックする
+   *
+   * @param page ページ
+   */
   protected async news(page: Page) {
     this.logger.info('news()')
 
@@ -370,12 +375,18 @@ export default class EcNaviCrawler extends BaseCrawler {
     const items = await page.$$(
       'li.article-latest-item a.article-latest-item__link'
     )
-    for (const item of items.slice(0, 5)) {
+    for (const [index, item] of items.slice(0, 5).entries()) {
       const url = await page.evaluate((element) => element.href, item)
+      this.logger.info(`news[${index + 1}/5]: Opening ${url}`)
+
       const newsPage = await page.browser().newPage()
       await newsPage.goto(url, {
         waitUntil: 'networkidle2',
       })
+
+      // デバッグ: ページ状態をログ出力
+      const pageUrl = newsPage.url()
+      this.logger.info(`news[${index + 1}/5]: Page loaded, URL=${pageUrl}`)
 
       await newsPage.evaluate(() => {
         if (document.querySelector('p.article-reaction-status') != null) {
@@ -388,7 +399,22 @@ export default class EcNaviCrawler extends BaseCrawler {
         .then((element) => element?.click())
         .catch(() => null)
       await sleep(3000)
-      await newsPage.close()
+
+      // デバッグ: クローズ前の状態を確認
+      const isClosed = newsPage.isClosed()
+      this.logger.info(
+        `news[${index + 1}/5]: Before close - isClosed=${isClosed}`
+      )
+
+      // タブが既に閉じている場合はスキップ
+      if (isClosed) {
+        this.logger.warn(
+          `news[${index + 1}/5]: Page was already closed, skipping close()`
+        )
+      } else {
+        await newsPage.close()
+        this.logger.info(`news[${index + 1}/5]: Page closed successfully`)
+      }
     }
   }
 
