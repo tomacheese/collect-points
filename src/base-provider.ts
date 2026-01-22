@@ -45,6 +45,43 @@ export abstract class BaseCrawler implements Crawler {
       directory: process.env.SCREENSHOT_DIR ?? 'data/screenshots',
       retentionDays,
     }
+
+    // スクリーンショット設定をログ出力
+    this.logger.info(
+      `Screenshot config: enabled=${this.screenshotConfig.enabled}, ` +
+        `directory=${this.screenshotConfig.directory}, ` +
+        `retentionDays=${this.screenshotConfig.retentionDays}`
+    )
+
+    // スクリーンショットが有効な場合、ベースディレクトリを事前に作成
+    if (this.screenshotConfig.enabled) {
+      this.initScreenshotDirectory()
+    }
+  }
+
+  /**
+   * スクリーンショットのベースディレクトリを初期化する
+   */
+  private initScreenshotDirectory(): void {
+    const baseDir = this.screenshotConfig.directory
+    try {
+      if (fs.existsSync(baseDir)) {
+        // ディレクトリが存在する場合、書き込み権限を確認
+        fs.accessSync(baseDir, fs.constants.W_OK)
+        this.logger.info(`Screenshot base directory exists: ${baseDir}`)
+      } else {
+        fs.mkdirSync(baseDir, { recursive: true })
+        this.logger.info(`Screenshot base directory created: ${baseDir}`)
+      }
+    } catch (error) {
+      this.logger.error(
+        `Failed to initialize screenshot directory: ${baseDir}`,
+        error as Error
+      )
+      // ディレクトリ作成に失敗した場合、スクリーンショットを無効化
+      this.screenshotConfig.enabled = false
+      this.logger.warn('Screenshot feature disabled due to directory error')
+    }
   }
 
   private async initBrowser(): Promise<Browser> {
@@ -381,6 +418,7 @@ export abstract class BaseCrawler implements Crawler {
 
       if (!fs.existsSync(screenshotDir)) {
         fs.mkdirSync(screenshotDir, { recursive: true })
+        this.logger.info(`Screenshot directory created: ${screenshotDir}`)
       }
 
       // ファイル名の生成（YYYYMMDD-HHmmss-SSS 形式）
@@ -390,6 +428,15 @@ export abstract class BaseCrawler implements Crawler {
         .replaceAll(/-$/g, '')
       const filename = `${timestamp}_${methodName}_${timing}.png`
       const filepath = path.join(screenshotDir, filename)
+
+      // スクリーンショット撮影前にビューポートサイズを確認
+      const viewport = page.viewport()
+      if (!viewport || viewport.width === 0 || viewport.height === 0) {
+        this.logger.warn(
+          `Invalid viewport for screenshot: ${JSON.stringify(viewport)}`
+        )
+        return null
+      }
 
       // スクリーンショット撮影
       await page.screenshot({ path: filepath, fullPage: true })
