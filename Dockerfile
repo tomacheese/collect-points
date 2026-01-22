@@ -1,15 +1,3 @@
-FROM alpine:3.23.2 AS version-getter
-
-# Git からバージョンとしてハッシュ値を取得
-
-# hadolint ignore=DL3018
-RUN apk update && \
-  apk add --no-cache git
-
-WORKDIR /app
-COPY .git/ .git/
-RUN git rev-parse --short HEAD > /app/VERSION
-
 FROM zenika/alpine-chrome:with-puppeteer-xvfb AS runner
 
 ENV PNPM_HOME="/pnpm"
@@ -43,8 +31,6 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 
 COPY entrypoint.sh ./
 RUN chmod +x ./entrypoint.sh
-
-COPY --from=version-getter /app/VERSION /app/VERSION
 
 ENV TZ=Asia/Tokyo
 ENV NODE_ENV=production
