@@ -167,6 +167,7 @@ private async watchAdIfExists(page: Page): Promise<void> {
 - `src/base-provider.ts` - クローラーの基底クラス
 - `src/configuration.ts` - 設定ファイルの読み込み
 - `src/functions.ts` - 共通ユーティリティ関数
+- `src/version.ts` - バージョン情報取得（package.json から取得）
 - `data/config.json` - 認証情報などの設定（Git 管理外）
 - `.claude/commands/` - Claude Code 用スキル
   - `detect-changes.md` - 新規機能・変更検出
@@ -208,13 +209,15 @@ private async watchAdIfExists(page: Page): Promise<void> {
 
 **処理内容**:
 1. 本番環境 `data/prod-data/` 配下の新しいログファイルを確認。`data/prod-data/screenshots/` も参照する。
-2. エラーパターン（ERROR, failed, timeout 等）を検索
-3. エラーがあれば Chrome で再現確認・原因調査
-4. GitHub Issue を作成
+2. **動作中のバージョンを確認する**（ログ冒頭の `🚀 collect-points v{version} を起動します` を確認）
+3. エラーパターン（ERROR, failed, timeout 等）を検索
+4. エラーがあれば Chrome で再現確認・原因調査
+5. GitHub Issue を作成
    - ラベル: `bug` + `waiting-review`
    - ログ、スクリーンショット添付
+   - **動作バージョンを明記**（例: `v2.0.0 で発生`）
    - アサイン: book000
-5. 確認済みログのタイムスタンプを記録（重複確認防止）
+6. 確認済みログのタイムスタンプを記録（重複確認防止）
 
 **実行方法**:
 ```bash

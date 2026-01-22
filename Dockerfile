@@ -1,15 +1,27 @@
-FROM alpine:3.23.2 AS version-getter
+# ビルドステージ: 依存関係のインストール
+FROM node:20-alpine AS builder
 
-# Git からバージョンとしてハッシュ値を取得
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME/bin:$PATH"
 
 # hadolint ignore=DL3018
-RUN apk update && \
-  apk add --no-cache git
+RUN apk add --no-cache libc6-compat && \
+  npm install -g corepack@latest && \
+  corepack enable
 
 WORKDIR /app
-COPY .git/ .git/
-RUN git rev-parse --short HEAD > /app/VERSION
 
+COPY pnpm-lock.yaml ./
+
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm fetch
+
+COPY package.json tsconfig.json ./
+COPY src src
+
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile --offline && \
+  pnpm approve-builds
+
+# ランナーステージ: 実行環境
 FROM zenika/alpine-chrome:with-puppeteer-xvfb AS runner
 
 ENV PNPM_HOME="/pnpm"
@@ -26,25 +38,18 @@ RUN apk upgrade --no-cache --available && \
   echo "Asia/Tokyo" > /etc/timezone && \
   apk del tzdata && \
   npm install -g corepack@latest && \
-  pnpm approve-builds && \
   corepack enable
 
 WORKDIR /app
 
-COPY pnpm-lock.yaml ./
-
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm fetch
-
-COPY package.json tsconfig.json ./
-COPY src src
-
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile --offline && \
-  pnpm approve-builds
+# builder ステージから必要なファイルのみをコピー
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/tsconfig.json ./
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/src ./src
 
 COPY entrypoint.sh ./
 RUN chmod +x ./entrypoint.sh
-
-COPY --from=version-getter /app/VERSION /app/VERSION
 
 ENV TZ=Asia/Tokyo
 ENV NODE_ENV=production
