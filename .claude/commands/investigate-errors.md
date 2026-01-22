@@ -26,7 +26,19 @@ fi
 find /data/logs -name "*.log" -newermt "$LAST_CHECK" -type f
 ```
 
-### 3. ログからエラーを抽出
+### 3. 動作中のバージョンを確認
+
+ログファイルの冒頭にある起動メッセージからバージョンを確認する。
+
+```bash
+# ログ冒頭のバージョン情報を取得
+grep "collect-points v" /data/logs/*.log | head -5
+```
+
+バージョン情報は `🚀 collect-points v{version} を起動します` の形式で出力される。
+Issue 作成時にこのバージョン情報を明記すること。
+
+### 4. ログからエラーを抽出
 
 各ログファイルから以下のパターンを検索：
 
@@ -40,7 +52,7 @@ find /data/logs -name "*.log" -newermt "$LAST_CHECK" -type f
 grep -i -E "(error|failed|exception|timeout)" /data/logs/*.log
 ```
 
-### 4. 既存の GitHub Issues を確認
+### 5. 既存の GitHub Issues を確認
 
 ```bash
 gh issue list --repo tomacheese/collect-points --state all --label "bug" --json number,title,body,state
@@ -49,7 +61,7 @@ gh issue list --repo tomacheese/collect-points --state all --label "bug" --json 
 同じエラーがすでに issue 化されていないか確認する。
 エラーメッセージやスタックトレースの類似性で判断。
 
-### 5. エラーの原因を調査
+### 6. エラーの原因を調査
 
 エラーが見つかった場合、以下を実施：
 
@@ -57,7 +69,7 @@ gh issue list --repo tomacheese/collect-points --state all --label "bug" --json 
 2. **スクリーンショット確認**: `/data/screenshots/` 配下の該当時刻のスクリーンショットを確認
 3. **Chrome で再現確認**: Claude in Chrome を使用して、エラーが発生した機能を実際に操作し、現在の状態を確認
 
-### 6. GitHub Issue を作成
+### 7. GitHub Issue を作成
 
 エラーごとに Issue を作成する。
 
@@ -67,6 +79,9 @@ gh issue create \
   --title "[バグ] {機能名}: {エラー概要}" \
   --body "## エラー概要
 {エラーの説明}
+
+## 動作バージョン
+{バージョン情報（例: v2.0.0）}
 
 ## 発生日時
 {ログのタイムスタンプ}
@@ -93,13 +108,13 @@ gh issue create \
   --label "Waiting review"
 ```
 
-### 7. チェック完了時刻を記録
+### 8. チェック完了時刻を記録
 
 ```bash
 date +%Y-%m-%dT%H:%M:%S > "$LAST_CHECK_FILE"
 ```
 
-### 8. 結果の報告
+### 9. 結果の報告
 
 - 確認したログファイルの数
 - 検出したエラーの数
