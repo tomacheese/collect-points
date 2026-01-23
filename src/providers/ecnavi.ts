@@ -188,36 +188,41 @@ export default class EcNaviCrawler extends BaseCrawler {
     }
 
     // 問題リンクをクリックしてナビゲーション（タイムアウト時は広告をチェックしてリトライ）
-    const questionLink = await page
-      .waitForSelector('a.chinju-lesson-question__link', { timeout: 5000 })
-      .catch(() => null)
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const questionLink = await page
+        .waitForSelector('a.chinju-lesson-question__link', { timeout: 5000 })
+        .catch(() => null)
 
-    if (!questionLink) {
-      this.logger.info('問題リンクが見つかりません')
-      return
-    }
+      if (!questionLink) {
+        this.logger.info('問題リンクが見つかりません')
+        return
+      }
 
-    try {
-      await Promise.all([
-        page.waitForNavigation({
-          waitUntil: 'domcontentloaded',
-          timeout: 30_000,
-        }),
-        questionLink.click(),
-      ])
-    } catch (error) {
-      if ((error as Error).name === 'TimeoutError') {
-        this.logger.warn(
-          'ナビゲーションタイムアウト、広告ポップアップをチェック'
-        )
-        // タイムアウト時は広告をチェック
-        await this.handleRewardedAd(page)
-        // ページをリロードしてリトライ
-        await page.goto('https://ecnavi.jp/research/chinju_lesson/', {
-          waitUntil: 'networkidle2',
-        })
-      } else {
-        throw error
+      try {
+        await Promise.all([
+          page.waitForNavigation({
+            waitUntil: 'domcontentloaded',
+            timeout: 30_000,
+          }),
+          questionLink.click(),
+        ])
+        // ナビゲーション成功
+        return
+      } catch (error) {
+        if ((error as Error).name === 'TimeoutError') {
+          this.logger.warn(
+            `ナビゲーションタイムアウト (試行 ${attempt + 1}/2)、広告ポップアップをチェック`
+          )
+          // タイムアウト時は広告をチェック
+          await this.handleRewardedAd(page)
+          // ページをリロードしてリトライ
+          await page.goto('https://ecnavi.jp/research/chinju_lesson/', {
+            waitUntil: 'networkidle2',
+          })
+          // 次のループで再試行
+        } else {
+          throw error
+        }
       }
     }
   }
