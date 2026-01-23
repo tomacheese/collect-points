@@ -4,7 +4,7 @@ import path from 'node:path'
 import puppeteer, { Browser, Page } from 'rebrowser-puppeteer-core'
 import { sendDiscordMessage } from './discord'
 import { getConfig } from './configuration'
-import { waitForCloudflareChallenge } from './functions'
+import { waitForCloudflareChallenge } from '@/utils/functions'
 
 /**
  * スクリーンショット設定
@@ -18,11 +18,17 @@ interface ScreenshotConfig {
   retentionDays: number
 }
 
+/**
+ * クローラーのインターフェース
+ */
 export interface Crawler {
   run(): Promise<void>
   loginOnly(): Promise<void>
 }
 
+/**
+ * クローラーの基底クラス
+ */
 export abstract class BaseCrawler implements Crawler {
   logger!: Logger
   protected screenshotConfig: ScreenshotConfig
@@ -351,6 +357,9 @@ export abstract class BaseCrawler implements Crawler {
     await browser.close()
   }
 
+  /**
+   * ログインのみを実行する
+   */
   public async loginOnly(): Promise<void> {
     const browser = await this.initBrowser()
     const page = await this.initPage(browser)
@@ -372,6 +381,11 @@ export abstract class BaseCrawler implements Crawler {
     await browser.close()
   }
 
+  /**
+   * メソッドを実行する（エラーハンドリング・スクリーンショット付き）
+   * @param page ページ
+   * @param method 実行するメソッド
+   */
   public async runMethod(
     page: Page,
     method: (page: Page) => Promise<void>

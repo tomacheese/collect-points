@@ -71,6 +71,12 @@ export interface SendDiscordMessageOptions {
   screenshotPath?: string | null
 }
 
+/**
+ * Discord にメッセージを送信する
+ * @param config 設定
+ * @param text メッセージテキスト
+ * @param options オプション
+ */
 export async function sendDiscordMessage(
   config: CollectConfiguration,
   text: string,

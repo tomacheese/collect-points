@@ -1,5 +1,8 @@
 import fs from 'node:fs'
 
+/**
+ * 収集設定のインターフェース
+ */
 export interface CollectConfiguration {
   pointtown: {
     email: string
@@ -23,6 +26,10 @@ export interface CollectConfiguration {
   }
 }
 
+/**
+ * 設定ファイルを読み込む
+ * @returns 設定オブジェクト
+ */
 export function getConfig() {
   const path = process.env.CONFIG_PATH ?? './config.json'
   const config = JSON.parse(

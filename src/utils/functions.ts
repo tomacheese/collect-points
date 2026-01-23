@@ -1,8 +1,12 @@
 import { Logger } from '@book000/node-utils'
 import { Browser, ElementHandle, Page } from 'rebrowser-puppeteer-core'
-import { getConfig } from './configuration'
-import { sendDiscordMessage } from './discord'
+import { getConfig } from '@/core/configuration'
+import { sendDiscordMessage } from '@/core/discord'
 
+/**
+ * 指定ミリ秒待機する
+ * @param msec 待機ミリ秒
+ */
 export async function sleep(msec: number) {
   return new Promise((resolve) => setTimeout(resolve, msec))
 }
@@ -96,14 +100,32 @@ export async function waitForCloudflareChallenge(
   return false
 }
 
+/**
+ * 獲得ポイントを計算する
+ * @param previousPoint 前回のポイント
+ * @param currentPoint 現在のポイント
+ * @returns 獲得ポイント
+ */
 export function calcEarnedPoint(previousPoint: number, currentPoint: number) {
   return +(currentPoint - previousPoint).toFixed(2)
 }
 
+/**
+ * 獲得ポイントを円換算する
+ * @param earnedPoint 獲得ポイント
+ * @param rate レート
+ * @returns 円換算額
+ */
 export function calcEarnedYen(earnedPoint: number, rate: number) {
   return +(earnedPoint * rate).toFixed(2)
 }
 
+/**
+ * セレクタが存在するかどうかを確認する
+ * @param page ページ
+ * @param selector セレクタ
+ * @returns 存在する場合は true
+ */
 export async function isExistsSelector(
   page: Page,
   selector: string
@@ -120,6 +142,11 @@ export async function isExistsSelector(
   })
 }
 
+/**
+ * 開いているページ数を取得する
+ * @param browser ブラウザ
+ * @returns ページ数
+ */
 export function getPageCount(browser: Browser) {
   return new Promise<number>((resolve, reject) => {
     setTimeout(() => {
@@ -136,6 +163,13 @@ export function getPageCount(browser: Browser) {
   })
 }
 
+/**
+ * 新しいタブページを取得する
+ * @param logger ロガー
+ * @param page ページ
+ * @param element クリックする要素
+ * @returns 新しいタブページ（取得できない場合は null）
+ */
 export async function getNewTabPage(
   logger: Logger,
   page: Page,
@@ -175,6 +209,13 @@ export async function getNewTabPage(
   return pages.at(-1) ?? null
 }
 
+/**
+ * セレクタから新しいタブページを取得する
+ * @param logger ロガー
+ * @param page ページ
+ * @param elementSelector 要素のセレクタ
+ * @returns 新しいタブページ（取得できない場合は null）
+ */
 export async function getNewTabPageFromSelector(
   logger: Logger,
   page: Page,
@@ -186,6 +227,13 @@ export async function getNewTabPageFromSelector(
 
 type EqualType = 'equal' | 'includes' | 'startsWith'
 
+/**
+ * 指定 URL になるまで待機する
+ * @param page ページ
+ * @param type 比較タイプ
+ * @param url URL
+ * @param timeout タイムアウト（ミリ秒）
+ */
 export async function waitForUrl(
   page: Page,
   type: EqualType,
@@ -213,6 +261,10 @@ export async function waitForUrl(
   })
 }
 
+/**
+ * ページの最下部までスクロールする
+ * @param page ページ
+ */
 export function scrollToBottom(page: Page) {
   return page.evaluate(() => {
     window.scroll({
@@ -223,6 +275,13 @@ export function scrollToBottom(page: Page) {
   })
 }
 
+/**
+ * 完了通知を送信する
+ * @param targetScript 対象スクリプト名
+ * @param beforePt 開始前ポイント
+ * @param afterPt 終了後ポイント
+ * @param rate レート
+ */
 export async function finishedNotify(
   targetScript: string,
   beforePt: number,
