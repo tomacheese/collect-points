@@ -393,20 +393,53 @@ export default class PointTownCrawler extends BaseCrawler {
       json[question] = trueanswer
       fs.writeFileSync(`/data/pointq.json`, JSON.stringify(json))
 
+      // 次の問題への遷移（タイムアウト時はページを直接リロード）
       if (await isExistsSelector(page, 'a[href="/pointq/input"]')) {
-        await Promise.all([
-          page
-            .waitForSelector('a[href="/pointq/input"]')
-            .then((element) => element?.click()),
-          page.waitForNavigation({ waitUntil: 'networkidle2' }),
-        ])
+        try {
+          await Promise.all([
+            page
+              .waitForSelector('a[href="/pointq/input"]')
+              .then((element) => element?.click()),
+            page.waitForNavigation({
+              waitUntil: 'domcontentloaded',
+              timeout: 30_000,
+            }),
+          ])
+        } catch (error) {
+          if ((error as Error).name === 'TimeoutError') {
+            this.logger.warn(
+              '次の問題への遷移がタイムアウト、ページを直接読み込み'
+            )
+            await page.goto('https://www.pointtown.com/pointq/input', {
+              waitUntil: 'networkidle2',
+            })
+          } else {
+            throw error
+          }
+        }
       } else if (await isExistsSelector(page, 'div.rewardResumebutton')) {
-        await Promise.all([
-          page
-            .waitForSelector('div.rewardResumebutton')
-            .then((element) => element?.click()),
-          page.waitForNavigation({ waitUntil: 'networkidle2' }),
-        ])
+        try {
+          await Promise.all([
+            page
+              .waitForSelector('div.rewardResumebutton')
+              .then((element) => element?.click()),
+            page.waitForNavigation({
+              waitUntil: 'domcontentloaded',
+              timeout: 30_000,
+            }),
+          ])
+        } catch (error) {
+          if ((error as Error).name === 'TimeoutError') {
+            this.logger.warn(
+              '次の問題への遷移がタイムアウト、ページを直接読み込み'
+            )
+            await page.goto('https://www.pointtown.com/pointq/input', {
+              waitUntil: 'networkidle2',
+            })
+          } else {
+            throw error
+          }
+        }
       } else {
         return
       }
