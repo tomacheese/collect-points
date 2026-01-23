@@ -171,32 +171,60 @@ export default class EcNaviCrawler extends BaseCrawler {
   protected async chinju(page: Page) {
     this.logger.info('chinju()')
 
-    // for (let index = 0; index < 5; index++) {
     await page.goto('https://ecnavi.jp/research/chinju_lesson/', {
       waitUntil: 'networkidle2',
     })
+
+    // ナビゲーション前に広告ポップアップをチェック
+    await this.handleRewardedAd(page)
+
     if (await isExistsSelector(page, 'div.chinju-lesson-finished')) {
       this.logger.info('chinju() today finished')
       return
     }
     if (await isExistsSelector(page, 'div.chinju-lesson-interbal')) {
-      /* await new Promise<void>((resolve) => {
-        setInterval(async () => {
-          if (!(await isExistsSelector(page, 'div.chinju-lesson-interbal'))) {
-            resolve()
-          }
-        }, 1000)
-      })
-      */
+      this.logger.info('chinju() インターバル中')
       return
     }
-    await Promise.all([
-      page.waitForNavigation({ waitUntil: 'networkidle2' }),
-      page
-        .waitForSelector('a.chinju-lesson-question__link')
-        .then((element) => element?.click()),
-    ])
-    // }
+
+    // 問題リンクをクリックしてナビゲーション（タイムアウト時は広告をチェックしてリトライ）
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const questionLink = await page
+        .waitForSelector('a.chinju-lesson-question__link', { timeout: 5000 })
+        .catch(() => null)
+
+      if (!questionLink) {
+        this.logger.info('問題リンクが見つかりません')
+        return
+      }
+
+      try {
+        await Promise.all([
+          page.waitForNavigation({
+            waitUntil: 'domcontentloaded',
+            timeout: 30_000,
+          }),
+          questionLink.click(),
+        ])
+        // ナビゲーション成功
+        return
+      } catch (error) {
+        if ((error as Error).name === 'TimeoutError') {
+          this.logger.warn(
+            `ナビゲーションタイムアウト (試行 ${attempt + 1}/2)、広告ポップアップをチェック`
+          )
+          // タイムアウト時は広告をチェック
+          await this.handleRewardedAd(page)
+          // ページをリロードしてリトライ
+          await page.goto('https://ecnavi.jp/research/chinju_lesson/', {
+            waitUntil: 'networkidle2',
+          })
+          // 次のループで再試行
+        } else {
+          throw error
+        }
+      }
+    }
   }
 
   protected async quiz(page: Page) {
@@ -573,7 +601,7 @@ export default class EcNaviCrawler extends BaseCrawler {
    *
    * @param page ページ
    */
-  private async handleRewardedAd(page: Page): Promise<void> {
+  protected async handleRewardedAd(page: Page): Promise<void> {
     // 「短い広告を見る」ボタンを 5 秒間待機（広告表示の検出用）
     const rewardedAdButton = await page
       .waitForSelector('button.fc-rewarded-ad-button', { timeout: 5000 })
