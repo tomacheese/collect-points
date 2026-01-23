@@ -12,10 +12,12 @@ export interface CrawlerContext {
    * メソッドを実行する（エラーハンドリング付き）
    * @param page ページ
    * @param method 実行するメソッド
+   * @param methodName メソッド名（スクリーンショットのファイル名に使用）
    */
   runMethod: (
     page: Page,
-    method: (page: Page) => Promise<void>
+    method: (page: Page) => Promise<void>,
+    methodName?: string
   ) => Promise<void>
 }
 

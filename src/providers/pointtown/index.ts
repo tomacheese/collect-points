@@ -119,35 +119,59 @@ export default class PointTownCrawler extends BaseCrawler {
     const beforePoint = await this.getCurrentPoint(page)
     this.logger.info(`beforePoint: ${beforePoint}`)
 
-    await this.runMethod(page, (p) => loginBonus(this.context, p))
-    await this.runMethod(page, (p) => triangleLot(this.context, p))
-    await this.runMethod(page, (p) => pointQ(this.context, p))
-    await this.runMethod(page, (p) => mailCheck(this.context, p))
-    await this.runMethod(page, (p) => pointChance(this.context, p))
-    await this.runMethod(page, (p) => competition(this.context, p))
-    await this.runMethod(page, (p) => easyGame(this.context, p))
-    await this.runMethod(page, (p) => gesoten(this.context, p))
-    await this.runMethod(page, (p) => news(this.context, p))
+    await this.runMethod(page, (p) => loginBonus(this.context, p), 'loginBonus')
+    await this.runMethod(
+      page,
+      (p) => triangleLot(this.context, p),
+      'triangleLot'
+    )
+    await this.runMethod(page, (p) => pointQ(this.context, p), 'pointQ')
+    await this.runMethod(page, (p) => mailCheck(this.context, p), 'mailCheck')
+    await this.runMethod(
+      page,
+      (p) => pointChance(this.context, p),
+      'pointChance'
+    )
+    await this.runMethod(
+      page,
+      (p) => competition(this.context, p),
+      'competition'
+    )
+    await this.runMethod(page, (p) => easyGame(this.context, p), 'easyGame')
+    await this.runMethod(page, (p) => gesoten(this.context, p), 'gesoten')
+    await this.runMethod(page, (p) => news(this.context, p), 'news')
 
     // 新ゲーム
-    await this.runMethod(page, (p) => brainTraining(this.context, p))
-    await this.runMethod(page, (p) => nazotore(this.context, p))
-    await this.runMethod(page, (p) => spotdiff(this.context, p))
-    await this.runMethod(page, (p) => puzzle(this.context, p))
-    await this.runMethod(page, (p) => sugoroku(this.context, p))
-    await this.runMethod(page, (p) => dropgame(this.context, p))
-    await this.runMethod(page, (p) => cmkuji(this.context, p))
-    await this.runMethod(page, (p) => movieDeCoin(this.context, p))
+    await this.runMethod(
+      page,
+      (p) => brainTraining(this.context, p),
+      'brainTraining'
+    )
+    await this.runMethod(page, (p) => nazotore(this.context, p), 'nazotore')
+    await this.runMethod(page, (p) => spotdiff(this.context, p), 'spotdiff')
+    await this.runMethod(page, (p) => puzzle(this.context, p), 'puzzle')
+    await this.runMethod(page, (p) => sugoroku(this.context, p), 'sugoroku')
+    await this.runMethod(page, (p) => dropgame(this.context, p), 'dropgame')
+    await this.runMethod(page, (p) => cmkuji(this.context, p), 'cmkuji')
+    await this.runMethod(
+      page,
+      (p) => movieDeCoin(this.context, p),
+      'movieDeCoin'
+    )
 
     // スマホ系
     const mobilePage = await browser.newPage()
-    await this.runMethod(mobilePage, (p) => gacha(this.context, p))
-    await this.runMethod(mobilePage, (p) => omikuji(this.context, p))
-    await this.runMethod(mobilePage, (p) => horoscope(this.context, p))
+    await this.runMethod(mobilePage, (p) => gacha(this.context, p), 'gacha')
+    await this.runMethod(mobilePage, (p) => omikuji(this.context, p), 'omikuji')
+    await this.runMethod(
+      mobilePage,
+      (p) => horoscope(this.context, p),
+      'horoscope'
+    )
     await mobilePage.close()
 
     // スタンプラリーの進捗確認
-    await this.runMethod(page, (p) => stamprally(this.context, p))
+    await this.runMethod(page, (p) => stamprally(this.context, p), 'stamprally')
 
     const afterPoint = await this.getCurrentPoint(page)
     this.logger.info(`afterPoint: ${afterPoint}`)

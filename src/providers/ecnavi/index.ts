@@ -55,9 +55,10 @@ export default class EcNaviCrawler extends BaseCrawler {
    */
   public override async runMethod(
     page: Page,
-    method: (page: Page) => Promise<void>
+    method: (page: Page) => Promise<void>,
+    methodName?: string
   ): Promise<void> {
-    await super.runMethod(page, method)
+    await super.runMethod(page, method, methodName)
 
     // 各メソッド実行後に Google Rewarded Ads をチェック（エラーは無視）
     try {
@@ -112,43 +113,72 @@ export default class EcNaviCrawler extends BaseCrawler {
     this.logger.info(`beforePoint: ${beforePoint}`)
 
     // 一番最初にエントリー
-    await this.runMethod(page, (p) => entryLottery(this.context, p))
-
-    await this.runMethod(page, (p) => gesoten(this.context, p))
-    await this.runMethod(page, (p) => chirashi(this.context, p))
-    await this.runMethod(page, (p) =>
-      chinju(this.context, p, this.handleRewardedAd.bind(this))
+    await this.runMethod(
+      page,
+      (p) => entryLottery(this.context, p),
+      'entryLottery'
     )
-    await this.runMethod(page, (p) => quiz(this.context, p))
-    await this.runMethod(page, (p) => divination(this.context, p))
-    await this.runMethod(page, (p) => fishing(this.context, p))
-    await this.runMethod(page, (p) => choice(this.context, p))
-    await this.runMethod(page, (p) => news(this.context, p))
-    await this.runMethod(page, (p) => garapon(this.context, p))
-    await this.runMethod(page, (p) => doron(this.context, p))
-    await this.runMethod(page, (p) => ticketingLottery(this.context, p))
-    await this.runMethod(page, (p) => fund(this.context, p))
+
+    await this.runMethod(page, (p) => gesoten(this.context, p), 'gesoten')
+    await this.runMethod(page, (p) => chirashi(this.context, p), 'chirashi')
+    await this.runMethod(
+      page,
+      (p) => chinju(this.context, p, this.handleRewardedAd.bind(this)),
+      'chinju'
+    )
+    await this.runMethod(page, (p) => quiz(this.context, p), 'quiz')
+    await this.runMethod(page, (p) => divination(this.context, p), 'divination')
+    await this.runMethod(page, (p) => fishing(this.context, p), 'fishing')
+    await this.runMethod(page, (p) => choice(this.context, p), 'choice')
+    await this.runMethod(page, (p) => news(this.context, p), 'news')
+    await this.runMethod(page, (p) => garapon(this.context, p), 'garapon')
+    await this.runMethod(page, (p) => doron(this.context, p), 'doron')
+    await this.runMethod(
+      page,
+      (p) => ticketingLottery(this.context, p),
+      'ticketingLottery'
+    )
+    await this.runMethod(page, (p) => fund(this.context, p), 'fund')
 
     // 新ゲーム
-    await this.runMethod(page, (p) =>
-      natsupoi(this.context, p, this.watchAdIfExists.bind(this))
+    await this.runMethod(
+      page,
+      (p) => natsupoi(this.context, p, this.watchAdIfExists.bind(this)),
+      'natsupoi'
     )
-    await this.runMethod(page, (p) =>
-      spotdiffBox(this.context, p, this.watchAdIfExists.bind(this))
+    await this.runMethod(
+      page,
+      (p) => spotdiffBox(this.context, p, this.watchAdIfExists.bind(this)),
+      'spotdiffBox'
     )
-    await this.runMethod(page, (p) => languageTravel(this.context, p))
-    await this.runMethod(page, (p) =>
-      brainExerciseGame(this.context, p, this.watchAdIfExists.bind(this))
+    await this.runMethod(
+      page,
+      (p) => languageTravel(this.context, p),
+      'languageTravel'
     )
-    await this.runMethod(page, (p) =>
-      easyGame(this.context, p, this.watchAdIfExists.bind(this))
+    await this.runMethod(
+      page,
+      (p) =>
+        brainExerciseGame(this.context, p, this.watchAdIfExists.bind(this)),
+      'brainExerciseGame'
     )
-    await this.runMethod(page, (p) =>
-      brainTraining(this.context, p, this.watchAdIfExists.bind(this))
+    await this.runMethod(
+      page,
+      (p) => easyGame(this.context, p, this.watchAdIfExists.bind(this)),
+      'easyGame'
     )
-    await this.runMethod(page, (p) => vegetable(this.context, p))
-    await this.runMethod(page, (p) => chocoRead(this.context, p))
-    await this.runMethod(page, (p) => enqueteRally(this.context, p))
+    await this.runMethod(
+      page,
+      (p) => brainTraining(this.context, p, this.watchAdIfExists.bind(this)),
+      'brainTraining'
+    )
+    await this.runMethod(page, (p) => vegetable(this.context, p), 'vegetable')
+    await this.runMethod(page, (p) => chocoRead(this.context, p), 'chocoRead')
+    await this.runMethod(
+      page,
+      (p) => enqueteRally(this.context, p),
+      'enqueteRally'
+    )
 
     const afterPoint = await this.getCurrentPoint(page)
     this.logger.info(`afterPoint: ${afterPoint}`)

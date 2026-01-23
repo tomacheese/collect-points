@@ -19,12 +19,36 @@ export async function triangleLot(
 ): Promise<void> {
   context.logger.info('triangleLot()')
 
-  await context.runMethod(page, (p) => triangleLotRed(context, p))
-  await context.runMethod(page, (p) => triangleLotYellow(context, p))
-  await context.runMethod(page, (p) => triangleLotPurple(context, p))
-  await context.runMethod(page, (p) => triangleLotPink(context, p))
-  await context.runMethod(page, (p) => triangleLotBlue(context, p))
-  await context.runMethod(page, (p) => triangleLotGreen(context, p))
+  await context.runMethod(
+    page,
+    (p) => triangleLotRed(context, p),
+    'triangleLotRed'
+  )
+  await context.runMethod(
+    page,
+    (p) => triangleLotYellow(context, p),
+    'triangleLotYellow'
+  )
+  await context.runMethod(
+    page,
+    (p) => triangleLotPurple(context, p),
+    'triangleLotPurple'
+  )
+  await context.runMethod(
+    page,
+    (p) => triangleLotPink(context, p),
+    'triangleLotPink'
+  )
+  await context.runMethod(
+    page,
+    (p) => triangleLotBlue(context, p),
+    'triangleLotBlue'
+  )
+  await context.runMethod(
+    page,
+    (p) => triangleLotGreen(context, p),
+    'triangleLotGreen'
+  )
 }
 
 // 個別のメソッドもエクスポート

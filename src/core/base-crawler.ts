@@ -388,16 +388,17 @@ export abstract class BaseCrawler implements Crawler {
    */
   public async runMethod(
     page: Page,
-    method: (page: Page) => Promise<void>
+    method: (page: Page) => Promise<void>,
+    methodName?: string
   ): Promise<void> {
-    const methodName = method.name || 'unknown'
+    const name = methodName ?? (method.name || 'unknown')
     await page.bringToFront()
     try {
-      await this.takeScreenshot(page, methodName, 'before')
+      await this.takeScreenshot(page, name, 'before')
       await method(page)
-      await this.takeScreenshot(page, methodName, 'after')
+      await this.takeScreenshot(page, name, 'after')
     } catch (error) {
-      await this.takeScreenshot(page, methodName, 'error')
+      await this.takeScreenshot(page, name, 'error')
       this.logger.error('Error', error as Error)
       throw error
     }
