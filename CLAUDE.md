@@ -161,13 +161,25 @@ private async watchAdIfExists(page: Page): Promise<void> {
 
 ## プロジェクト構成
 
+- `src/core/` - コア機能
+  - `base-crawler.ts` - クローラーの基底クラス（`Crawler` インターフェース、`BaseCrawler` 抽象クラス）
+  - `configuration.ts` - 設定ファイルの読み込み
+  - `discord.ts` - Discord 通知
+  - `types.ts` - Context インターフェース定義（`CrawlerContext`、`EcNaviContext`、`PointTownContext`）
+  - `index.ts` - バレルエクスポート
+- `src/utils/` - ユーティリティ関数
+  - `functions.ts` - 共通ユーティリティ関数
+  - `version.ts` - バージョン情報取得（package.json から取得）
+  - `index.ts` - バレルエクスポート
 - `src/providers/` - 各ポイントサイトのクローラー実装
-  - `pointtown.ts` - PointTown クローラー
-  - `ecnavi.ts` - ECNavi クローラー
-- `src/base-provider.ts` - クローラーの基底クラス
-- `src/configuration.ts` - 設定ファイルの読み込み
-- `src/functions.ts` - 共通ユーティリティ関数
-- `src/version.ts` - バージョン情報取得（package.json から取得）
+  - `pointtown/` - PointTown クローラー
+    - `index.ts` - `PointTownCrawler` クラス
+    - `contents/` - コンテンツメソッド（各ゲーム・機能の実装）
+    - `contents/triangle-lot/` - 三角くじ関連メソッド
+  - `ecnavi/` - ECNavi クローラー
+    - `index.ts` - `EcNaviCrawler` クラス
+    - `contents/` - コンテンツメソッド（各ゲーム・機能の実装）
+    - `contents/lottery/` - 宝くじ関連メソッド
 - `data/config.json` - 認証情報などの設定（Git 管理外）
 - `.claude/commands/` - Claude Code 用スキル
   - `detect-changes.md` - 新規機能・変更検出

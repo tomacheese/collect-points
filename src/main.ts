@@ -1,7 +1,7 @@
 import fs from 'node:fs'
-import { getVersion } from './version'
-import EcNaviCrawler from './providers/ecnavi'
-import PointTownCrawler from './providers/pointtown'
+import { getVersion } from '@/utils/version'
+import EcNaviCrawler from '@/providers/ecnavi'
+import PointTownCrawler from '@/providers/pointtown'
 import { Logger } from '@book000/node-utils'
 import * as Sentry from '@sentry/node'
 
