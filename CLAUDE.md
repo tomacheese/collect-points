@@ -187,7 +187,6 @@ private async watchAdIfExists(page: Page): Promise<void> {
 **スケジュール**: 毎週土曜 8:00
 
 **処理内容**:
-
 1. PointTown と ECNavi のサイトを Chrome で探索
 2. CLAUDE.md の実装済み機能一覧と比較
 3. 既存の実装コード・ドキュメントを確認し、改善ポイントがないかを探索
@@ -198,11 +197,15 @@ private async watchAdIfExists(page: Page): Promise<void> {
 5. 既存 Issue（クローズ済み含む）と重複する場合は作成しない
 
 **実行方法**:
-
 ```bash
-./scripts/weekly-detect-changes.sh
-# または
-/detect-changes
+# 依存関係のインストール
+pnpm install
+
+# 開発
+pnpm dev
+
+# Lint
+pnpm lint
 ```
 
 ### 2. エラー原因の調査（週6回）
@@ -210,7 +213,6 @@ private async watchAdIfExists(page: Page): Promise<void> {
 **スケジュール**: 毎日 8:00（土曜は除く）
 
 **処理内容**:
-
 1. 本番環境 `data/prod-data/` 配下の新しいログファイルを確認。`data/prod-data/screenshots/` も参照する。
 2. **動作中のバージョンを確認する**（ログ冒頭の `🚀 collect-points v{version} を起動します` を確認）
 3. エラーパターン（ERROR, failed, timeout 等）を検索
@@ -223,7 +225,6 @@ private async watchAdIfExists(page: Page): Promise<void> {
 6. 確認済みログのタイムスタンプを記録（重複確認防止）
 
 **実行方法**:
-
 ```bash
 ./scripts/investigate-errors.sh
 # または
@@ -235,7 +236,6 @@ private async watchAdIfExists(page: Page): Promise<void> {
 **スケジュール**: 毎日 10:00（土曜は除く）
 
 **処理内容**:
-
 1. `approved` ラベルの付いた Issue を取得。Issue 本文・コメントも確認すること
 2. 各 Issue について:
    - ブランチ作成（`feat/issue-{番号}-{説明}` or `fix/issue-{番号}-{説明}`）
@@ -248,7 +248,6 @@ private async watchAdIfExists(page: Page): Promise<void> {
 3. 既存 PR について、レビュー・CIエラー・コメントがあれば、対応を行う
 
 **実行方法**:
-
 ```bash
 ./scripts/implement-approved.sh
 # または
@@ -260,24 +259,24 @@ private async watchAdIfExists(page: Page): Promise<void> {
 **スケジュール**: 毎週月曜 0:00
 
 **処理内容**:
-
 1. リモートの最新情報を取得（`git fetch --all --prune`）
 2. マージ済みのローカルブランチを削除（master, main, develop は除外）
 3. リモートで削除されたブランチ（`[gone]`）のローカル参照を削除
 4. 30日以上更新がない Open な PR を報告
 
 **実行方法**:
-
 ```bash
 ./scripts/cleanup-branches.sh
 ```
 
 ### GitHub Issue ラベルの意味
 
-- `enhancement`: 新機能追加
-- `bug`: バグ・不具合
-- `waiting-review`: レビュー待ち（自動作成直後）
-- `approved`: 実装承認済み（実装対象）
+| ラベル | 意味 |
+|--------|------|
+| `enhancement` | 新機能追加 |
+| `bug` | バグ・不具合 |
+| `waiting-review` | レビュー待ち（自動作成直後）|
+| `approved` | 実装承認済み（実装対象）|
 
 ### crontab 設定例
 
@@ -332,9 +331,7 @@ if (element) {
 
 ### target="_blank" リンクの注意点
 
-`target="_blank"` のリンクを JavaScript の `element.click()`
-でクリックしても、ブラウザのセキュリティ制約により新規タブは開かない。Puppeteer では `getNewTabPage()`
-関数でユーザークリックをシミュレートするため、この問題は発生しない。
+`target="_blank"` のリンクを JavaScript の `element.click()` でクリックしても、ブラウザのセキュリティ制約により新規タブは開かない。Puppeteer では `getNewTabPage()` 関数でユーザークリックをシミュレートするため、この問題は発生しない。
 
 Claude in Chrome での動作確認時は、`target="_blank"` で開くページリンクを別タブなどで手動で開き、確認すること。
 
@@ -357,74 +354,78 @@ await screenshot(); // 状態確認
 
 ### ECNavi 実装済み機能
 
-- `entryLottery`: ボタンクリック（宝くじエントリー）
-- `gesoten`: 新規タブ + ガチャ（ゲソてんガチャ）
-- `chirashi`: 新規タブ（チラシ閲覧）
-- `chinju`: クイズ回答（珍獣レッスン）
-- `quiz`: クイズ回答（今日のクイズ（ヒントページから回答検索））
-- `divination`: ボタンクリック（占い 3 種（星座/タロット/おみくじ））
-- `fishing`: ボタンクリック（釣りパンダガチャ）
-- `choice`: ボタンクリック（二択アンケート）
-- `news`: 記事閲覧 + リアクション（ニュース記事閲覧）
-- `garapon`: 新規タブ（ガラポン広告閲覧）
-- `doron`: 新規タブ（たぬきときつねでドロン）
-- `ticketingLottery`: ボタンクリック（宝くじチケット一括使用）
-- `fund`: 新規タブ（クリック募金）
-- `natsupoi`: 広告視聴型（ナツポイ）
-- `spotdiffBox`: 広告視聴型（まちがい探し）
-- `languageTravel`: クイズ回答型（語学トラベル）
-- `brainExerciseGame`: 広告視聴型（頭の体操ゲーム）
-- `easyGame`: 広告視聴型（かんたんゲーム）
-- `brainTraining`: クイズ回答型（脳トレクイズ）
-- `vegetable`: 操作型（ポイント畑（クレーンゲーム））
-- `chocoRead`: ページめくり（ちょこ読み（雑誌閲覧））
+| 機能 | 実装パターン | 備考 |
+|------|-------------|------|
+| `entryLottery` | ボタンクリック | 宝くじエントリー |
+| `gesoten` | 新規タブ + ガチャ | ゲソてんガチャ |
+| `chirashi` | 新規タブ | チラシ閲覧 |
+| `chinju` | クイズ回答 | 珍獣レッスン |
+| `quiz` | クイズ回答 | 今日のクイズ（ヒントページから回答検索）|
+| `divination` | ボタンクリック | 占い 3 種（星座/タロット/おみくじ）|
+| `fishing` | ボタンクリック | 釣りパンダガチャ |
+| `choice` | ボタンクリック | 二択アンケート |
+| `news` | 記事閲覧 + リアクション | ニュース記事閲覧 |
+| `garapon` | 新規タブ | ガラポン広告閲覧 |
+| `doron` | 新規タブ | たぬきときつねでドロン |
+| `ticketingLottery` | ボタンクリック | 宝くじチケット一括使用 |
+| `fund` | 新規タブ | クリック募金 |
+| `natsupoi` | 広告視聴型 | ナツポイ |
+| `spotdiffBox` | 広告視聴型 | まちがい探し |
+| `languageTravel` | クイズ回答型 | 語学トラベル |
+| `brainExerciseGame` | 広告視聴型 | 頭の体操ゲーム |
+| `easyGame` | 広告視聴型 | かんたんゲーム |
+| `brainTraining` | クイズ回答型 | 脳トレクイズ |
+| `vegetable` | 操作型 | ポイント畑（クレーンゲーム）|
+| `chocoRead` | ページめくり | ちょこ読み（雑誌閲覧）|
 
 ### PointTown 実装済み機能
 
-- `loginBonus`: ボタンクリック（ログインボーナス）
-- `triangleLot`: 三角くじ（6 ページで三角くじを引く）
-- `pointQ`: クイズ回答型（ポイント Q（回答を JSON 保存））
-- `mailCheck`: メール確認（ポイントメールボックス）
-- `pointChance`: 新規タブ（ポイントチャンス（モニター））
-- `competition`: ボタンクリック（ポイント争奪戦）
-- `easyGame`: ボタンクリック（かんたんゲーム）
-- `gesoten`: 新規タブ（ゲソてん）
-- `news`: 記事閲覧（ニュース閲覧）
-- `gacha`: スマホエミュレート（ガチャ）
-- `omikuji`: スマホエミュレート（おみくじ）
-- `horoscope`: スマホエミュレート（星座占い）
-- `brainTraining`: クイズ回答型（脳トレクイズ）
-- `nazotore`: 広告視聴 + クイズ（今夜はナゾトレ）
-- `spotdiff`: 広告視聴型（まちがい探し）
-- `puzzle`: 広告視聴型（クラッシュアイス）
-- `sugoroku`: 広告視聴型（たびろく（すごろく））
-- `dropgame`: 広告視聴型（ふるふるパニック）
-- `cmkuji`: 広告視聴型（CM くじ）
-- `movieDeCoin`: 広告視聴型（動画でコイン（時間帯別最大 3 回/日））
+| 機能 | 実装パターン | 備考 |
+|------|-------------|------|
+| `loginBonus` | ボタンクリック | ログインボーナス |
+| `triangleLot` | 三角くじ | 6 ページで三角くじを引く |
+| `pointQ` | クイズ回答型 | ポイント Q（回答を JSON 保存）|
+| `mailCheck` | メール確認 | ポイントメールボックス |
+| `pointChance` | 新規タブ | ポイントチャンス（モニター）|
+| `competition` | ボタンクリック | ポイント争奪戦 |
+| `easyGame` | ボタンクリック | かんたんゲーム |
+| `gesoten` | 新規タブ | ゲソてん |
+| `news` | 記事閲覧 | ニュース閲覧 |
+| `gacha` | スマホエミュレート | ガチャ |
+| `omikuji` | スマホエミュレート | おみくじ |
+| `horoscope` | スマホエミュレート | 星座占い |
+| `brainTraining` | クイズ回答型 | 脳トレクイズ |
+| `nazotore` | 広告視聴 + クイズ | 今夜はナゾトレ |
+| `spotdiff` | 広告視聴型 | まちがい探し |
+| `puzzle` | 広告視聴型 | クラッシュアイス |
+| `sugoroku` | 広告視聴型 | たびろく（すごろく）|
+| `dropgame` | 広告視聴型 | ふるふるパニック |
+| `cmkuji` | 広告視聴型 | CM くじ |
+| `movieDeCoin` | 広告視聴型 | 動画でコイン（時間帯別最大 3 回/日）|
 
 ### ECNavi 固有のセレクター
 
-- `entryLottery`: `p.btn_entry a`（宝くじエントリー）
-- `chirashi`: `a.chirashi_link`（チラシページへのリンク）
-- `chinju`: `a.chinju-lesson-question__link`（珍獣レッスン）
-- `quiz`: `p.todays-quiz__text`, `ul.choices__list button`（今日のクイズ）
-- `divination`: `ul.western-astrology-list button`, `ul.draw-tarot button`,
-  `button.draw-omikuji__button`（占い系）
-- `choice`: `ul.answer_botton button`（二択アンケート）
-- `fishing`: `#home .function button.gacha`, `#home .gacha div.scene_1
-  button.common`（釣りパンダガチャ）
-- `news`: `li.article-latest-item a.article-latest-item__link`,
-  `button.article-reaction__feeling-button`（ニュース記事＋リアクション）
-- `doron`: `ul.character-tanuki a`, `ul.character-kitsune a`（たぬきときつねでドロン）
-- `fund`: `ul.click-fund-contents li:nth-child(1) a`, `ul.click-fund-contents
-  li:nth-child(2) a`（クリック募金）
+| 機能 | セレクター | 備考 |
+|------|-----------|------|
+| `entryLottery` | `p.btn_entry a` | 宝くじエントリー |
+| `chirashi` | `a.chirashi_link` | チラシページへのリンク |
+| `chinju` | `a.chinju-lesson-question__link` | 珍獣レッスン |
+| `quiz` | `p.todays-quiz__text`, `ul.choices__list button` | 今日のクイズ |
+| `divination` | `ul.western-astrology-list button`, `ul.draw-tarot button`, `button.draw-omikuji__button` | 占い系 |
+| `choice` | `ul.answer_botton button` | 二択アンケート |
+| `fishing` | `#home .function button.gacha`, `#home .gacha div.scene_1 button.common` | 釣りパンダガチャ |
+| `news` | `li.article-latest-item a.article-latest-item__link`, `button.article-reaction__feeling-button` | ニュース記事＋リアクション |
+| `doron` | `ul.character-tanuki a`, `ul.character-kitsune a` | たぬきときつねでドロン |
+| `fund` | `ul.click-fund-contents li:nth-child(1) a`, `ul.click-fund-contents li:nth-child(2) a` | クリック募金 |
 
 ### PointTown 固有のセレクター
 
-- `loginBonus`: `a[href="/login-bonus/"]`（ログインボーナスポップアップ）
-- `triangleLot`: `button.link-sankaku-kuji`（三角くじボタン）
-- `stamprally`: `#link-stamp-sec`（スタンプラリー進捗確認）
-- `pointQ`: `form#js-quiz-form`（ポイント Q フォーム）
+| 機能 | セレクター/URL | 備考 |
+|------|---------------|------|
+| `loginBonus` | `a[href="/login-bonus/"]` | ログインボーナスポップアップ |
+| `triangleLot` | `button.link-sankaku-kuji` | 三角くじボタン |
+| `stamprally` | `#link-stamp-sec` | スタンプラリー進捗確認 |
+| `pointQ` | `form#js-quiz-form` | ポイント Q フォーム |
 
 ### 広告ポップアップへの対処
 
