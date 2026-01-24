@@ -202,7 +202,7 @@ private async watchAdIfExists(page: Page): Promise<void> {
 1. PointTown と ECNavi のサイトを Chrome で探索
 2. CLAUDE.md の実装済み機能一覧と比較
 3. 既存の実装コード・ドキュメントを確認し、改善ポイントがないかを探索
-4. 新機能や変更、改善ポイントを検出したら GitHub Issue を作成
+4. 新機能や変更、改善ポイント (ドキュメント更新漏れなど) を検出したら GitHub Issue を作成
    - ラベル: `enhancement` または `bug` + `Waiting review`
    - 該当コードへのパーマネントリンク、スクリーンショット添付必須
    - アサイン: book000
