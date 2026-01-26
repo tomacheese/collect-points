@@ -1,456 +1,124 @@
-# collect-points
+# CLAUDE.md
+
+## 目的
+
+このファイルは、Claude Code の作業方針とプロジェクト固有のルールを示します。
+
+## 判断記録のルール
+
+1. 判断内容の要約を記載する
+2. 検討した代替案を列挙する
+3. 採用しなかった案とその理由を明記する
+4. 前提条件・仮定・不確実性を明示する
+5. 他エージェントによるレビュー可否を示す
+
+## プロジェクト概要
 
 Puppeteer を使用してポイントサイト（PointTown、ECNavi）のポイント収集を自動化するプロジェクト。
+**目的はポイントを「収集」することであり、実際にポイントが獲得できるインタラクションの実装が必須です。**
 
-## 重要: このプロジェクトの目的
+## 重要ルール
 
-**このプロジェクトの目的はポイントを「収集」すること。** 単なるページ遷移ではなく、実際にポイントが獲得できるインタラクションを実装する必要がある。
+- **会話言語**: 日本語
+- **コミット規約**: Conventional Commits（`<description>` は日本語）
+- **コメント言語**: 日本語
+- **エラーメッセージ**: 英語（既存のメッセージに絵文字がある場合は、全体で統一して絵文字を設定）
 
-## 新機能実装時の注意事項
+## 環境のルール
 
-### 基本原則
+- **ブランチ命名**: Conventional Branch（`<type>` は feat, fix 等の短縮形）
+- **リポジトリ調査**: GitHub リポジトリを調査する際は、テンポラリディレクトリにクローンして検索する
+- **Renovate**: Renovate が作成した PR に対して追加コミットを行わない
 
-1. **URL のリダイレクト確認だけでは不十分** - ページに遷移して待機するだけではポイントは取得できない
-2. **実際にポイントが取得できるインタラクションを実装する** - ボタンクリック、ゲームプレイ、広告視聴など
-3. **動作確認時はポイントの増減を確認する** - 操作前後でポイント数を比較して、実際に獲得できているか検証する
+## Git Worktree
 
-単に `page.goto()` して `sleep()` するだけの実装は意味がない。各ゲームの仕組みを理解し、ポイント獲得に必要な操作を特定・実装すること。
+Git Worktree を採用している場合、ディレクトリ構成は以下とする：
 
-### 新しいゲーム/機能の調査手順
+- `.bare/` (bare リポジトリ)
+- `<branch>/` (各ブランチの worktree)
 
-1. **ブラウザで実際にアクセスしてゲームの流れを確認する**
-   - どのボタンをクリックすると開始するか
-   - 広告視聴が必要か
-   - どのような操作でポイントが獲得できるか
+## コード改修時のルール
 
-2. **必要なセレクターを特定する**
-   - 開始ボタン、回答ボタン、閉じるボタンなど
-   - `:has-text()` セレクターは Puppeteer で動作しないため、実際のクラス名や属性を使用
+- 日本語と英数字の間には半角スペースを挿入する
+- TypeScript の `skipLibCheck` を有効にして型エラーを回避しない
+- 関数やインターフェースには日本語で docstring を記載する
 
-3. **実装パターンを選択する**（下記参照）
+## 相談ルール
 
-4. **動作確認でポイント増減を確認する**
+- **Codex CLI**: 実装レビュー、局所設計、既存コードとの整合性確認に使用
+- **Gemini CLI**: 外部仕様の調査、最新情報の確認、マニュアル等の検索に使用
+- **指摘への対応**: コードレビュー等の指摘に対しては、信頼度スコア 50 以上のものには必ず対応する（黙殺禁止）
+
+## 開発コマンド
+
+```bash
+pnpm install  # 依存関係インストール
+pnpm start    # 実行
+pnpm dev      # 開発実行 (watch)
+pnpm run lint # Lint チェック
+pnpm run fix  # 自動修正
+```
+
+## アーキテクチャと主要ファイル
+
+- `src/core/`: コア機能（基底クラス、設定、通知）
+- `src/providers/`: 各ポイントサイトの実装（ECNavi, PointTown）
+- `src/utils/`: 共通ユーティリティ
+- `src/main.ts`: エントリーポイント
 
 ## 実装パターン
 
 ### パターン 1: 広告視聴型
 
-多くのゲームは広告視聴後にポイント/スタンプが獲得できる。
-
-```typescript
-async gameWithAd(page: Page): Promise<void> {
-  await page.goto('https://example.com/game/redirect', {
-    waitUntil: 'networkidle2',
-  })
-
-  // 開始ボタンをクリック
-  const startButton = await page
-    .waitForSelector('button.start-button', { timeout: 5000 })
-    .catch(() => null)
-
-  if (startButton) {
-    await startButton.click()
-    await sleep(3000)
-  }
-
-  // 広告視聴
-  await this.watchAdIfExists(page)
-
-  await sleep(5000)
-}
-```
+広告視聴後にポイント/スタンプが獲得できるもの。適切な待機（約 30 秒）が必要。
 
 ### パターン 2: クイズ/回答型
 
-クイズに回答してポイントを獲得する。正解でなくても参加ポイントが得られることが多い。
-
-```typescript
-async quizGame(page: Page): Promise<void> {
-  await page.goto('https://example.com/quiz', {
-    waitUntil: 'networkidle2',
-  })
-
-  // クイズに回答（最大 N 問）
-  for (let i = 0; i < 10; i++) {
-    const answerButtons = await page.$$('button.answer-choice')
-    if (answerButtons.length === 0) break
-
-    // ランダムに回答を選択
-    const randomIndex = Math.floor(Math.random() * answerButtons.length)
-    await answerButtons[randomIndex].click()
-    await sleep(2000)
-
-    // 次の問題へ
-    const nextButton = await page.$('button.next').catch(() => null)
-    if (nextButton) {
-      await nextButton.click()
-      await sleep(2000)
-    }
-  }
-}
-```
+クイズに回答してポイントを獲得するもの。ランダムな回答選択でも参加ポイントが得られることが多い。
 
 ### パターン 3: スタンプ収集型
 
-訪問やゲーム参加でスタンプを集め、一定数でくじが引ける。
+訪問や特定のアクションでスタンプを集めるもの。
 
-```typescript
-async stampGame(page: Page): Promise<void> {
-  await page.goto('https://example.com/stamp-game', {
-    waitUntil: 'networkidle2',
-  })
+## テスト
 
-  // 挑戦ボタンをクリック
-  const challengeButton = await page
-    .waitForSelector('button.challenge', { timeout: 5000 })
-    .catch(() => null)
+- 自動テストはないため、実際に動作させてポイントの増減を確認する
+- ログ出力を確認し、エラーが発生していないか検証する
 
-  if (challengeButton) {
-    await challengeButton.click()
-    await sleep(3000)
-  }
+## ドキュメント更新ルール
 
-  // 広告視聴（必要な場合）
-  await this.watchAdIfExists(page)
+- 技術スタック、開発コマンド、プロジェクト要件の変更時に、本ファイルを含むプロンプトファイルを更新する
 
-  // ゲーム画面で待機（参加するだけでスタンプが貯まる場合）
-  await sleep(10_000)
-}
-```
+## 作業チェックリスト
 
-### 共通: 広告視聴処理
+### 新規改修時
 
-```typescript
-private async watchAdIfExists(page: Page): Promise<void> {
-  const adButton = await page
-    .waitForSelector(
-      'button:has-text("広告を再生"), button:has-text("広告を見て"), button:has-text("動画を見る")',
-      { timeout: 3000 }
-    )
-    .catch(() => null)
+1. プロジェクトを理解する
+2. 適切なブランチ（最新のリモートに基づく）で作業する
+3. 依存パッケージをインストールする
 
-  if (adButton) {
-    await adButton.click()
-    this.logger.info('広告再生開始、30秒待機')
-    await sleep(30_000) // 広告は通常 15-30 秒
+### コミット・プッシュ前
 
-    const closeButton = await page
-      .waitForSelector(
-        'button:has-text("閉じる"), button:has-text("スキップ"), button[class*="close"]',
-        { timeout: 10_000 }
-      )
-      .catch(() => null)
+1. Conventional Commits に従っているか確認
+2. センシティブな情報が含まれていないか確認
+3. Lint / Format エラーがないか確認
+4. 動作確認を行う
 
-    if (closeButton) {
-      await closeButton.click()
-      await sleep(2000)
-    }
-  }
-}
-```
+### PR 作成前
 
-## 自動化が困難なゲーム
+1. PR 作成の依頼があるか確認
+2. コンフリクトの恐れがないか確認
 
-以下のようなゲームは完全な自動化が困難：
+### PR 作成後
 
-1. **画像認識が必要なゲーム** - まちがい探しで実際に違いを見つける必要がある場合
-2. **タイミングが重要なゲーム** - クレーンゲームで適切なタイミングで操作する必要がある場合
-3. **CAPTCHA/人間認証** - ボット検出がある場合
+1. コンフリクトがないか確認
+2. PR 本文が最新の状態を日本語で網羅しているか確認
+3. CI（GitHub Actions）の成功を確認
+4. コードレビューの指摘に対応する
 
-ただし、これらのゲームでも「参加するだけでスタンプが貯まる」場合は、広告視聴 + 参加の形で部分的に自動化可能。
+## リポジトリ固有の注意事項
 
-## プロジェクト構成
-
-- `src/core/` - コア機能
-  - `base-crawler.ts` - クローラーの基底クラス（`Crawler` インターフェース、`BaseCrawler` 抽象クラス）
-  - `configuration.ts` - 設定ファイルの読み込み
-  - `discord.ts` - Discord 通知
-  - `types.ts` - Context インターフェース定義（`CrawlerContext`、`EcNaviContext`、`PointTownContext`）
-  - `index.ts` - バレルエクスポート
-- `src/utils/` - ユーティリティ関数
-  - `functions.ts` - 共通ユーティリティ関数
-  - `version.ts` - バージョン情報取得（package.json から取得）
-  - `index.ts` - バレルエクスポート
-- `src/providers/` - 各ポイントサイトのクローラー実装
-  - `pointtown/` - PointTown クローラー
-    - `index.ts` - `PointTownCrawler` クラス
-    - `contents/` - コンテンツメソッド（各ゲーム・機能の実装）
-    - `contents/triangle-lot/` - 三角くじ関連メソッド
-  - `ecnavi/` - ECNavi クローラー
-    - `index.ts` - `EcNaviCrawler` クラス
-    - `contents/` - コンテンツメソッド（各ゲーム・機能の実装）
-    - `contents/lottery/` - 宝くじ関連メソッド
-- `data/config.json` - 認証情報などの設定（Git 管理外）
-- `.claude/commands/` - Claude Code 用スキル
-  - `detect-changes.md` - 新規機能・変更検出
-  - `investigate-errors.md` - エラー原因調査
-  - `implement-approved.md` - Approved Issue 実装
-- `.claude/hooks/` - Claude Code フック
-  - `check-branch-status.sh` - マージ済みブランチでの作業を防止
-  - `pre-commit-check.sh` - git commit/push 前のブランチ状態チェック
-- `scripts/` - crontab 用スクリプト
-
-## 運用フロー
-
-このプロジェクトは Claude Code を用いた自動運用を行う。
-
-### 1. 新規機能・既存機能の変更検出（週1回）
-
-**スケジュール**: 毎週土曜 8:00
-
-**処理内容**:
-1. PointTown と ECNavi のサイトを Chrome で探索
-2. CLAUDE.md の実装済み機能一覧と比較
-3. 既存の実装コード・ドキュメントを確認し、改善ポイントがないかを探索
-4. 新機能や変更、改善ポイント (ドキュメント更新漏れなど) を検出したら GitHub Issue を作成
-   - ラベル: `enhancement` または `bug` + `Waiting review`
-   - 該当コードへのパーマネントリンク、スクリーンショット添付必須
-   - アサイン: book000
-5. 既存 Issue（クローズ済み含む）と重複する場合は作成しない
-
-**実行方法**:
-```bash
-./scripts/weekly-detect-changes.sh
-# または
-/detect-changes
-```
-
-### 2. エラー原因の調査（週6回）
-
-**スケジュール**: 毎日 8:00（土曜は除く）
-
-**処理内容**:
-1. 本番環境 `data/prod-data/` 配下の新しいログファイルを確認。`data/prod-data/screenshots/` も参照する。
-2. **動作中のバージョンを確認する**（ログ冒頭の `🚀 collect-points v{version} を起動します` を確認）
-3. エラーパターン（ERROR, failed, timeout 等）を検索
-4. エラーがあれば Chrome で再現確認・原因調査
-5. GitHub Issue を作成
-   - ラベル: `bug` + `waiting-review`
-   - ログ、スクリーンショット添付
-   - **動作バージョンを明記**（例: `v2.0.0 で発生`）
-   - アサイン: book000
-6. 確認済みログのタイムスタンプを記録（重複確認防止）
-
-**実行方法**:
-```bash
-./scripts/investigate-errors.sh
-# または
-/investigate-errors
-```
-
-### 3. Approved Issue の実装（週6回）
-
-**スケジュール**: 毎日 10:00（土曜は除く）
-
-**処理内容**:
-1. `approved` ラベルの付いた Issue を取得。Issue 本文・コメントも確認すること
-2. 各 Issue について:
-   - ブランチ作成（`feat/issue-{番号}-{説明}` or `fix/issue-{番号}-{説明}`）
-   - Chrome でサイト調査（必要に応じて）
-   - 実装パターンに従って実装
-   - Lint 確認
-   - CLAUDE.md などのドキュメント更新
-   - コミット・プッシュ
-   - PR 作成（`Closes #{Issue番号}` を含める）。レビュアーに book000 を設定
-3. 既存 PR について、レビュー・CIエラー・コメントがあれば、対応を行う
-
-**実行方法**:
-```bash
-./scripts/implement-approved.sh
-# または
-/implement-approved
-```
-
-### 4. ブランチ/PR クリーンアップ（週1回）
-
-**スケジュール**: 毎週月曜 0:00
-
-**処理内容**:
-1. リモートの最新情報を取得（`git fetch --all --prune`）
-2. マージ済みのローカルブランチを削除（master, main, develop は除外）
-3. リモートで削除されたブランチ（`[gone]`）のローカル参照を削除
-4. 30日以上更新がない Open な PR を報告
-
-**実行方法**:
-```bash
-./scripts/cleanup-branches.sh
-```
-
-### GitHub Issue ラベルの意味
-
-| ラベル | 意味 |
-|--------|------|
-| `enhancement` | 新機能追加 |
-| `bug` | バグ・不具合 |
-| `waiting-review` | レビュー待ち（自動作成直後）|
-| `approved` | 実装承認済み（実装対象）|
-
-### crontab 設定例
-
-```crontab
-# 週次: 新規機能・変更検出（毎週土曜 8:00）
-0 8 * * 6 /home/tomachi/repos/collect-points/scripts/weekly-detect-changes.sh
-
-# 週6回: エラー原因調査（土曜以外の毎日 8:00）
-0 8 * * 0-5 /home/tomachi/repos/collect-points/scripts/investigate-errors.sh
-
-# 週6回: Approved Issue 実装（土曜以外の毎日 10:00）
-0 10 * * 0-5 /home/tomachi/repos/collect-points/scripts/implement-approved.sh
-
-# 週次: ブランチ/PR クリーンアップ（毎週月曜 0:00）
-0 0 * * 1 /home/tomachi/repos/collect-points/scripts/cleanup-branches.sh
-```
-
-## 開発コマンド
-
-```bash
-pnpm lint       # Lint チェック（prettier, eslint, tsc）
-pnpm fix        # 自動修正
-pnpm dev        # 開発実行
-```
-
-## Claude in Chrome を用いた動作確認の知見
-
-### 基本方針
-
-1. **セレクターの存在確認** → **実際のクリックテスト** の順で行う
-2. JavaScript 実行 (`javascript_tool`) でセレクターの存在とクリックを行う
-3. 座標ベースのクリックではなく、セレクターベースのクリックを使用する
-
-### セレクター確認方法
-
-```javascript
-// セレクターの存在確認
-const element = document.querySelector('セレクター');
-({ exists: element ? true : false, href: element?.href });
-```
-
-```javascript
-// セレクターでクリック
-const element = document.querySelector('セレクター');
-if (element) {
-  element.click();
-  'Clicked';
-} else {
-  'Not found';
-}
-```
-
-### target="_blank" リンクの注意点
-
-`target="_blank"` のリンクを JavaScript の `element.click()` でクリックしても、ブラウザのセキュリティ制約により新規タブは開かない。Puppeteer では `getNewTabPage()` 関数でユーザークリックをシミュレートするため、この問題は発生しない。
-
-Claude in Chrome での動作確認時は、`target="_blank"` で開くページリンクを別タブなどで手動で開き、確認すること。
-
-### ページ読み込み待機
-
-ページ遷移後は `wait` アクションで 2〜3 秒待機してから操作を行う。
-
-```javascript
-// navigation 後
-await wait(2); // 2秒待機
-await screenshot(); // 状態確認
-```
-
-### ポイント変動の確認
-
-操作前後でポイントを確認し、正しく動作しているか検証する。
-
-- PointTown: ヘッダー右上の `pt` 表示
-- ECNavi: ヘッダー右上の `pts.` 表示
-
-### ECNavi 実装済み機能
-
-| 機能 | 実装パターン | 備考 |
-|------|-------------|------|
-| `entryLottery` | ボタンクリック | 宝くじエントリー |
-| `gesoten` | 新規タブ + ガチャ | ゲソてんガチャ |
-| `chirashi` | 新規タブ | チラシ閲覧 |
-| `chinju` | クイズ回答 | 珍獣レッスン |
-| `quiz` | クイズ回答 | 今日のクイズ（ヒントページから回答検索）|
-| `divination` | ボタンクリック | 占い 3 種（星座/タロット/おみくじ）|
-| `fishing` | ボタンクリック | 釣りパンダガチャ |
-| `choice` | ボタンクリック | 二択アンケート |
-| `news` | 記事閲覧 + リアクション | ニュース記事閲覧 |
-| `garapon` | 新規タブ | ガラポン広告閲覧 |
-| `doron` | 新規タブ | たぬきときつねでドロン |
-| `ticketingLottery` | ボタンクリック | 宝くじチケット一括使用 |
-| `fund` | 新規タブ | クリック募金 |
-| `natsupoi` | 広告視聴型 | ナツポイ |
-| `spotdiffBox` | 広告視聴型 | まちがい探し |
-| `languageTravel` | クイズ回答型 | 語学トラベル |
-| `brainExerciseGame` | 広告視聴型 | 頭の体操ゲーム |
-| `easyGame` | 広告視聴型 | かんたんゲーム |
-| `brainTraining` | クイズ回答型 | 脳トレクイズ |
-| `vegetable` | 操作型 | ポイント畑（クレーンゲーム）|
-| `chocoRead` | ページめくり | ちょこ読み（雑誌閲覧）|
-
-### PointTown 実装済み機能
-
-| 機能 | 実装パターン | 備考 |
-|------|-------------|------|
-| `loginBonus` | ボタンクリック | ログインボーナス |
-| `triangleLot` | 三角くじ | 6 ページで三角くじを引く |
-| `pointQ` | クイズ回答型 | ポイント Q（回答を JSON 保存）|
-| `mailCheck` | メール確認 | ポイントメールボックス |
-| `pointChance` | 新規タブ | ポイントチャンス（モニター）|
-| `competition` | ボタンクリック | ポイント争奪戦 |
-| `easyGame` | ボタンクリック | かんたんゲーム |
-| `gesoten` | 新規タブ | ゲソてん |
-| `news` | 記事閲覧 | ニュース閲覧 |
-| `gacha` | スマホエミュレート | ガチャ |
-| `omikuji` | スマホエミュレート | おみくじ |
-| `horoscope` | スマホエミュレート | 星座占い |
-| `brainTraining` | クイズ回答型 | 脳トレクイズ |
-| `nazotore` | 広告視聴 + クイズ | 今夜はナゾトレ |
-| `spotdiff` | 広告視聴型 | まちがい探し |
-| `puzzle` | 広告視聴型 | クラッシュアイス |
-| `sugoroku` | 広告視聴型 | たびろく（すごろく）|
-| `dropgame` | 広告視聴型 | ふるふるパニック |
-| `cmkuji` | 広告視聴型 | CM くじ |
-| `movieDeCoin` | 広告視聴型 | 動画でコイン（時間帯別最大 3 回/日）|
-
-### ECNavi 固有のセレクター
-
-| 機能 | セレクター | 備考 |
-|------|-----------|------|
-| `entryLottery` | `p.btn_entry a` | 宝くじエントリー |
-| `chirashi` | `a.chirashi_link` | チラシページへのリンク |
-| `chinju` | `a.chinju-lesson-question__link` | 珍獣レッスン |
-| `quiz` | `p.todays-quiz__text`, `ul.choices__list button` | 今日のクイズ |
-| `divination` | `ul.western-astrology-list button`, `ul.draw-tarot button`, `button.draw-omikuji__button` | 占い系 |
-| `choice` | `ul.answer_botton button` | 二択アンケート |
-| `fishing` | `#home .function button.gacha`, `#home .gacha div.scene_1 button.common` | 釣りパンダガチャ |
-| `news` | `li.article-latest-item a.article-latest-item__link`, `button.article-reaction__feeling-button` | ニュース記事＋リアクション |
-| `doron` | `ul.character-tanuki a`, `ul.character-kitsune a` | たぬきときつねでドロン |
-| `fund` | `ul.click-fund-contents li:nth-child(1) a`, `ul.click-fund-contents li:nth-child(2) a` | クリック募金 |
-
-### PointTown 固有のセレクター
-
-| 機能 | セレクター/URL | 備考 |
-|------|---------------|------|
-| `loginBonus` | `a[href="/login-bonus/"]` | ログインボーナスポップアップ |
-| `triangleLot` | `button.link-sankaku-kuji` | 三角くじボタン |
-| `stamprally` | `#link-stamp-sec` | スタンプラリー進捗確認 |
-| `pointQ` | `form#js-quiz-form` | ポイント Q フォーム |
-
-### 広告ポップアップへの対処
-
-ECNavi では Google Rewarded Ads のポップアップ（「短い広告を見る」）が表示されることがある。
-
-- URL に `#goog_rewarded` が含まれる場合がある
-- ポップアップが表示された場合は、ページをリロードするか、URL から `#goog_rewarded` を除去して再アクセス
-
-### トラブルシューティング
-
-1. **セレクターが見つからない場合**
-   - `read_page` で現在のページ構造を確認
-   - `javascript_tool` で `document.querySelectorAll()` を使って類似セレクターを探索
-
-2. **クリックしても反応がない場合**
-   - `wait` で待機時間を延ばす
-   - スクロールして要素を表示領域に入れてからクリック
-
-3. **ログインが必要な場合**
-   - まず `mypage` 等にアクセスしてログイン状態を確認
-   - 未ログインの場合はログインページに遷移してログイン処理を行う
+- **Puppeteer 構成**: `rebrowser-puppeteer-core` を使用している。
+- **ボット対策**: 適度な `sleep` を挿入し、ボット検知を回避する。
+- **セレクター**: `:has-text()` は Puppeteer で動作しないため使用しない。
+- **自動運用**: 毎週・毎日の自動スクリプト（`scripts/`）による Issue 作成・エラー調査が行われている。
