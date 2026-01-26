@@ -69,16 +69,32 @@ export async function pointQ(
       }
     }
 
-    // 回答ボタンをクリックし、ページ遷移を待機
-    await Promise.all([
-      page
-        .waitForSelector('button#js-pointq-submit', {
-          visible: true,
-          timeout: 10_000,
+    // 回答ボタンをクリックし、結果ページへの遷移を待機（タイムアウト時はページを直接読み込み）
+    try {
+      await Promise.all([
+        page
+          .waitForSelector('button#js-pointq-submit', {
+            visible: true,
+            timeout: 10_000,
+          })
+          .then((element) => element?.click()),
+        page.waitForNavigation({
+          waitUntil: 'domcontentloaded',
+          timeout: 30_000,
+        }),
+      ])
+    } catch (error) {
+      if ((error as Error).name === 'TimeoutError') {
+        context.logger.warn(
+          '結果ページへの遷移がタイムアウト、ページを直接読み込み'
+        )
+        await page.goto('https://www.pointtown.com/pointq/result', {
+          waitUntil: 'networkidle2',
         })
-        .then((element) => element?.click()),
-      page.waitForNavigation({ waitUntil: 'networkidle2' }),
-    ])
+      } else {
+        throw error
+      }
+    }
 
     // 結果ページの正解表示を待機（タイムアウトを 60 秒に設定）
     await page.waitForSelector('p.pointq-correct-answer', {
