@@ -296,7 +296,10 @@ export default class EcNaviCrawler extends BaseCrawler {
         .catch(() => null)
       if (closeButton) {
         try {
-          await closeButton.click()
+          // JavaScript で直接クリック（広告ボタンと同様の理由）
+          await closeButton.evaluate((el) => {
+            ;(el as HTMLElement).click()
+          })
           this.logger.info('閉じるボタンをクリック')
           await sleep(2000)
           break
