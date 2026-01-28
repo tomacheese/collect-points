@@ -93,7 +93,16 @@ export async function chocoRead(
     .catch(() => null)
 
   if (pointButton) {
-    await pointButton.click()
+    // ボタンを表示領域に移動（広告などの干渉を回避）
+    await pointButton.evaluate((el) => {
+      el.scrollIntoView({ block: 'center' })
+    })
+    await sleep(500)
+
+    // JavaScript で直接クリック（Puppeteer の click() は要素の配置により失敗することがある）
+    await pointButton.evaluate((el) => {
+      ;(el as HTMLElement).click()
+    })
     await sleep(1000)
   }
 }
