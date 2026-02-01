@@ -5,18 +5,18 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  puppeteer: npm:rebrowser-puppeteer-core@^24.8.1
-  puppeteer-core: npm:rebrowser-puppeteer-core@^24.8.1
+  puppeteer: npm:rebrowser-puppeteer-core@24.8.1
+  puppeteer-core: npm:rebrowser-puppeteer-core@24.8.1
 
 importers:
 
   .:
     dependencies:
       form-data:
-        specifier: ^4.0.5
+        specifier: 4.0.5
         version: 4.0.5
       rebrowser-puppeteer-core:
-        specifier: ^24.8.1
+        specifier: 24.8.1
         version: 24.8.1
     devDependencies:
       '@book000/eslint-config':
