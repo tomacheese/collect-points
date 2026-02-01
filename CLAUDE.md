@@ -367,7 +367,7 @@ await screenshot(); // 状態確認
 | `gesoten` | 新規タブ + ガチャ | ゲソてんガチャ |
 | `chirashi` | 新規タブ | チラシ閲覧 |
 | `chinju` | クイズ回答 | 珍獣レッスン |
-| `quiz` | クイズ回答 | 今日のクイズ（ヒントページから回答検索）|
+| `quiz` | クイズ回答 | 超難問クイズ王（ヒントページから回答検索）|
 | `divination` | ボタンクリック | 占い 3 種（星座/タロット/おみくじ）|
 | `fishing` | ボタンクリック | 釣りパンダガチャ |
 | `choice` | ボタンクリック | 二択アンケート |
@@ -384,6 +384,7 @@ await screenshot(); // 状態確認
 | `brainTraining` | クイズ回答型 | 脳トレクイズ |
 | `vegetable` | 操作型 | ポイント畑（クレーンゲーム）|
 | `chocoRead` | ページめくり | ちょこ読み（雑誌閲覧）|
+| `enqueteRally` | ドロップダウン選択 | アンケートラリー |
 
 ### PointTown 実装済み機能
 
@@ -409,6 +410,7 @@ await screenshot(); // 状態確認
 | `dropgame` | 広告視聴型 | ふるふるパニック |
 | `cmkuji` | 広告視聴型 | CM くじ |
 | `movieDeCoin` | 広告視聴型 | 動画でコイン（時間帯別最大 3 回/日）|
+| `stamprally` | 進捗確認 | スタンプラリー（他機能で自動獲得）|
 
 ### ECNavi 固有のセレクター
 
@@ -417,13 +419,14 @@ await screenshot(); // 状態確認
 | `entryLottery` | `p.btn_entry a` | 宝くじエントリー |
 | `chirashi` | `a.chirashi_link` | チラシページへのリンク |
 | `chinju` | `a.chinju-lesson-question__link` | 珍獣レッスン |
-| `quiz` | `p.todays-quiz__text`, `ul.choices__list button` | 今日のクイズ |
+| `quiz` | `p.todays-quiz__text`, `ul.choices__list button` | 超難問クイズ王 |
 | `divination` | `ul.western-astrology-list button`, `ul.draw-tarot button`, `button.draw-omikuji__button` | 占い系 |
 | `choice` | `ul.answer_botton button` | 二択アンケート |
 | `fishing` | `#home .function button.gacha`, `#home .gacha div.scene_1 button.common` | 釣りパンダガチャ |
 | `news` | `li.article-latest-item a.article-latest-item__link`, `button.article-reaction__feeling-button` | ニュース記事＋リアクション |
 | `doron` | `ul.character-tanuki a`, `ul.character-kitsune a` | たぬきときつねでドロン |
 | `fund` | `ul.click-fund-contents li:nth-child(1) a`, `ul.click-fund-contents li:nth-child(2) a` | クリック募金 |
+| `enqueteRally` | `select.c_select`, `button.question-area__button.c_red` | アンケートラリー |
 
 ### PointTown 固有のセレクター
 
