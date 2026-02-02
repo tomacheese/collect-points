@@ -27,11 +27,20 @@ export interface Crawler {
 }
 
 /**
+ * ポイントログ設定
+ */
+interface PointLogConfig {
+  /** 各機能のポイントログを有効にするか */
+  enabled: boolean
+}
+
+/**
  * クローラーの基底クラス
  */
 export abstract class BaseCrawler implements Crawler {
   logger!: Logger
   protected screenshotConfig: ScreenshotConfig
+  protected pointLogConfig: PointLogConfig
   private screenshotCleanupDone = false
 
   constructor() {
@@ -52,12 +61,20 @@ export abstract class BaseCrawler implements Crawler {
       retentionDays,
     }
 
+    // ポイントログ設定（デフォルトで有効、ENABLE_POINT_LOG=false で無効化）
+    this.pointLogConfig = {
+      enabled: process.env.ENABLE_POINT_LOG !== 'false',
+    }
+
     // スクリーンショット設定をログ出力
     this.logger.info(
       `Screenshot config: enabled=${this.screenshotConfig.enabled}, ` +
         `directory=${this.screenshotConfig.directory}, ` +
         `retentionDays=${this.screenshotConfig.retentionDays}`
     )
+
+    // ポイントログ設定をログ出力
+    this.logger.info(`PointLog config: enabled=${this.pointLogConfig.enabled}`)
 
     // スクリーンショットが有効な場合、ベースディレクトリを事前に作成
     if (this.screenshotConfig.enabled) {
@@ -382,9 +399,10 @@ export abstract class BaseCrawler implements Crawler {
   }
 
   /**
-   * メソッドを実行する（エラーハンドリング・スクリーンショット付き）
+   * メソッドを実行する（エラーハンドリング・スクリーンショット・ポイントログ付き）
    * @param page ページ
    * @param method 実行するメソッド
+   * @param methodName メソッド名（スクリーンショットのファイル名に使用）
    */
   public async runMethod(
     page: Page,
@@ -393,15 +411,69 @@ export abstract class BaseCrawler implements Crawler {
   ): Promise<void> {
     const name = methodName ?? (method.name || 'unknown')
     await page.bringToFront()
+
+    // ポイントログが有効な場合、実行前のポイントを取得
+    let beforePoint: number | null = null
+    if (this.pointLogConfig.enabled) {
+      try {
+        beforePoint = await this.getCurrentPoint(page)
+      } catch {
+        // ポイント取得に失敗してもメソッド実行は継続
+        this.logger.warn(`${name}: ポイント取得に失敗しました（実行前）`)
+      }
+    }
+
     try {
       await this.takeScreenshot(page, name, 'before')
       await method(page)
       await this.takeScreenshot(page, name, 'after')
+
+      // ポイントログが有効な場合、実行後のポイントを取得して差分をログ出力
+      if (this.pointLogConfig.enabled) {
+        try {
+          const afterPoint = await this.getCurrentPoint(page)
+          this.logPointChange(name, beforePoint, afterPoint)
+        } catch {
+          this.logger.warn(`${name}: ポイント取得に失敗しました（実行後）`)
+        }
+      }
     } catch (error) {
       await this.takeScreenshot(page, name, 'error')
       this.logger.error('Error', error as Error)
       throw error
     }
+  }
+
+  /**
+   * ポイント変動をログ出力する
+   * @param methodName メソッド名
+   * @param beforePoint 実行前のポイント
+   * @param afterPoint 実行後のポイント
+   */
+  private logPointChange(
+    methodName: string,
+    beforePoint: number | null,
+    afterPoint: number | null
+  ): void {
+    if (beforePoint === null || afterPoint === null) {
+      this.logger.info(
+        `📊 [${methodName}] ポイント変動: 取得失敗（before=${beforePoint}, after=${afterPoint}）`
+      )
+      return
+    }
+
+    if (beforePoint === -1 || afterPoint === -1) {
+      this.logger.info(
+        `📊 [${methodName}] ポイント変動: 取得失敗（before=${beforePoint}, after=${afterPoint}）`
+      )
+      return
+    }
+
+    const diff = afterPoint - beforePoint
+    const sign = diff >= 0 ? '+' : ''
+    this.logger.info(
+      `📊 [${methodName}] ポイント変動: ${beforePoint.toLocaleString()} → ${afterPoint.toLocaleString()} (${sign}${diff.toLocaleString()})`
+    )
   }
 
   /**
@@ -551,4 +623,15 @@ export abstract class BaseCrawler implements Crawler {
    * @param page ページ
    */
   protected abstract login(page: Page): Promise<void>
+
+  /**
+   * 現在のポイントを取得する
+   *
+   * runMethod() でポイント変動をログ出力するために使用される。
+   * 各クローラーで実装する必要がある。
+   *
+   * @param page ページ
+   * @returns ポイント数（取得できない場合は -1）
+   */
+  protected abstract getCurrentPoint(page: Page): Promise<number>
 }
