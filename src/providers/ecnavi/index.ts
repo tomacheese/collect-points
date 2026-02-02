@@ -188,9 +188,9 @@ export default class EcNaviCrawler extends BaseCrawler {
   /**
    * 現在のポイントを取得する
    * @param page ページ
-   * @returns ポイント数
+   * @returns ポイント数（取得できない場合は -1）
    */
-  async getCurrentPoint(page: Page): Promise<number> {
+  protected async getCurrentPoint(page: Page): Promise<number> {
     this.logger.info('getCurrentPoint()')
     await page.goto('https://ecnavi.jp/mypage/', {
       waitUntil: 'networkidle2',
