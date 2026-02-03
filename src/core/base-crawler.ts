@@ -400,6 +400,10 @@ export abstract class BaseCrawler implements Crawler {
 
   /**
    * メソッドを実行する（エラーハンドリング・スクリーンショット・ポイントログ付き）
+   *
+   * ProtocolError（CDP タイムアウト）が発生した場合は、ページをリロードして
+   * 次のメソッド実行に備える（Issue #407 の対策）。
+   *
    * @param page ページ
    * @param method 実行するメソッド
    * @param methodName メソッド名（スクリーンショットのファイル名に使用）
@@ -440,6 +444,25 @@ export abstract class BaseCrawler implements Crawler {
     } catch (error) {
       await this.takeScreenshot(page, name, 'error')
       this.logger.error('Error', error as Error)
+
+      // ProtocolError（CDP タイムアウト）の場合は、ページをリロードして復帰を試みる
+      // 広告ポップアップが表示された状態でブラウザがフリーズするケースへの対策（Issue #407）
+      if ((error as Error).name === 'ProtocolError') {
+        this.logger.warn(
+          `${name}: ProtocolError が発生したため、ページをリロードして復帰を試みます`
+        )
+        try {
+          await page.reload({ waitUntil: 'domcontentloaded', timeout: 30_000 })
+          this.logger.info(`${name}: ページのリロードに成功しました`)
+        } catch (reloadError) {
+          this.logger.warn(
+            `${name}: ページのリロードに失敗しました: ${(reloadError as Error).message}`
+          )
+        }
+        // ProtocolError の場合は throw せず、次のメソッド実行に進む
+        return
+      }
+
       throw error
     }
   }
