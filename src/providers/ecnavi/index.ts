@@ -51,20 +51,31 @@ export default class EcNaviCrawler extends BaseCrawler {
   }
 
   /**
-   * runMethod をオーバーライドして、各メソッド実行後に Google Rewarded Ads をチェックする
+   * runMethod をオーバーライドして、各メソッド実行前後に Google Rewarded Ads をチェックする
+   *
+   * 広告ポップアップはメソッド実行中にも表示されることがあり、表示された状態で
+   * Puppeteer 操作を行うと CDP 接続がタイムアウトしてフリーズする（Issue #407）。
+   * そのため、メソッド実行前後で広告ポップアップをチェックして閉じる。
    */
   public override async runMethod(
     page: Page,
     method: (page: Page) => Promise<void>,
     methodName?: string
   ): Promise<void> {
-    await super.runMethod(page, method, methodName)
-
-    // 各メソッド実行後に Google Rewarded Ads をチェック（エラーは無視）
+    // メソッド実行前に広告ポップアップをチェック（エラーは無視）
     try {
       await this.handleRewardedAd(page)
     } catch (error) {
-      this.logger.warn('handleRewardedAd failed', error as Error)
+      this.logger.warn('handleRewardedAd (before) failed', error as Error)
+    }
+
+    await super.runMethod(page, method, methodName)
+
+    // メソッド実行後に広告ポップアップをチェック（エラーは無視）
+    try {
+      await this.handleRewardedAd(page)
+    } catch (error) {
+      this.logger.warn('handleRewardedAd (after) failed', error as Error)
     }
   }
 
