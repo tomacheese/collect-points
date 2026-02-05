@@ -1,12 +1,15 @@
 import type { Page } from 'rebrowser-puppeteer-core'
 import type { PointTownContext } from '@/core/types'
 import { sleep } from '@/utils/functions'
+import { safeGoto } from '@/utils/safe-operations'
 
 /**
  * クラッシュアイス（パズル）
  *
  * gamebox.pointtown.com/puzzle にリダイレクトされる。
  * パズルゲームをプレイしてスタンプを獲得する。
+ *
+ * リダイレクト先のゲームページでは動的コンテンツが多いため safeGoto を使用する。
  *
  * @param context クローラーコンテキスト
  * @param page ページ
@@ -17,9 +20,12 @@ export async function puzzle(
 ): Promise<void> {
   context.logger.info('puzzle()')
 
-  await page.goto('https://www.pointtown.com/game/redirect/puzzle', {
-    waitUntil: 'networkidle2',
-  })
+  // ゲームページは動的コンテンツが多いため safeGoto を使用
+  await safeGoto(
+    page,
+    'https://www.pointtown.com/game/redirect/puzzle',
+    context.logger
+  )
 
   // 開始ボタンをクリック
   const startButton = await page

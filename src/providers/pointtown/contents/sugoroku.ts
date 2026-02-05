@@ -1,9 +1,13 @@
 import type { Page } from 'rebrowser-puppeteer-core'
 import type { PointTownContext } from '@/core/types'
 import { sleep } from '@/utils/functions'
+import { safeGoto } from '@/utils/safe-operations'
 
 /**
  * すごろくを実行する
+ *
+ * リダイレクト先のゲームページでは動的コンテンツが多いため safeGoto を使用する。
+ *
  * @param context PointTown コンテキスト
  * @param page ページ
  */
@@ -13,9 +17,12 @@ export async function sugoroku(
 ): Promise<void> {
   context.logger.info('sugoroku()')
 
-  await page.goto('https://www.pointtown.com/game/redirect/sugoroku', {
-    waitUntil: 'networkidle2',
-  })
+  // ゲームページは動的コンテンツが多いため safeGoto を使用
+  await safeGoto(
+    page,
+    'https://www.pointtown.com/game/redirect/sugoroku',
+    context.logger
+  )
 
   // 広告があれば視聴
   await context.watchAdIfExists(page)

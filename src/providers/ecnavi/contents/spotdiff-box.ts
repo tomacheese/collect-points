@@ -1,12 +1,16 @@
 import type { Page } from 'rebrowser-puppeteer-core'
 import type { EcNaviContext } from '@/core/types'
 import { sleep } from '@/utils/functions'
+import { safeGoto } from '@/utils/safe-operations'
 
 /**
  * まちがい探し
  *
  * ecnavi.kantangame.com/spotdiff にリダイレクトされる。
  * 間違い探しゲームをプレイしてスタンプを獲得する。
+ *
+ * リダイレクト先のゲームページでは動的コンテンツが多いため safeGoto を使用する。
+ *
  * @param context クローラーコンテキスト
  * @param page ページ
  * @param watchAdIfExists 広告視聴処理関数
@@ -18,9 +22,12 @@ export async function spotdiffBox(
 ): Promise<void> {
   context.logger.info('spotdiffBox()')
 
-  await page.goto('https://ecnavi.jp/spotdiff_box/redirect/', {
-    waitUntil: 'networkidle2',
-  })
+  // ゲームページは動的コンテンツが多いため safeGoto を使用
+  await safeGoto(
+    page,
+    'https://ecnavi.jp/spotdiff_box/redirect/',
+    context.logger
+  )
 
   // 挑戦ボタンをクリック
   const challengeButton = await page

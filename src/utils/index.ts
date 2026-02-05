@@ -15,3 +15,6 @@ export {
 } from './functions'
 
 export { getVersion } from './version'
+
+// 安全な操作ユーティリティ
+export { safeGoto, safeWaitForNavigation, smartClick } from './safe-operations'

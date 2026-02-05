@@ -1,12 +1,15 @@
 import type { Page } from 'rebrowser-puppeteer-core'
 import type { PointTownContext } from '@/core/types'
 import { sleep } from '@/utils/functions'
+import { safeGoto } from '@/utils/safe-operations'
 
 /**
  * 今夜はナゾトレ
  *
  * gamebox.pointtown.com/nazotore にリダイレクトされる。
  * 謎解きクイズに回答してスタンプを獲得する。
+ *
+ * リダイレクト先のゲームページでは動的コンテンツが多いため safeGoto を使用する。
  *
  * @param context クローラーコンテキスト
  * @param page ページ
@@ -17,9 +20,12 @@ export async function nazotore(
 ): Promise<void> {
   context.logger.info('nazotore()')
 
-  await page.goto('https://www.pointtown.com/nazotore/redirect', {
-    waitUntil: 'networkidle2',
-  })
+  // ゲームページは動的コンテンツが多いため safeGoto を使用
+  await safeGoto(
+    page,
+    'https://www.pointtown.com/nazotore/redirect',
+    context.logger
+  )
 
   // 開始ボタンをクリック
   const startButton = await page

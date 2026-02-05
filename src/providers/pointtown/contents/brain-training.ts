@@ -1,12 +1,15 @@
 import type { Page } from 'rebrowser-puppeteer-core'
 import type { PointTownContext } from '@/core/types'
 import { sleep } from '@/utils/functions'
+import { safeGoto } from '@/utils/safe-operations'
 
 /**
  * 脳トレクイズ
  *
  * gamebox.pointtown.com/quiz にリダイレクトされ、クイズに回答してスタンプを集める。
  * 12個スタンプを集めると抽選でコインが当たる。
+ *
+ * リダイレクト先のゲームページでは動的コンテンツが多いため safeGoto を使用する。
  *
  * @param context クローラーコンテキスト
  * @param page ページ
@@ -17,9 +20,12 @@ export async function brainTraining(
 ): Promise<void> {
   context.logger.info('brainTraining()')
 
-  await page.goto('https://www.pointtown.com/quiz/redirect/brain-training', {
-    waitUntil: 'networkidle2',
-  })
+  // ゲームページは動的コンテンツが多いため safeGoto を使用
+  await safeGoto(
+    page,
+    'https://www.pointtown.com/quiz/redirect/brain-training',
+    context.logger
+  )
 
   // 「つづきから」または「はじめる」ボタンをクリック
   const startButton = await page

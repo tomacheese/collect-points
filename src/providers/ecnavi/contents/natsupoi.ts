@@ -1,6 +1,7 @@
 import type { Page } from 'rebrowser-puppeteer-core'
 import type { EcNaviContext } from '@/core/types'
 import { sleep } from '@/utils/functions'
+import { safeGoto } from '@/utils/safe-operations'
 
 /**
  * ナツポイ
@@ -10,7 +11,7 @@ import { sleep } from '@/utils/functions'
  *
  * リダイレクト先のゲームページでは、広告のリアルタイム読み込みや WebSocket 接続などが
  * 継続的に行われるため networkidle2 ではタイムアウトしやすい。
- * そのため waitUntil: 'load' を使用し、タイムアウト時も処理を継続する（Issue #410）。
+ * safeGoto を使用してタイムアウト時も処理を継続する。
  *
  * @param context クローラーコンテキスト
  * @param page ページ
@@ -23,19 +24,8 @@ export async function natsupoi(
 ): Promise<void> {
   context.logger.info('natsupoi()')
 
-  // ゲームページは広告読み込み等でネットワークアイドルにならないため、
-  // load イベントで待機し、タイムアウトしても処理を継続する
-  try {
-    await page.goto('https://ecnavi.jp/natsupoi/redirect/', {
-      waitUntil: 'load',
-      timeout: 30_000,
-    })
-  } catch (error) {
-    // ナビゲーションタイムアウト時もゲーム画面は表示されている可能性が高いため継続
-    context.logger.warn(
-      `ページ遷移でタイムアウトが発生しましたが処理を継続します: ${error instanceof Error ? error.message : String(error)}`
-    )
-  }
+  // ゲームページは広告読み込み等でネットワークアイドルにならないため safeGoto を使用
+  await safeGoto(page, 'https://ecnavi.jp/natsupoi/redirect/', context.logger)
 
   // 広告があれば視聴
   await watchAdIfExists(page)
