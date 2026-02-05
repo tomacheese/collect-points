@@ -94,8 +94,8 @@ export async function chocoRead(
     .catch(() => null)
 
   if (pointButton) {
-    // 広告などの干渉を回避するため smartClick を使用（Issue #397, #415）
-    await smartClick(pointButton, context.logger)
+    // 広告オーバーレイの干渉により Puppeteer click が常に失敗するため JS クリックを使用（Issue #397, #415）
+    await smartClick(pointButton, context.logger, { useJavaScript: true })
     await sleep(1000)
   }
 }
