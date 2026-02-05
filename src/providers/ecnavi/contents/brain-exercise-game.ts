@@ -1,12 +1,16 @@
 import type { Page } from 'rebrowser-puppeteer-core'
 import type { EcNaviContext } from '@/core/types'
 import { sleep } from '@/utils/functions'
+import { safeGoto } from '@/utils/safe-operations'
 
 /**
  * 頭の体操ゲーム
  *
  * ecnavi.ib-game.jp/stamp にリダイレクトされる。
  * 脳トレゲームをプレイしてスタンプを獲得する。
+ *
+ * リダイレクト先のゲームページでは動的コンテンツが多いため safeGoto を使用する。
+ *
  * @param context クローラーコンテキスト
  * @param page ページ
  * @param watchAdIfExists 広告視聴処理関数
@@ -18,9 +22,12 @@ export async function brainExerciseGame(
 ): Promise<void> {
   context.logger.info('brainExerciseGame()')
 
-  await page.goto('https://ecnavi.jp/brain_exercise_game/redirect/', {
-    waitUntil: 'networkidle2',
-  })
+  // ゲームページは動的コンテンツが多いため safeGoto を使用
+  await safeGoto(
+    page,
+    'https://ecnavi.jp/brain_exercise_game/redirect/',
+    context.logger
+  )
 
   // 広告があれば視聴
   await watchAdIfExists(page)

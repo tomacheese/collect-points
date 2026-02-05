@@ -1,6 +1,7 @@
 import type { Page } from 'rebrowser-puppeteer-core'
 import type { PointTownContext } from '@/core/types'
 import { sleep } from '@/utils/functions'
+import { safeGoto } from '@/utils/safe-operations'
 
 /**
  * まちがい探し
@@ -8,6 +9,8 @@ import { sleep } from '@/utils/functions'
  * gamebox.pointtown.com/spotdiff にリダイレクトされる。
  * 「挑戦する」→ 広告視聴 → ゲームプレイでルーペを獲得。
  * 100個ルーペを集めると抽選でコインが当たる。
+ *
+ * リダイレクト先のゲームページでは動的コンテンツが多いため safeGoto を使用する。
  *
  * @param context クローラーコンテキスト
  * @param page ページ
@@ -18,9 +21,12 @@ export async function spotdiff(
 ): Promise<void> {
   context.logger.info('spotdiff()')
 
-  await page.goto('https://www.pointtown.com/game/redirect/spotdiff', {
-    waitUntil: 'networkidle2',
-  })
+  // ゲームページは動的コンテンツが多いため safeGoto を使用
+  await safeGoto(
+    page,
+    'https://www.pointtown.com/game/redirect/spotdiff',
+    context.logger
+  )
 
   // 「挑戦する」ボタンをクリック
   const challengeButton = await page
