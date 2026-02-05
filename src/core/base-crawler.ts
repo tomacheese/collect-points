@@ -629,9 +629,9 @@ export abstract class BaseCrawler implements Crawler {
   /**
    * 広告ポップアップの定期監視を設定する
    *
-   * ページ上の DOM 変更を MutationObserver で監視し、広告ポップアップが
-   * 検出された場合にフラグを立てる。定期的にフラグをチェックし、
-   * 広告が検出された場合は handleRewardedAd() で処理する。
+   * 5 秒間隔で広告ポップアップのセレクター（button.fc-rewarded-ad-button）の
+   * 存在を isExistsSelector でチェックし、検出された場合は
+   * handleRewardedAd() で処理する。
    *
    * メソッド実行中に表示される広告ポップアップに proactive に対応するための
    * 仕組み（Issue #414）。
