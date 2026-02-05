@@ -53,35 +53,6 @@ export default class PointTownCrawler extends BaseCrawler {
   }
 
   /**
-   * runMethod をオーバーライドして、各メソッド実行前後に広告ポップアップをチェックする
-   *
-   * 広告ポップアップはメソッド実行中にも表示されることがあり、表示された状態で
-   * Puppeteer 操作を行うと CDP 接続がタイムアウトしてフリーズする（Issue #407）。
-   * そのため、メソッド実行前後で広告ポップアップをチェックして閉じる。
-   */
-  public override async runMethod(
-    page: Page,
-    method: (page: Page) => Promise<void>,
-    methodName?: string
-  ): Promise<void> {
-    // メソッド実行前に広告ポップアップをチェック（エラーは無視）
-    try {
-      await this.handleRewardedAd(page)
-    } catch (error) {
-      this.logger.warn('handleRewardedAd (before) failed', error as Error)
-    }
-
-    await super.runMethod(page, method, methodName)
-
-    // メソッド実行後に広告ポップアップをチェック（エラーは無視）
-    try {
-      await this.handleRewardedAd(page)
-    } catch (error) {
-      this.logger.warn('handleRewardedAd (after) failed', error as Error)
-    }
-  }
-
-  /**
    * ログイン処理
    * @param page ページ
    */
@@ -354,76 +325,5 @@ export default class PointTownCrawler extends BaseCrawler {
         await sleep(2000)
       }
     }
-  }
-
-  /**
-   * Google Rewarded Ads（広告ポップアップ）に対応する
-   *
-   * PointTown でも広告ポップアップが表示されることがあり、表示された状態で
-   * Puppeteer 操作を行うと CDP 接続がタイムアウトしてフリーズする（Issue #407）。
-   *
-   * @param page ページ
-   */
-  private async handleRewardedAd(page: Page): Promise<void> {
-    // 広告ポップアップのボタンを 3 秒間待機
-    const rewardedAdButton = await page
-      .waitForSelector('button.fc-rewarded-ad-button', { timeout: 3000 })
-      .catch(() => null)
-
-    if (!rewardedAdButton) {
-      return
-    }
-
-    this.logger.info('広告ポップアップを検出')
-
-    // 「広告を見る」ボタンをクリック
-    try {
-      await rewardedAdButton.evaluate((el) => {
-        ;(el as HTMLElement).click()
-      })
-      this.logger.info('広告再生開始')
-    } catch {
-      this.logger.warn('広告ボタンのクリックに失敗')
-      return
-    }
-
-    // 広告視聴を待機（最大 60 秒）
-    const startTime = Date.now()
-    const maxWaitTime = 60_000
-
-    while (Date.now() - startTime < maxWaitTime) {
-      // ポップアップが閉じたかチェック
-      const popupExists = await isExistsSelector(
-        page,
-        '.fc-monetization-dialog-container'
-      )
-      if (!popupExists) {
-        this.logger.info('広告ポップアップが閉じました')
-        break
-      }
-
-      // 閉じるボタンを探す
-      const closeButton = await page
-        .$(
-          'button.fc-close, button[aria-label="close"], button[aria-label="閉じる"]'
-        )
-        .catch(() => null)
-      if (closeButton) {
-        try {
-          await closeButton.evaluate((el) => {
-            ;(el as HTMLElement).click()
-          })
-          this.logger.info('閉じるボタンをクリック')
-          await sleep(2000)
-          break
-        } catch {
-          this.logger.warn('閉じるボタンのクリックに失敗')
-        }
-      }
-
-      await sleep(1000)
-    }
-
-    await sleep(2000)
   }
 }
