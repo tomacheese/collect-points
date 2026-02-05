@@ -1,6 +1,7 @@
 import type { Page } from 'rebrowser-puppeteer-core'
 import type { PointTownContext } from '@/core/types'
 import { sleep } from '@/utils/functions'
+import { smartClick } from '@/utils'
 
 /**
  * ふるふるパニック（ドロップゲーム）を実行する
@@ -47,7 +48,7 @@ export async function dropgame(
     .catch(() => null)
 
   if (startButton) {
-    await startButton.click()
+    await smartClick(startButton, context.logger)
     await sleep(10_000) // ゲームプレイ待機
   }
 

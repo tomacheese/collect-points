@@ -7,6 +7,7 @@ import {
   sleep,
   waitForUrl,
 } from '@/utils/functions'
+import { smartClick } from '@/utils'
 import type { Browser, Page } from 'rebrowser-puppeteer-core'
 
 // コンテンツ関数のインポート
@@ -231,7 +232,7 @@ export default class EcNaviCrawler extends BaseCrawler {
       .catch(() => null)
 
     if (adButton) {
-      await adButton.click()
+      await smartClick(adButton, this.logger)
       this.logger.info('広告再生開始、30秒待機')
       await sleep(30_000)
 
@@ -243,7 +244,7 @@ export default class EcNaviCrawler extends BaseCrawler {
         .catch(() => null)
 
       if (closeButton) {
-        await closeButton.click()
+        await smartClick(closeButton, this.logger)
         await sleep(2000)
       }
     }
@@ -273,11 +274,8 @@ export default class EcNaviCrawler extends BaseCrawler {
 
     this.logger.info('Google Rewarded Ads のポップアップを検出')
 
-    // 「短い広告を見る」ボタンをクリック
-    // JavaScript で直接クリック（Puppeteer の click() は要素の配置により失敗することがある）
-    await rewardedAdButton.evaluate((el) => {
-      ;(el as HTMLElement).click()
-    })
+    // 「短い広告を見る」ボタンをクリック（広告ポップアップは他要素に覆われやすいため JS クリックを使用）
+    await smartClick(rewardedAdButton, this.logger, { useJavaScript: true })
     this.logger.info('広告再生開始')
 
     // 広告視聴を待機（最大 60 秒）
@@ -307,10 +305,8 @@ export default class EcNaviCrawler extends BaseCrawler {
         .catch(() => null)
       if (closeButton) {
         try {
-          // JavaScript で直接クリック（広告ボタンと同様の理由）
-          await closeButton.evaluate((el) => {
-            ;(el as HTMLElement).click()
-          })
+          // 閉じるボタンも広告ポップアップ上にあるため JS クリックを使用
+          await smartClick(closeButton, this.logger, { useJavaScript: true })
           this.logger.info('閉じるボタンをクリック')
           await sleep(2000)
           break

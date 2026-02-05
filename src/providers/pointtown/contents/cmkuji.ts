@@ -1,6 +1,7 @@
 import type { Page } from 'rebrowser-puppeteer-core'
 import type { PointTownContext } from '@/core/types'
 import { sleep } from '@/utils/functions'
+import { smartClick } from '@/utils'
 
 /**
  * CM くじを引く
@@ -26,7 +27,7 @@ export async function cmkuji(
     .catch(() => null)
 
   if (drawButton) {
-    await drawButton.click()
+    await smartClick(drawButton, context.logger)
     context.logger.info('CM動画再生開始、30秒待機')
     await sleep(30_000) // CM視聴待機
 
@@ -39,7 +40,7 @@ export async function cmkuji(
       .catch(() => null)
 
     if (closeButton) {
-      await closeButton.click()
+      await smartClick(closeButton, context.logger)
       await sleep(3000)
     }
   }

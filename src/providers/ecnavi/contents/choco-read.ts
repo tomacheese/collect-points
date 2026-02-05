@@ -1,6 +1,7 @@
 import type { Page } from 'rebrowser-puppeteer-core'
 import type { EcNaviContext } from '@/core/types'
 import { isExistsSelector, sleep } from '@/utils/functions'
+import { smartClick } from '@/utils'
 
 /**
  * ちょこ読み
@@ -93,16 +94,8 @@ export async function chocoRead(
     .catch(() => null)
 
   if (pointButton) {
-    // ボタンを表示領域に移動（広告などの干渉を回避）
-    await pointButton.evaluate((el) => {
-      el.scrollIntoView({ block: 'center' })
-    })
-    await sleep(500)
-
-    // JavaScript で直接クリック（Puppeteer の click() は要素の配置により失敗することがある）
-    await pointButton.evaluate((el) => {
-      ;(el as HTMLElement).click()
-    })
+    // 広告などの干渉を回避するため smartClick を使用（Issue #397, #415）
+    await smartClick(pointButton, context.logger)
     await sleep(1000)
   }
 }

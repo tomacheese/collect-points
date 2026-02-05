@@ -1,6 +1,7 @@
 import type { Page } from 'rebrowser-puppeteer-core'
 import type { PointTownContext } from '@/core/types'
 import { sleep } from '@/utils/functions'
+import { smartClick } from '@/utils'
 
 /**
  * クラッシュアイス（パズル）
@@ -30,7 +31,7 @@ export async function puzzle(
     .catch(() => null)
 
   if (startButton) {
-    await startButton.click()
+    await smartClick(startButton, context.logger)
     await sleep(3000)
   }
 

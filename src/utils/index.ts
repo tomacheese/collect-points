@@ -15,3 +15,4 @@ export {
 } from './functions'
 
 export { getVersion } from './version'
+export { smartClick } from './smart-click'

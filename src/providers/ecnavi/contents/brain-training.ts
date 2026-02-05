@@ -1,6 +1,7 @@
 import type { Page } from 'rebrowser-puppeteer-core'
 import type { EcNaviContext } from '@/core/types'
 import { sleep } from '@/utils/functions'
+import { smartClick } from '@/utils'
 
 /**
  * 脳トレクイズ
@@ -31,7 +32,7 @@ export async function brainTraining(
     .catch(() => null)
 
   if (startButton) {
-    await startButton.click()
+    await smartClick(startButton, context.logger)
     await sleep(3000)
   }
 
@@ -46,7 +47,7 @@ export async function brainTraining(
     if (answerButtons.length === 0) break
 
     const randomIndex = Math.floor(Math.random() * answerButtons.length)
-    await answerButtons[randomIndex].click()
+    await smartClick(answerButtons[randomIndex], context.logger)
     await sleep(2000)
 
     // 次へボタン
@@ -54,7 +55,7 @@ export async function brainTraining(
       .$('button:has-text("次へ"), a:has-text("次へ")')
       .catch(() => null)
     if (nextButton) {
-      await nextButton.click()
+      await smartClick(nextButton, context.logger)
       await sleep(2000)
     }
   }

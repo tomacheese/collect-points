@@ -1,6 +1,7 @@
 import type { Page } from 'rebrowser-puppeteer-core'
 import type { EcNaviContext } from '@/core/types'
 import { sleep } from '@/utils/functions'
+import { smartClick } from '@/utils'
 
 /**
  * まちがい探し
@@ -30,7 +31,7 @@ export async function spotdiffBox(
     .catch(() => null)
 
   if (challengeButton) {
-    await challengeButton.click()
+    await smartClick(challengeButton, context.logger)
     await sleep(3000)
   }
 

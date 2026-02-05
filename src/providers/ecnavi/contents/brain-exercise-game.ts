@@ -1,6 +1,7 @@
 import type { Page } from 'rebrowser-puppeteer-core'
 import type { EcNaviContext } from '@/core/types'
 import { sleep } from '@/utils/functions'
+import { smartClick } from '@/utils'
 
 /**
  * 頭の体操ゲーム
@@ -34,7 +35,7 @@ export async function brainExerciseGame(
     .catch(() => null)
 
   if (startButton) {
-    await startButton.click()
+    await smartClick(startButton, context.logger)
     await sleep(10_000)
   }
 

@@ -9,6 +9,7 @@ import {
   sleep,
   waitForUrl,
 } from '@/utils/functions'
+import { smartClick } from '@/utils'
 import type { Browser, Page } from 'rebrowser-puppeteer-core'
 import {
   brainTraining,
@@ -338,7 +339,7 @@ export default class PointTownCrawler extends BaseCrawler {
       .catch(() => null)
 
     if (adButton) {
-      await adButton.click()
+      await smartClick(adButton, this.logger)
       this.logger.info('広告再生開始、30秒待機')
       await sleep(30_000)
 
@@ -350,7 +351,7 @@ export default class PointTownCrawler extends BaseCrawler {
         .catch(() => null)
 
       if (closeButton) {
-        await closeButton.click()
+        await smartClick(closeButton, this.logger)
         await sleep(2000)
       }
     }
@@ -376,11 +377,9 @@ export default class PointTownCrawler extends BaseCrawler {
 
     this.logger.info('広告ポップアップを検出')
 
-    // 「広告を見る」ボタンをクリック
+    // 「広告を見る」ボタンをクリック（広告ポップアップは他要素に覆われやすいため JS クリックを使用）
     try {
-      await rewardedAdButton.evaluate((el) => {
-        ;(el as HTMLElement).click()
-      })
+      await smartClick(rewardedAdButton, this.logger, { useJavaScript: true })
       this.logger.info('広告再生開始')
     } catch {
       this.logger.warn('広告ボタンのクリックに失敗')
@@ -410,9 +409,7 @@ export default class PointTownCrawler extends BaseCrawler {
         .catch(() => null)
       if (closeButton) {
         try {
-          await closeButton.evaluate((el) => {
-            ;(el as HTMLElement).click()
-          })
+          await smartClick(closeButton, this.logger, { useJavaScript: true })
           this.logger.info('閉じるボタンをクリック')
           await sleep(2000)
           break

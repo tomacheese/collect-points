@@ -1,6 +1,7 @@
 import type { Page } from 'rebrowser-puppeteer-core'
 import type { PointTownContext } from '@/core/types'
 import { sleep } from '@/utils/functions'
+import { smartClick } from '@/utils'
 
 /**
  * 脳トレクイズ
@@ -30,7 +31,7 @@ export async function brainTraining(
     .catch(() => null)
 
   if (startButton) {
-    await startButton.click()
+    await smartClick(startButton, context.logger)
     await sleep(3000)
   }
 
@@ -49,7 +50,7 @@ export async function brainTraining(
 
     // ランダムに回答を選択
     const randomIndex = Math.floor(Math.random() * answerButtons.length)
-    await answerButtons[randomIndex].click()
+    await smartClick(answerButtons[randomIndex], context.logger)
     await sleep(2000)
 
     // 次の問題へ進むボタンがあればクリック
@@ -59,7 +60,7 @@ export async function brainTraining(
       )
       .catch(() => null)
     if (nextButton) {
-      await nextButton.click()
+      await smartClick(nextButton, context.logger)
       await sleep(2000)
     }
   }

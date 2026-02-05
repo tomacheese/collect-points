@@ -1,6 +1,7 @@
 import type { Page } from 'rebrowser-puppeteer-core'
 import type { PointTownContext } from '@/core/types'
 import { sleep } from '@/utils/functions'
+import { smartClick } from '@/utils'
 
 /**
  * すごろくを実行する
@@ -29,7 +30,7 @@ export async function sugoroku(
     .catch(() => null)
 
   if (diceButton) {
-    await diceButton.click()
+    await smartClick(diceButton, context.logger)
     await sleep(5000) // アニメーション待機
   }
 

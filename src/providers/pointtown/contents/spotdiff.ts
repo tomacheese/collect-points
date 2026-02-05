@@ -1,6 +1,7 @@
 import type { Page } from 'rebrowser-puppeteer-core'
 import type { PointTownContext } from '@/core/types'
 import { sleep } from '@/utils/functions'
+import { smartClick } from '@/utils'
 
 /**
  * まちがい探し
@@ -30,7 +31,7 @@ export async function spotdiff(
     .catch(() => null)
 
   if (challengeButton) {
-    await challengeButton.click()
+    await smartClick(challengeButton, context.logger)
     await sleep(3000)
   }
 
@@ -45,7 +46,7 @@ export async function spotdiff(
     .catch(() => null)
 
   if (adButton) {
-    await adButton.click()
+    await smartClick(adButton, context.logger)
     context.logger.info('広告再生開始、30秒待機')
     await sleep(30_000) // 広告視聴待機
 
@@ -58,7 +59,7 @@ export async function spotdiff(
       .catch(() => null)
 
     if (closeButton) {
-      await closeButton.click()
+      await smartClick(closeButton, context.logger)
       await sleep(2000)
     }
   }

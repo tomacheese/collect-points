@@ -1,6 +1,7 @@
 import type { Page } from 'rebrowser-puppeteer-core'
 import type { PointTownContext } from '@/core/types'
 import { sleep } from '@/utils/functions'
+import { smartClick } from '@/utils'
 
 /**
  * 今夜はナゾトレ
@@ -30,7 +31,7 @@ export async function nazotore(
     .catch(() => null)
 
   if (startButton) {
-    await startButton.click()
+    await smartClick(startButton, context.logger)
     await sleep(3000)
   }
 
@@ -45,7 +46,7 @@ export async function nazotore(
     if (answerButtons.length === 0) break
 
     const randomIndex = Math.floor(Math.random() * answerButtons.length)
-    await answerButtons[randomIndex].click()
+    await smartClick(answerButtons[randomIndex], context.logger)
     await sleep(3000)
   }
 
