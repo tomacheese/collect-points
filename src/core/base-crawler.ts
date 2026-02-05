@@ -4,7 +4,11 @@ import path from 'node:path'
 import puppeteer, { Browser, Page } from 'rebrowser-puppeteer-core'
 import { sendDiscordMessage } from './discord'
 import { getConfig } from './configuration'
-import { waitForCloudflareChallenge } from '@/utils/functions'
+import {
+  isExistsSelector,
+  sleep,
+  waitForCloudflareChallenge,
+} from '@/utils/functions'
 
 /**
  * スクリーンショット設定
@@ -118,6 +122,9 @@ export abstract class BaseCrawler implements Crawler {
       headless: false,
       executablePath: process.env.CHROMIUM_PATH,
       userDataDir: userDataDirectory,
+      // CDP プロトコルタイムアウトを 2 分に設定（デフォルト 180 秒）
+      // 広告ポップアップによるフリーズ時に早期検出するため短縮（Issue #414）
+      protocolTimeout: 120_000,
       defaultViewport: {
         width: 1920,
         height: 1080,
@@ -401,8 +408,11 @@ export abstract class BaseCrawler implements Crawler {
   /**
    * メソッドを実行する（エラーハンドリング・スクリーンショット・ポイントログ付き）
    *
-   * ProtocolError（CDP タイムアウト）が発生した場合は、ページをリロードして
-   * 次のメソッド実行に備える（Issue #407 の対策）。
+   * メソッド実行前後で広告ポップアップ（Google Rewarded Ads）をチェックし、
+   * 表示されていれば処理する。また、メソッド実行中も定期的に広告を監視する。
+   *
+   * ProtocolError（CDP タイムアウト）が発生した場合は、広告ポップアップの
+   * チェック後にページをリロードして次のメソッド実行に備える（Issue #407, #414）。
    *
    * @param page ページ
    * @param method 実行するメソッド
@@ -415,6 +425,19 @@ export abstract class BaseCrawler implements Crawler {
   ): Promise<void> {
     const name = methodName ?? (method.name || 'unknown')
     await page.bringToFront()
+
+    // メソッド実行前に広告ポップアップをチェック（エラーは無視）
+    try {
+      await this.handleRewardedAd(page)
+    } catch (error) {
+      this.logger.warn(
+        `${name}: handleRewardedAd (before) failed`,
+        error as Error
+      )
+    }
+
+    // メソッド実行中の広告監視を開始
+    const stopMonitoring = this.setupAdMonitoring(page)
 
     // ポイントログが有効な場合、実行前のポイントを取得
     let beforePoint: number | null = null
@@ -445,12 +468,18 @@ export abstract class BaseCrawler implements Crawler {
       await this.takeScreenshot(page, name, 'error')
       this.logger.error('Error', error as Error)
 
-      // ProtocolError（CDP タイムアウト）の場合は、ページをリロードして復帰を試みる
-      // 広告ポップアップが表示された状態でブラウザがフリーズするケースへの対策（Issue #407）
+      // ProtocolError（CDP タイムアウト）の場合は、広告チェック後にリロードして復帰を試みる
+      // 広告ポップアップが表示された状態でブラウザがフリーズするケースへの対策（Issue #407, #414）
       if ((error as Error).name === 'ProtocolError') {
         this.logger.warn(
-          `${name}: ProtocolError が発生したため、ページをリロードして復帰を試みます`
+          `${name}: ProtocolError が発生したため、広告チェック後にページをリロードして復帰を試みます`
         )
+        // ProtocolError 後に広告ポップアップを処理（フリーズの原因になった可能性がある）
+        try {
+          await this.handleRewardedAd(page)
+        } catch {
+          // 広告処理に失敗しても続行
+        }
         try {
           await page.reload({ waitUntil: 'domcontentloaded', timeout: 30_000 })
           this.logger.info(`${name}: ページのリロードに成功しました`)
@@ -464,6 +493,19 @@ export abstract class BaseCrawler implements Crawler {
       }
 
       throw error
+    } finally {
+      // 広告監視を停止
+      stopMonitoring()
+
+      // メソッド実行後に広告ポップアップをチェック（エラーは無視）
+      try {
+        await this.handleRewardedAd(page)
+      } catch (error) {
+        this.logger.warn(
+          `${name}: handleRewardedAd (after) failed`,
+          error as Error
+        )
+      }
     }
   }
 
@@ -497,6 +539,144 @@ export abstract class BaseCrawler implements Crawler {
     this.logger.info(
       `📊 [${methodName}] ポイント変動: ${beforePoint.toLocaleString()} → ${afterPoint.toLocaleString()} (${sign}${diff.toLocaleString()})`
     )
+  }
+
+  /**
+   * Google Rewarded Ads（広告ポップアップ）に対応する
+   *
+   * 「短い広告を見る」ボタンが表示されている場合、クリックして広告を視聴し、
+   * ポップアップが閉じるまで待機する。広告ポップアップが表示された状態で
+   * Puppeteer 操作を行うと CDP 接続がタイムアウトしてフリーズするため、
+   * メソッド実行前後でこのメソッドを呼び出す（Issue #407, #414）。
+   *
+   * サブクラスでオーバーライド可能（例: ECNavi では URL ハッシュ除去が必要）。
+   *
+   * @param page ページ
+   */
+  protected async handleRewardedAd(page: Page): Promise<void> {
+    // 広告ポップアップのボタンを 3 秒間待機
+    const rewardedAdButton = await page
+      .waitForSelector('button.fc-rewarded-ad-button', { timeout: 3000 })
+      .catch(() => null)
+
+    if (!rewardedAdButton) {
+      return
+    }
+
+    this.logger.info('広告ポップアップを検出')
+
+    // 「広告を見る」ボタンを JavaScript で直接クリック
+    // Puppeteer の click() は要素の配置により失敗することがある
+    try {
+      await rewardedAdButton.evaluate((el) => {
+        ;(el as HTMLElement).click()
+      })
+      this.logger.info('広告再生開始')
+    } catch {
+      this.logger.warn('広告ボタンのクリックに失敗')
+      return
+    }
+
+    // 広告視聴を待機（最大 60 秒）
+    const startTime = Date.now()
+    const maxWaitTime = 60_000
+    let loopCount = 0
+
+    while (Date.now() - startTime < maxWaitTime) {
+      loopCount++
+
+      // ポップアップが閉じたかチェック
+      const popupExists = await isExistsSelector(
+        page,
+        '.fc-monetization-dialog-container'
+      )
+      if (!popupExists) {
+        this.logger.info('広告ポップアップが閉じました')
+        break
+      }
+
+      // 閉じるボタンを探す
+      const closeButton = await page
+        .$(
+          'button.fc-close, button[aria-label="close"], button[aria-label="閉じる"]'
+        )
+        .catch(() => null)
+      if (closeButton) {
+        try {
+          await closeButton.evaluate((el) => {
+            ;(el as HTMLElement).click()
+          })
+          this.logger.info('閉じるボタンをクリック')
+          await sleep(2000)
+          break
+        } catch {
+          this.logger.warn('閉じるボタンのクリックに失敗')
+        }
+      }
+
+      // 10 回ごとに進捗ログを出力
+      if (loopCount % 10 === 0) {
+        const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000)
+        this.logger.info(`広告視聴待機中... ${elapsedSeconds}秒経過`)
+      }
+
+      await sleep(1000)
+    }
+
+    await sleep(2000)
+  }
+
+  /**
+   * 広告ポップアップの定期監視を設定する
+   *
+   * 5 秒間隔で広告ポップアップのセレクター（button.fc-rewarded-ad-button）の
+   * 存在を isExistsSelector でチェックし、検出された場合は
+   * handleRewardedAd() で処理する。
+   *
+   * メソッド実行中に表示される広告ポップアップに proactive に対応するための
+   * 仕組み（Issue #414）。
+   *
+   * @param page ページ
+   * @returns 監視停止用のクリーンアップ関数
+   */
+  protected setupAdMonitoring(page: Page): () => void {
+    let stopped = false
+
+    // 5 秒ごとに広告ポップアップをチェック
+    const checkAd = async () => {
+      try {
+        const adDetected = await isExistsSelector(
+          page,
+          'button.fc-rewarded-ad-button'
+        )
+        if (adDetected) {
+          this.logger.info('広告監視: 広告ポップアップを検出、処理を開始します')
+          await this.handleRewardedAd(page)
+        }
+      } catch {
+        // ページが閉じられた場合など、エラーは無視
+      }
+    }
+
+    const intervalId = setInterval(() => {
+      if (stopped) return
+      // 非同期処理をバックグラウンドで実行（エラーは checkAd 内で処理済み）
+      checkAd().catch(() => null)
+    }, 5000)
+
+    // ページが閉じられたら監視を停止
+    const onClose = () => {
+      stopped = true
+      clearInterval(intervalId)
+    }
+    page.on('close', onClose)
+
+    // クリーンアップ関数を返す
+    return () => {
+      stopped = true
+      clearInterval(intervalId)
+      page.off('close', onClose)
+    }
   }
 
   /**
