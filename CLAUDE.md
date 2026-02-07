@@ -190,6 +190,57 @@ private async watchAdIfExists(page: Page): Promise<void> {
   - `pre-commit-check.sh` - git commit/push 前のブランチ状態チェック
 - `scripts/` - crontab 用スクリプト
 
+## 診断情報機能
+
+エラー発生時に詳細な診断情報を自動的に収集・保存する機能。エラー調査やデバッグの効率化を目的とする。
+
+### 概要
+
+`runMethod()` でメソッド実行中にエラーが発生すると、以下の診断情報を構造化 JSON 形式（gzip 圧縮）で自動保存する。
+
+### 記録される情報
+
+| カテゴリ | 内容 |
+|---------|------|
+| **基本情報** | タイムスタンプ、メソッド名、実行時間（ミリ秒） |
+| **エラー詳細** | name, message, stack |
+| **メインページ情報** | URL, title, HTML size, User Agent, localStorage, sessionStorage, Cookie 数, HTML ダンプ |
+| **他のページ情報** | URL, title, HTML size, HTML ダンプ（開いているすべてのタブ） |
+| **Console logs** | type, text, location, ページ URL（すべてのタブから収集、最大 500 行/タブ） |
+| **Network logs** | URL, method, status, headers, timing（すべてのタブから収集、最大 200 リクエスト/タブ） |
+| **スクリーンショット** | メインページ: `_error.png`、他のタブ: `_error_tab1.png`, `_error_tab2.png`, ... |
+
+### 個人情報のサニタイズ
+
+診断情報保存時に以下のサニタイズ処理が自動的に適用される:
+
+- **URL**: クエリパラメータとフラグメントを除去
+- **localStorage/sessionStorage**: token, password, email, session, auth, secret, key を含むキーの値を `[REDACTED]` に置換
+- **Network ヘッダー**: Authorization, Cookie, Set-Cookie を `[REDACTED]` に置換
+- **Cookie**: 数のみ記録（内容は記録しない）
+
+### 保存先とファイル形式
+
+```
+data/diagnostics/{providerName}/{YYYY-MM-DD}/
+  YYYY-MM-DD-HH-mm-ss-nnn_methodName_error.json.gz
+```
+
+- `providerName`: クローラー名（小文字、例: `pointtowncrawler`, `ecnavicrawler`）
+- gzip 圧縮された JSON ファイル
+
+### 設定（環境変数）
+
+| 環境変数 | デフォルト値 | 説明 |
+|---------|-------------|------|
+| `ENABLE_DIAGNOSTICS` | `true`（`false` で無効化） | 診断情報の有効/無効 |
+| `DIAGNOSTICS_DIR` | `data/diagnostics` | 診断情報の保存先ディレクトリ |
+| `SCREENSHOT_RETENTION_DAYS` | `7` | 診断情報の保持期間（日数、スクリーンショットと共通） |
+
+### クリーンアップ
+
+スクリーンショットと同じ保持期間（`SCREENSHOT_RETENTION_DAYS`）で自動削除される。
+
 ## 運用フロー
 
 このプロジェクトは Claude Code を用いた自動運用を行う。
@@ -220,16 +271,17 @@ private async watchAdIfExists(page: Page): Promise<void> {
 **スケジュール**: 毎日 8:00（土曜は除く）
 
 **処理内容**:
-1. 本番環境 `data/prod-data/` 配下の新しいログファイルを確認。`data/prod-data/screenshots/` も参照する。
+1. 本番環境 `data/prod-data/` 配下の新しいログファイルを確認。`data/prod-data/screenshots/` および `data/prod-data/diagnostics/` も参照する。
 2. **動作中のバージョンを確認する**（ログ冒頭の `🚀 collect-points v{version} を起動します` を確認）
 3. エラーパターン（ERROR, failed, timeout 等）を検索
-4. エラーがあれば Chrome で再現確認・原因調査
-5. GitHub Issue を作成
+4. エラーがあれば診断情報（`data/diagnostics/` 配下の `.json.gz` ファイル）を確認し、Console logs, Network logs, HTML ダンプなどからエラーの詳細を分析する
+5. 必要に応じて Chrome で再現確認・原因調査
+6. GitHub Issue を作成
    - ラベル: `bug` + `waiting-review`
    - ログ、スクリーンショット添付
    - **動作バージョンを明記**（例: `v2.0.0 で発生`）
    - アサイン: book000
-6. 確認済みログのタイムスタンプを記録（重複確認防止）
+7. 確認済みログのタイムスタンプを記録（重複確認防止）
 
 **実行方法**:
 ```bash
