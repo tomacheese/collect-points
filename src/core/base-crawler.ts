@@ -252,7 +252,7 @@ export abstract class BaseCrawler implements Crawler {
         type: msg.type(),
         text: msg.text().slice(0, 2000), // 最大 2,000 文字
         location: `${location.url}:${location.lineNumber}:${location.columnNumber ?? 0}`,
-        pageUrl: page.url(),
+        pageUrl: this.sanitizeUrl(page.url()),
       }
 
       logs.push(log)
@@ -272,7 +272,7 @@ export abstract class BaseCrawler implements Crawler {
       const timing = response.timing()
 
       const log: NetworkLog = {
-        url: response.url(),
+        url: this.sanitizeUrl(response.url()),
         method: request.method(),
         status: response.status(),
         statusText: response.statusText(),
@@ -518,12 +518,16 @@ export abstract class BaseCrawler implements Crawler {
             .catch(() => ({})),
         ])
 
-      // Cookie 数を取得（現在のページのURLでフィルタ）
-      const browser = page.browser()
-      const cookies = await browser.cookies(url).catch(() => [])
+      // Cookie 数を取得（Page から取得）
+      const cookies = await page.cookies().catch(() => [])
 
       // HTML ダンプを取得（タイムアウト 10 秒）
-      const htmlDump = await page.content().catch(() => '')
+      const htmlDump = await Promise.race<string>([
+        page.content(),
+        new Promise<string>((resolve) => {
+          setTimeout(() => resolve(''), 10_000)
+        }),
+      ]).catch(() => '')
 
       return {
         url: this.sanitizeUrl(url),
@@ -536,7 +540,7 @@ export abstract class BaseCrawler implements Crawler {
         htmlDump,
       }
     } catch (error) {
-      this.logger.warn('ページ情報の収集に失敗しました', error as Error)
+      this.logger.warn('Failed to collect page information', error as Error)
       return null
     }
   }
@@ -581,7 +585,7 @@ export abstract class BaseCrawler implements Crawler {
 
       return otherPagesInfo.filter((info) => info !== null)
     } catch (error) {
-      this.logger.warn('他のページ情報の収集に失敗しました', error as Error)
+      this.logger.warn('Failed to collect other page information', error as Error)
       return []
     }
   }
@@ -605,14 +609,22 @@ export abstract class BaseCrawler implements Crawler {
       await Promise.all(
         openPages.map(async (p, index) => {
           try {
-            // タイムアウト 5 秒で保存
+            // タイムアウト 5 秒で保存（unhandled rejection を防ぐため catch を付ける）
             await Promise.race([
-              this.takeScreenshotForTab(p, methodName, timestamp, index),
+              this.takeScreenshotForTab(p, methodName, timestamp, index).catch(
+                (error) => {
+                  // スクリーンショット取得失敗時はログを出力してエラーを吸収する
+                  this.logger.warn(
+                    `Tab ${index} screenshot save failed`,
+                    error as Error
+                  )
+                }
+              ),
               sleep(5000),
             ])
           } catch (error) {
             this.logger.warn(
-              `タブ ${index} のスクリーンショット保存に失敗しました`,
+              `Tab ${index} screenshot save failed`,
               error as Error
             )
           }
@@ -1054,7 +1066,7 @@ export abstract class BaseCrawler implements Crawler {
         beforePoint = await this.getCurrentPoint(page)
       } catch {
         // ポイント取得に失敗してもメソッド実行は継続
-        this.logger.warn(`${name}: ポイント取得に失敗しました（実行前）`)
+        this.logger.warn(`${name}: Failed to get point (before execution)`)
       }
     }
 
@@ -1069,11 +1081,14 @@ export abstract class BaseCrawler implements Crawler {
           const afterPoint = await this.getCurrentPoint(page)
           this.logPointChange(name, beforePoint, afterPoint)
         } catch {
-          this.logger.warn(`${name}: ポイント取得に失敗しました（実行後）`)
+          this.logger.warn(`${name}: Failed to get point (after execution)`)
         }
       }
     } catch (error) {
-      await this.takeScreenshot(page, name, 'error')
+      // 診断情報が有効な場合は、診断情報保存時に全タブのスクリーンショットを撮影するため、ここではスキップ
+      if (!this.diagnosticsConfig.enabled) {
+        await this.takeScreenshot(page, name, 'error')
+      }
 
       // 診断情報を保存（失敗しても元のエラーを妨げない）
       if (this.diagnosticsConfig.enabled) {
@@ -1202,7 +1217,7 @@ export abstract class BaseCrawler implements Crawler {
       })
       this.logger.info('広告再生開始')
     } catch {
-      this.logger.warn('広告ボタンのクリックに失敗')
+      this.logger.warn('Failed to click rewarded ad button')
       return
     }
 
@@ -1239,7 +1254,7 @@ export abstract class BaseCrawler implements Crawler {
           await sleep(2000)
           break
         } catch {
-          this.logger.warn('閉じるボタンのクリックに失敗')
+          this.logger.warn('Failed to click close button')
         }
       }
 
