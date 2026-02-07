@@ -281,7 +281,7 @@ export abstract class BaseCrawler implements Crawler {
           end: timing
             ? (timing.requestTime + timing.receiveHeadersEnd / 1000) * 1000
             : Date.now(),
-          duration: timing ? timing.receiveHeadersEnd / 1000 : 0,
+          duration: timing ? timing.receiveHeadersEnd : 0,
         },
         requestHeaders: request.headers(),
         responseHeaders: response.headers(),
@@ -417,17 +417,25 @@ export abstract class BaseCrawler implements Crawler {
       // すべてのタブのスクリーンショットを保存
       await this.saveAllTabsScreenshots(browser, methodName, timestamp)
 
-      // Console logs を取得
-      const consoleLogs = isPageClosed ? [] : (this.consoleLogs.get(page) ?? [])
+      // すべてのタブから Console logs を取得
+      const allConsoleLogs: ConsoleLog[] = []
+      const allPages = await browser.pages()
+      for (const p of allPages) {
+        const logs = this.consoleLogs.get(p) ?? []
+        allConsoleLogs.push(...logs)
+      }
 
-      // Network logs を取得（サニタイズ）
-      const networkLogs = isPageClosed
-        ? []
-        : (this.networkLogs.get(page) ?? []).map((log) => ({
-            ...log,
-            requestHeaders: this.sanitizeHeaders(log.requestHeaders),
-            responseHeaders: this.sanitizeHeaders(log.responseHeaders),
-          }))
+      // すべてのタブから Network logs を取得（サニタイズ）
+      const allNetworkLogs: NetworkLog[] = []
+      for (const p of allPages) {
+        const logs = this.networkLogs.get(p) ?? []
+        const sanitizedLogs = logs.map((log) => ({
+          ...log,
+          requestHeaders: this.sanitizeHeaders(log.requestHeaders),
+          responseHeaders: this.sanitizeHeaders(log.responseHeaders),
+        }))
+        allNetworkLogs.push(...sanitizedLogs)
+      }
 
       // 診断情報 JSON を構築
       const diagnosticInfo = {
@@ -441,8 +449,8 @@ export abstract class BaseCrawler implements Crawler {
         },
         mainPage: mainPageInfo,
         otherPages: otherPagesInfo,
-        console: consoleLogs,
-        network: networkLogs,
+        console: allConsoleLogs,
+        network: allNetworkLogs,
       }
 
       // JSON を文字列化
@@ -473,11 +481,11 @@ export abstract class BaseCrawler implements Crawler {
 
       fs.writeFileSync(filepath, compressed)
 
-      this.logger.info(`診断情報を保存しました: ${filepath}`)
+      this.logger.info(`Saved diagnostics: ${filepath}`)
     } catch (diagnosticError) {
       // 診断情報の保存に失敗しても、元のエラーを妨げない
       this.logger.error(
-        '診断情報の保存に失敗しました',
+        'Failed to save diagnostics',
         diagnosticError as Error
       )
     }
@@ -510,9 +518,9 @@ export abstract class BaseCrawler implements Crawler {
             .catch(() => ({})),
         ])
 
-      // Cookie 数を取得
+      // Cookie 数を取得（現在のページのURLでフィルタ）
       const browser = page.browser()
-      const cookies = await browser.cookies().catch(() => [])
+      const cookies = await browser.cookies(url).catch(() => [])
 
       // HTML ダンプを取得（タイムアウト 10 秒）
       const htmlDump = await page.content().catch(() => '')
@@ -670,6 +678,14 @@ export abstract class BaseCrawler implements Crawler {
     })
   }
 
+  /**
+   * ブラウザを初期化する
+   *
+   * Puppeteer ブラウザを起動し、診断情報収集のための
+   * targetcreated イベントリスナーを設定する
+   *
+   * @returns ブラウザインスタンス
+   */
   private async initBrowser(): Promise<Browser> {
     const userDataBaseDirectory = process.env.USER_DATA_BASE ?? 'userdata'
     if (!fs.existsSync(userDataBaseDirectory)) {
@@ -739,6 +755,15 @@ export abstract class BaseCrawler implements Crawler {
     return browser
   }
 
+  /**
+   * ページを初期化する
+   *
+   * 新しいページを作成し、User-Agent 設定、ステルスモード設定、
+   * フィンガープリント対策、診断情報収集の設定を行う
+   *
+   * @param browser ブラウザインスタンス
+   * @returns ページインスタンス
+   */
   private async initPage(browser: Browser): Promise<Page> {
     const page = await browser.newPage()
     page.setDefaultNavigationTimeout(120 * 1000)
@@ -866,6 +891,11 @@ export abstract class BaseCrawler implements Crawler {
         configurable: true,
       })
     })
+
+    // メインページの診断情報セットアップを同期的に実行
+    if (this.diagnosticsConfig.enabled) {
+      this.setupPageDiagnostics(page)
+    }
 
     return page
   }
@@ -1059,7 +1089,7 @@ export abstract class BaseCrawler implements Crawler {
           )
         } catch (diagnosticsError) {
           this.logger.warn(
-            `${name}: 診断情報の保存に失敗しました`,
+            `${name}: Failed to save diagnostics`,
             diagnosticsError as Error
           )
         }
@@ -1331,7 +1361,7 @@ export abstract class BaseCrawler implements Crawler {
       await page.screenshot({ path: filepath, fullPage: true })
       this.logger.info(`Screenshot saved: ${filepath}`)
 
-      // 古いスクリーンショットの削除（セッションごとに1回のみ実行）
+      // 古いスクリーンショットと診断情報の削除（セッションごとに1回のみ実行）
       if (!this.fileCleanupDone) {
         this.fileCleanupDone = true
         // バックグラウンドで非同期実行
