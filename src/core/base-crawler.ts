@@ -484,10 +484,7 @@ export abstract class BaseCrawler implements Crawler {
       this.logger.info(`Saved diagnostics: ${filepath}`)
     } catch (diagnosticError) {
       // 診断情報の保存に失敗しても、元のエラーを妨げない
-      this.logger.error(
-        'Failed to save diagnostics',
-        diagnosticError as Error
-      )
+      this.logger.error('Failed to save diagnostics', diagnosticError as Error)
     }
   }
 
@@ -519,13 +516,18 @@ export abstract class BaseCrawler implements Crawler {
         ])
 
       // Cookie 数を取得（Page から取得）
+      // NOTE: page.cookies() は deprecated だが、BrowserContext.cookies() への移行は
+      // Puppeteer のバージョンに依存するため、現時点では page.cookies() を使用
+      // eslint-disable-next-line @typescript-eslint/no-deprecated
       const cookies = await page.cookies().catch(() => [])
 
       // HTML ダンプを取得（タイムアウト 10 秒）
       const htmlDump = await Promise.race<string>([
         page.content(),
         new Promise<string>((resolve) => {
-          setTimeout(() => resolve(''), 10_000)
+          setTimeout(() => {
+            resolve('')
+          }, 10_000)
         }),
       ]).catch(() => '')
 
@@ -585,7 +587,10 @@ export abstract class BaseCrawler implements Crawler {
 
       return otherPagesInfo.filter((info) => info !== null)
     } catch (error) {
-      this.logger.warn('Failed to collect other page information', error as Error)
+      this.logger.warn(
+        'Failed to collect other page information',
+        error as Error
+      )
       return []
     }
   }
@@ -612,7 +617,7 @@ export abstract class BaseCrawler implements Crawler {
             // タイムアウト 5 秒で保存（unhandled rejection を防ぐため catch を付ける）
             await Promise.race([
               this.takeScreenshotForTab(p, methodName, timestamp, index).catch(
-                (error) => {
+                (error: unknown) => {
                   // スクリーンショット取得失敗時はログを出力してエラーを吸収する
                   this.logger.warn(
                     `Tab ${index} screenshot save failed`,
