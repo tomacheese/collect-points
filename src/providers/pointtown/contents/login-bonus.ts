@@ -19,7 +19,7 @@ export async function loginBonus(
 
   // ログインボーナスのポップアップが表示されるまで待つ
   const rewardButton = await page
-    .waitForSelector('a[href="/login-bonus/"]', {
+    .waitForSelector('#js-get-reward-btn', {
       visible: true,
       timeout: 5000,
     })
