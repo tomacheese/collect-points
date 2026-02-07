@@ -432,7 +432,7 @@ await screenshot(); // 状態確認
 
 | 機能 | セレクター/URL | 備考 |
 |------|---------------|------|
-| `loginBonus` | `a[href="/login-bonus/"]` | ログインボーナスポップアップ |
+| `loginBonus` | `#js-get-reward-btn` | ログインボーナスポップアップ |
 | `triangleLot` | `button.link-sankaku-kuji` | 三角くじボタン |
 | `stamprally` | `#link-stamp-sec` | スタンプラリー進捗確認 |
 | `pointQ` | `form#js-quiz-form` | ポイント Q フォーム |
