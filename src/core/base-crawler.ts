@@ -1,6 +1,8 @@
 import { Logger } from '@book000/node-utils'
 import fs from 'node:fs'
 import path from 'node:path'
+import zlib from 'node:zlib'
+import { promisify } from 'node:util'
 import puppeteer, { Browser, Page } from 'rebrowser-puppeteer-core'
 import { sendDiscordMessage } from './discord'
 import { getConfig } from './configuration'
@@ -9,6 +11,8 @@ import {
   sleep,
   waitForCloudflareChallenge,
 } from '@/utils/functions'
+
+const gzip = promisify(zlib.gzip)
 
 /**
  * スクリーンショット設定
@@ -20,6 +24,60 @@ interface ScreenshotConfig {
   directory: string
   /** スクリーンショットの保存期間（日数） */
   retentionDays: number
+}
+
+/**
+ * 診断情報設定
+ */
+interface DiagnosticsConfig {
+  /** 診断情報を有効にするか */
+  enabled: boolean
+  /** 診断情報の保存先ディレクトリ */
+  directory: string
+  /** 診断情報の保存期間（日数） */
+  retentionDays: number
+}
+
+/**
+ * Console log
+ */
+interface ConsoleLog {
+  /** ログの種類 */
+  type: string
+  /** ログのテキスト */
+  text: string
+  /** ログの場所 */
+  location?: string
+  /** ページ URL */
+  pageUrl: string
+}
+
+/**
+ * Network log
+ */
+interface NetworkLog {
+  /** リクエスト URL */
+  url: string
+  /** HTTP メソッド */
+  method: string
+  /** HTTP ステータスコード */
+  status: number
+  /** HTTP ステータステキスト */
+  statusText: string
+  /** タイミング情報 */
+  timing: {
+    start: number
+    end: number
+    duration: number
+  }
+  /** リクエストヘッダー */
+  requestHeaders: Record<string, string>
+  /** レスポンスヘッダー */
+  responseHeaders: Record<string, string>
+  /** リクエストが失敗したか */
+  failed?: boolean
+  /** エラーテキスト */
+  errorText?: string
 }
 
 /**
@@ -45,7 +103,10 @@ export abstract class BaseCrawler implements Crawler {
   logger!: Logger
   protected screenshotConfig: ScreenshotConfig
   protected pointLogConfig: PointLogConfig
-  private screenshotCleanupDone = false
+  protected diagnosticsConfig: DiagnosticsConfig
+  private fileCleanupDone = false
+  private consoleLogs = new WeakMap<Page, ConsoleLog[]>()
+  private networkLogs = new WeakMap<Page, NetworkLog[]>()
 
   constructor() {
     this.logger = Logger.configure(this.constructor.name)
@@ -70,6 +131,13 @@ export abstract class BaseCrawler implements Crawler {
       enabled: process.env.ENABLE_POINT_LOG !== 'false',
     }
 
+    // 診断情報設定（デフォルトで有効、ENABLE_DIAGNOSTICS=false で無効化）
+    this.diagnosticsConfig = {
+      enabled: process.env.ENABLE_DIAGNOSTICS !== 'false',
+      directory: process.env.DIAGNOSTICS_DIR ?? 'data/diagnostics',
+      retentionDays, // スクリーンショットと同じ保持期間
+    }
+
     // スクリーンショット設定をログ出力
     this.logger.info(
       `Screenshot config: enabled=${this.screenshotConfig.enabled}, ` +
@@ -80,9 +148,21 @@ export abstract class BaseCrawler implements Crawler {
     // ポイントログ設定をログ出力
     this.logger.info(`PointLog config: enabled=${this.pointLogConfig.enabled}`)
 
+    // 診断情報設定をログ出力
+    this.logger.info(
+      `Diagnostics config: enabled=${this.diagnosticsConfig.enabled}, ` +
+        `directory=${this.diagnosticsConfig.directory}, ` +
+        `retentionDays=${this.diagnosticsConfig.retentionDays}`
+    )
+
     // スクリーンショットが有効な場合、ベースディレクトリを事前に作成
     if (this.screenshotConfig.enabled) {
       this.initScreenshotDirectory()
+    }
+
+    // 診断情報が有効な場合、ベースディレクトリを事前に作成
+    if (this.diagnosticsConfig.enabled) {
+      this.initDiagnosticsDirectory()
     }
   }
 
@@ -109,6 +189,485 @@ export abstract class BaseCrawler implements Crawler {
       this.screenshotConfig.enabled = false
       this.logger.warn('Screenshot feature disabled due to directory error')
     }
+  }
+
+  /**
+   * 診断情報のベースディレクトリを初期化する
+   */
+  private initDiagnosticsDirectory(): void {
+    const baseDir = this.diagnosticsConfig.directory
+    try {
+      if (fs.existsSync(baseDir)) {
+        // ディレクトリが存在する場合、書き込み権限を確認
+        fs.accessSync(baseDir, fs.constants.W_OK)
+        this.logger.info(`Diagnostics base directory exists: ${baseDir}`)
+      } else {
+        fs.mkdirSync(baseDir, { recursive: true })
+        this.logger.info(`Diagnostics base directory created: ${baseDir}`)
+      }
+    } catch (error) {
+      this.logger.error(
+        `Failed to initialize diagnostics directory: ${baseDir}`,
+        error as Error
+      )
+      // ディレクトリ作成に失敗した場合、診断情報を無効化
+      this.diagnosticsConfig.enabled = false
+      this.logger.warn('Diagnostics feature disabled due to directory error')
+    }
+  }
+
+  /**
+   * ページの診断情報収集を設定する
+   * Console logs と Network logs を収集するリスナーを設定
+   * @param page 対象ページ
+   */
+  private setupPageDiagnostics(page: Page): void {
+    // 診断情報が無効の場合は何もしない
+    if (!this.diagnosticsConfig.enabled) {
+      return
+    }
+
+    // 既に設定済みの場合は何もしない（重複呼び出しを防ぐ）
+    if (this.consoleLogs.has(page)) {
+      return
+    }
+
+    // Console logs の収集を初期化
+    this.consoleLogs.set(page, [])
+
+    // Network logs の収集を初期化
+    this.networkLogs.set(page, [])
+
+    // Console logs の収集
+    page.on('console', (msg) => {
+      const logs = this.consoleLogs.get(page) ?? []
+
+      // リングバッファ方式で最大 500 行まで保持
+      if (logs.length >= 500) {
+        logs.shift()
+      }
+
+      const location = msg.location()
+      const log: ConsoleLog = {
+        type: msg.type(),
+        text: msg.text().slice(0, 2000), // 最大 2,000 文字
+        location: `${location.url}:${location.lineNumber}:${location.columnNumber ?? 0}`,
+        pageUrl: page.url(),
+      }
+
+      logs.push(log)
+      this.consoleLogs.set(page, logs)
+    })
+
+    // Network logs の収集
+    page.on('response', (response) => {
+      const logs = this.networkLogs.get(page) ?? []
+
+      // リングバッファ方式で最大 200 リクエストまで保持
+      if (logs.length >= 200) {
+        logs.shift()
+      }
+
+      const request = response.request()
+      const timing = response.timing()
+
+      const log: NetworkLog = {
+        url: response.url(),
+        method: request.method(),
+        status: response.status(),
+        statusText: response.statusText(),
+        timing: {
+          start: timing ? timing.requestTime * 1000 : Date.now(),
+          end: timing
+            ? (timing.requestTime + timing.receiveHeadersEnd / 1000) * 1000
+            : Date.now(),
+          duration: timing ? timing.receiveHeadersEnd / 1000 : 0,
+        },
+        requestHeaders: request.headers(),
+        responseHeaders: response.headers(),
+        failed: !response.ok(),
+      }
+
+      // エラーテキストを取得（失敗した場合のみ）
+      if (log.failed) {
+        try {
+          const failure = response.request().failure()
+          if (failure) {
+            log.errorText = failure.errorText
+          }
+        } catch {
+          // エラーテキスト取得に失敗しても無視
+        }
+      }
+
+      logs.push(log)
+      this.networkLogs.set(page, logs)
+    })
+
+    // ページが閉じられたらログをクリア
+    page.on('close', () => {
+      this.consoleLogs.delete(page)
+      this.networkLogs.delete(page)
+    })
+  }
+
+  /**
+   * URL をサニタイズする（クエリパラメータとフラグメントを除去）
+   * @param url サニタイズ対象の URL
+   * @returns サニタイズされた URL
+   */
+  private sanitizeUrl(url: string): string {
+    try {
+      const urlObject = new URL(url)
+      return `${urlObject.origin}${urlObject.pathname}`
+    } catch {
+      return url
+    }
+  }
+
+  /**
+   * localStorage/sessionStorage をサニタイズする
+   * トークン、パスワード、メールアドレスなどのキーを [REDACTED] に置き換え
+   * @param storage サニタイズ対象のストレージ
+   * @returns サニタイズされたストレージ
+   */
+  private sanitizeStorage(
+    storage: Record<string, string>
+  ): Record<string, string> {
+    const sensitiveKeys = [
+      'token',
+      'password',
+      'email',
+      'session',
+      'auth',
+      'secret',
+      'key',
+    ]
+    const sanitized: Record<string, string> = {}
+
+    for (const [key, value] of Object.entries(storage)) {
+      // キーに機密情報が含まれているかチェック（大文字小文字を区別しない部分一致）
+      const isSensitive = sensitiveKeys.some((sensitiveKey) =>
+        key.toLowerCase().includes(sensitiveKey)
+      )
+      sanitized[key] = isSensitive ? '[REDACTED]' : value
+    }
+
+    return sanitized
+  }
+
+  /**
+   * HTTP ヘッダーをサニタイズする
+   * Authorization, Cookie, Set-Cookie を [REDACTED] に置き換え
+   * @param headers サニタイズ対象のヘッダー
+   * @returns サニタイズされたヘッダー
+   */
+  private sanitizeHeaders(
+    headers: Record<string, string>
+  ): Record<string, string> {
+    const sanitized: Record<string, string> = { ...headers }
+    const sensitiveHeaders = new Set(['authorization', 'cookie', 'set-cookie'])
+
+    for (const header of Object.keys(sanitized)) {
+      if (sensitiveHeaders.has(header.toLowerCase())) {
+        sanitized[header] = '[REDACTED]'
+      }
+    }
+
+    return sanitized
+  }
+
+  /**
+   * 診断情報を保存する
+   * エラー発生時に詳細な診断情報を JSON.gz 形式で保存
+   * @param browser ブラウザ
+   * @param page メインページ
+   * @param methodName メソッド名
+   * @param error エラー
+   * @param executionTime 実行時間（ミリ秒）
+   */
+  private async saveDiagnostics(
+    browser: Browser,
+    page: Page,
+    methodName: string,
+    error: Error,
+    executionTime: number
+  ): Promise<void> {
+    // 診断情報が無効の場合は何もしない
+    if (!this.diagnosticsConfig.enabled) {
+      return
+    }
+
+    try {
+      // ページが閉じている場合は部分的な診断情報のみ保存
+      const isPageClosed = page.isClosed()
+
+      // タイムスタンプ生成
+      const timestamp = new Date()
+
+      // メインページ情報を取得（ページが閉じていない場合のみ）
+      let mainPageInfo: any = null
+      if (!isPageClosed) {
+        mainPageInfo = await this.collectPageInfo(page)
+      }
+
+      // 他のページ情報を取得
+      const otherPagesInfo = await this.collectOtherPagesInfo(browser, page)
+
+      // すべてのタブのスクリーンショットを保存
+      await this.saveAllTabsScreenshots(browser, methodName, timestamp)
+
+      // Console logs を取得
+      const consoleLogs = isPageClosed ? [] : (this.consoleLogs.get(page) ?? [])
+
+      // Network logs を取得（サニタイズ）
+      const networkLogs = isPageClosed
+        ? []
+        : (this.networkLogs.get(page) ?? []).map((log) => ({
+            ...log,
+            requestHeaders: this.sanitizeHeaders(log.requestHeaders),
+            responseHeaders: this.sanitizeHeaders(log.responseHeaders),
+          }))
+
+      // 診断情報 JSON を構築
+      const diagnosticInfo = {
+        timestamp: timestamp.toISOString(),
+        methodName,
+        executionTime,
+        error: {
+          name: error.name,
+          message: error.message,
+          stack: error.stack ?? '',
+        },
+        mainPage: mainPageInfo,
+        otherPages: otherPagesInfo,
+        console: consoleLogs,
+        network: networkLogs,
+      }
+
+      // JSON を文字列化
+      const jsonString = JSON.stringify(diagnosticInfo, null, 2)
+
+      // gzip 圧縮
+      const compressed = await gzip(jsonString)
+
+      // ファイルに保存
+      const providerName = this.constructor.name.toLowerCase()
+      const dateDir = timestamp.toISOString().split('T')[0] // YYYY-MM-DD
+      const diagnosticsDir = path.join(
+        this.diagnosticsConfig.directory,
+        providerName,
+        dateDir
+      )
+
+      if (!fs.existsSync(diagnosticsDir)) {
+        fs.mkdirSync(diagnosticsDir, { recursive: true })
+      }
+
+      const timestampStr = timestamp
+        .toISOString()
+        .replaceAll(/[:.TZ]/g, '-')
+        .replaceAll(/-$/g, '')
+      const filename = `${timestampStr}_${methodName}_error.json.gz`
+      const filepath = path.join(diagnosticsDir, filename)
+
+      fs.writeFileSync(filepath, compressed)
+
+      this.logger.info(`診断情報を保存しました: ${filepath}`)
+    } catch (diagnosticError) {
+      // 診断情報の保存に失敗しても、元のエラーを妨げない
+      this.logger.error(
+        '診断情報の保存に失敗しました',
+        diagnosticError as Error
+      )
+    }
+  }
+
+  /**
+   * ページ情報を収集する
+   * @param page 対象ページ
+   * @returns ページ情報
+   */
+  private async collectPageInfo(page: Page): Promise<any> {
+    try {
+      const [url, title, htmlSize, userAgent, localStorage, sessionStorage] =
+        await Promise.all([
+          Promise.resolve(page.url()),
+          page.title().catch(() => ''),
+          page
+            .evaluate(() => document.documentElement.outerHTML.length)
+            .catch(() => -1),
+          page.evaluate(() => navigator.userAgent).catch(() => ''),
+          page
+            .evaluate(() =>
+              Object.fromEntries(Object.entries(globalThis.localStorage))
+            )
+            .catch(() => ({})),
+          page
+            .evaluate(() =>
+              Object.fromEntries(Object.entries(globalThis.sessionStorage))
+            )
+            .catch(() => ({})),
+        ])
+
+      // Cookie 数を取得
+      const browser = page.browser()
+      const cookies = await browser.cookies().catch(() => [])
+
+      // HTML ダンプを取得（タイムアウト 10 秒）
+      const htmlDump = await page.content().catch(() => '')
+
+      return {
+        url: this.sanitizeUrl(url),
+        title,
+        htmlSize,
+        userAgent,
+        localStorage: this.sanitizeStorage(localStorage),
+        sessionStorage: this.sanitizeStorage(sessionStorage),
+        cookies: cookies.length,
+        htmlDump,
+      }
+    } catch (error) {
+      this.logger.warn('ページ情報の収集に失敗しました', error as Error)
+      return null
+    }
+  }
+
+  /**
+   * 他のページ情報を収集する
+   * @param browser ブラウザ
+   * @param mainPage メインページ
+   * @returns 他のページ情報の配列
+   */
+  private async collectOtherPagesInfo(
+    browser: Browser,
+    mainPage: Page
+  ): Promise<any[]> {
+    try {
+      const pages = await browser.pages()
+      const otherPages = pages.filter((p) => p !== mainPage && !p.isClosed())
+
+      const otherPagesInfo = await Promise.all(
+        otherPages.map(async (p) => {
+          try {
+            const [url, title, htmlSize, htmlDump] = await Promise.all([
+              Promise.resolve(p.url()),
+              p.title().catch(() => ''),
+              p
+                .evaluate(() => document.documentElement.outerHTML.length)
+                .catch(() => -1),
+              p.content().catch(() => ''),
+            ])
+
+            return {
+              url: this.sanitizeUrl(url),
+              title,
+              htmlSize,
+              htmlDump,
+            }
+          } catch {
+            return null
+          }
+        })
+      )
+
+      return otherPagesInfo.filter((info) => info !== null)
+    } catch (error) {
+      this.logger.warn('他のページ情報の収集に失敗しました', error as Error)
+      return []
+    }
+  }
+
+  /**
+   * すべてのタブのスクリーンショットを保存する
+   * @param browser ブラウザ
+   * @param methodName メソッド名
+   * @param timestamp タイムスタンプ
+   */
+  private async saveAllTabsScreenshots(
+    browser: Browser,
+    methodName: string,
+    timestamp: Date
+  ): Promise<void> {
+    try {
+      const pages = await browser.pages()
+      const openPages = pages.filter((p) => !p.isClosed())
+
+      // 並列実行でスクリーンショットを保存
+      await Promise.all(
+        openPages.map(async (p, index) => {
+          try {
+            // タイムアウト 5 秒で保存
+            await Promise.race([
+              this.takeScreenshotForTab(p, methodName, timestamp, index),
+              sleep(5000),
+            ])
+          } catch (error) {
+            this.logger.warn(
+              `タブ ${index} のスクリーンショット保存に失敗しました`,
+              error as Error
+            )
+          }
+        })
+      )
+    } catch (error) {
+      this.logger.warn(
+        'すべてのタブのスクリーンショット保存に失敗しました',
+        error as Error
+      )
+    }
+  }
+
+  /**
+   * タブのスクリーンショットを保存する
+   * @param page ページ
+   * @param methodName メソッド名
+   * @param timestamp タイムスタンプ
+   * @param tabIndex タブインデックス
+   */
+  private async takeScreenshotForTab(
+    page: Page,
+    methodName: string,
+    timestamp: Date,
+    tabIndex: number
+  ): Promise<void> {
+    if (!this.screenshotConfig.enabled) {
+      return
+    }
+
+    const providerName = this.constructor.name.toLowerCase()
+    const dateDir = timestamp.toISOString().split('T')[0]
+    const screenshotDir = path.join(
+      this.screenshotConfig.directory,
+      providerName,
+      dateDir
+    )
+
+    if (!fs.existsSync(screenshotDir)) {
+      fs.mkdirSync(screenshotDir, { recursive: true })
+    }
+
+    const timestampStr = timestamp
+      .toISOString()
+      .replaceAll(/[:.TZ]/g, '-')
+      .replaceAll(/-$/g, '')
+    const suffix = tabIndex === 0 ? '' : `_tab${tabIndex}`
+    const filename = `${timestampStr}_${methodName}_error${suffix}.png`
+    const filepath = path.join(screenshotDir, filename)
+
+    // ビューポートサイズを確認
+    const viewport = page.viewport()
+    if (!viewport || viewport.width === 0 || viewport.height === 0) {
+      this.logger.warn(
+        `スクリーンショットをスキップ: ビューポートサイズが不正です (${viewport?.width ?? 0}x${viewport?.height ?? 0})`
+      )
+      return
+    }
+
+    await page.screenshot({
+      path: filepath,
+      fullPage: true,
+    })
   }
 
   private async initBrowser(): Promise<Browser> {
@@ -159,7 +718,25 @@ export abstract class BaseCrawler implements Crawler {
       ignoreDefaultArgs: ['--enable-automation'],
     }
 
-    return await puppeteer.launch(launchOptions)
+    const browser = await puppeteer.launch(launchOptions)
+
+    // 新しいページが作成されたら診断情報の収集を設定
+    browser.on('targetcreated', (target) => {
+      if ((target.type() as string) === 'page') {
+        target
+          .page()
+          .then((page) => {
+            if (page) {
+              this.setupPageDiagnostics(page)
+            }
+          })
+          .catch(() => {
+            // ページ取得に失敗しても無視
+          })
+      }
+    })
+
+    return browser
   }
 
   private async initPage(browser: Browser): Promise<Page> {
@@ -424,6 +1001,7 @@ export abstract class BaseCrawler implements Crawler {
     methodName?: string
   ): Promise<void> {
     const name = methodName ?? (method.name || 'unknown')
+    const startTime = Date.now()
     await page.bringToFront()
 
     // メソッド実行前に広告ポップアップをチェック（エラーは無視）
@@ -466,6 +1044,27 @@ export abstract class BaseCrawler implements Crawler {
       }
     } catch (error) {
       await this.takeScreenshot(page, name, 'error')
+
+      // 診断情報を保存（失敗しても元のエラーを妨げない）
+      if (this.diagnosticsConfig.enabled) {
+        try {
+          const executionTime = Date.now() - startTime
+          const browser = page.browser()
+          await this.saveDiagnostics(
+            browser,
+            page,
+            name,
+            error as Error,
+            executionTime
+          )
+        } catch (diagnosticsError) {
+          this.logger.warn(
+            `${name}: 診断情報の保存に失敗しました`,
+            diagnosticsError as Error
+          )
+        }
+      }
+
       this.logger.error('Error', error as Error)
 
       // ProtocolError（CDP タイムアウト）の場合は、広告チェック後にリロードして復帰を試みる
@@ -733,12 +1332,12 @@ export abstract class BaseCrawler implements Crawler {
       this.logger.info(`Screenshot saved: ${filepath}`)
 
       // 古いスクリーンショットの削除（セッションごとに1回のみ実行）
-      if (!this.screenshotCleanupDone) {
-        this.screenshotCleanupDone = true
+      if (!this.fileCleanupDone) {
+        this.fileCleanupDone = true
         // バックグラウンドで非同期実行
-        this.cleanupOldScreenshots().catch((error: unknown) => {
+        this.cleanupOldFiles().catch((error: unknown) => {
           this.logger.warn(
-            `Failed to cleanup old screenshots: ${(error as Error).message}`
+            `Failed to cleanup old files: ${(error as Error).message}`
           )
         })
       }
@@ -751,22 +1350,49 @@ export abstract class BaseCrawler implements Crawler {
   }
 
   /**
-   * 古いスクリーンショットを削除する（非同期）
+   * 古いスクリーンショットと診断情報を削除する（非同期）
    */
-  private async cleanupOldScreenshots(): Promise<void> {
-    const screenshotBaseDir = this.screenshotConfig.directory
-    if (!fs.existsSync(screenshotBaseDir)) {
+  private async cleanupOldFiles(): Promise<void> {
+    // スクリーンショットのクリーンアップ
+    await this.cleanupOldFilesInDirectory(
+      this.screenshotConfig.directory,
+      this.screenshotConfig.retentionDays,
+      'screenshots'
+    )
+
+    // 診断情報のクリーンアップ
+    if (this.diagnosticsConfig.enabled) {
+      await this.cleanupOldFilesInDirectory(
+        this.diagnosticsConfig.directory,
+        this.diagnosticsConfig.retentionDays,
+        'diagnostics'
+      )
+    }
+  }
+
+  /**
+   * 指定されたディレクトリ配下の古いファイルを削除する（非同期）
+   *
+   * @param baseDir ベースディレクトリ
+   * @param retentionDays 保持期間（日数）
+   * @param fileType ファイルタイプ（ログ出力用）
+   */
+  private async cleanupOldFilesInDirectory(
+    baseDir: string,
+    retentionDays: number,
+    fileType: string
+  ): Promise<void> {
+    if (!fs.existsSync(baseDir)) {
       return
     }
 
-    const retentionDays = this.screenshotConfig.retentionDays
     const now = new Date()
     now.setHours(0, 0, 0, 0) // 今日の 00:00:00
 
     // プロバイダーディレクトリを走査
-    const providers = await fs.promises.readdir(screenshotBaseDir)
+    const providers = await fs.promises.readdir(baseDir)
     for (const provider of providers) {
-      const providerDir = path.join(screenshotBaseDir, provider)
+      const providerDir = path.join(baseDir, provider)
       const providerStat = await fs.promises.stat(providerDir)
       if (!providerStat.isDirectory()) {
         continue
@@ -794,7 +1420,7 @@ export abstract class BaseCrawler implements Crawler {
         )
         if (diffDays > retentionDays) {
           await fs.promises.rm(dateDirPath, { recursive: true })
-          this.logger.info(`Deleted old screenshots: ${dateDirPath}`)
+          this.logger.info(`Deleted old ${fileType}: ${dateDirPath}`)
         }
       }
 
