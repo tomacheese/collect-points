@@ -43,12 +43,17 @@ export async function chinju(
   const selectedLink = answerLinks[randomIndex]
 
   try {
+    // 広告オーバーレイによるクリック失敗を防ぐため JavaScript でクリック
     await Promise.all([
       page.waitForNavigation({
         waitUntil: 'domcontentloaded',
         timeout: 30_000,
       }),
-      selectedLink.click(),
+      (async () => {
+        await selectedLink.evaluate((el) => {
+          ;(el as HTMLElement).click()
+        })
+      })(),
     ])
     context.logger.info('chinju() 回答完了')
   } catch (error) {
