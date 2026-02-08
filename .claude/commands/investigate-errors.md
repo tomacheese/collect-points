@@ -67,7 +67,11 @@ gh issue list --repo tomacheese/collect-points --state all --label "bug" --json 
 
 1. **ログの詳細確認**: エラー前後のログを確認し、コンテキストを把握
 2. **スクリーンショット確認**: `/data/screenshots/` 配下の該当時刻のスクリーンショットを確認
-3. **Chrome で再現確認**: Claude in Chrome を使用して、エラーが発生した機能を実際に操作し、現在の状態を確認
+3. **Chrome で再現確認**: chrome-devtools MCP を使用して、エラーが発生した機能を実際に操作し、現在の状態を確認
+   - `navigate_page` でページにアクセス
+   - `take_snapshot` でページ構造を確認
+   - `evaluate_script` で JavaScript を実行してセレクターや要素の状態を確認
+   - `take_screenshot` で視覚的な状態を確認
 
 ### 7. GitHub Issue を作成
 

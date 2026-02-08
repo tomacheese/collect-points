@@ -42,11 +42,12 @@ Issue 本文から以下を把握：
 
 #### 2.3 必要に応じてサイトを調査
 
-Claude in Chrome を使用して：
+chrome-devtools MCP を使用して：
 
-- 対象ページにアクセス
-- セレクターを特定
-- ゲームの流れを確認
+- 対象ページにアクセス（`navigate_page`）
+- ページ構造を確認（`take_snapshot`）
+- セレクターを特定（`evaluate_script`）
+- ゲームの流れを確認（`take_screenshot` で視覚確認）
 
 #### 2.4 実装
 

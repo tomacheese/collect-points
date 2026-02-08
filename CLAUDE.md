@@ -245,7 +245,7 @@ data/diagnostics/{providerName}/{YYYY-MM-DD}/
 
 このプロジェクトは Claude Code を用いた自動運用を行う。
 
-### 1. 新規機能・既存機能の変更検出（週1回）
+### 1. 新規機能・既存機能の変更検出（週 1 回）
 
 **スケジュール**: 毎週土曜 8:00
 
@@ -266,7 +266,7 @@ data/diagnostics/{providerName}/{YYYY-MM-DD}/
 /detect-changes
 ```
 
-### 2. エラー原因の調査（週6回）
+### 2. エラー原因の調査（週 6 回）
 
 **スケジュール**: 毎日 8:00（土曜は除く）
 
@@ -290,7 +290,7 @@ data/diagnostics/{providerName}/{YYYY-MM-DD}/
 /investigate-errors
 ```
 
-### 3. Approved Issue の実装（週6回）
+### 3. Approved Issue の実装（週 6 回）
 
 **スケジュール**: 毎日 10:00（土曜は除く）
 
@@ -303,8 +303,8 @@ data/diagnostics/{providerName}/{YYYY-MM-DD}/
    - Lint 確認
    - CLAUDE.md などのドキュメント更新
    - コミット・プッシュ
-   - PR 作成（`Closes #{Issue番号}` を含める）。レビュアーに book000 を設定
-3. 既存 PR について、レビュー・CIエラー・コメントがあれば、対応を行う
+   - PR 作成（`Closes #{Issue 番号}` を含める）。レビュアーに book000 を設定
+3. 既存 PR について、レビュー・CI エラー・コメントがあれば、対応を行う
 
 **実行方法**:
 ```bash
@@ -313,7 +313,7 @@ data/diagnostics/{providerName}/{YYYY-MM-DD}/
 /implement-approved
 ```
 
-### 4. ブランチ/PR クリーンアップ（週1回）
+### 4. ブランチ/PR クリーンアップ（週 1 回）
 
 **スケジュール**: 毎週月曜 0:00
 
@@ -361,30 +361,64 @@ pnpm fix        # 自動修正
 pnpm dev        # 開発実行
 ```
 
-## Claude in Chrome を用いた動作確認の知見
+## chrome-devtools MCP を用いた動作確認の知見
 
 ### 基本方針
 
 1. **セレクターの存在確認** → **実際のクリックテスト** の順で行う
-2. JavaScript 実行 (`javascript_tool`) でセレクターの存在とクリックを行う
-3. 座標ベースのクリックではなく、セレクターベースのクリックを使用する
+2. `evaluate_script` ツールでセレクターの存在とクリックを行う
+3. UID ベースのクリックではなく、JavaScript evaluate でセレクターベースのクリックを使用する
+
+### 基本的なワークフロー
+
+```bash
+# 1. ページ一覧を取得
+mcp__chrome-devtools__list_pages
+
+# 2. 新しいページを開く（必要に応じて）
+mcp__chrome-devtools__new_page
+  url: "https://example.com"
+
+# 3. ページに移動
+mcp__chrome-devtools__navigate_page
+  type: "url"
+  url: "https://example.com/page"
+  timeout: 30000
+
+# 4. ページのスナップショットを取得（構造確認）
+mcp__chrome-devtools__take_snapshot
+
+# 5. スクリーンショットを取得（視覚確認）
+mcp__chrome-devtools__take_screenshot
+  format: "png"
+```
 
 ### セレクター確認方法
 
 ```javascript
-// セレクターの存在確認
-const element = document.querySelector('セレクター');
-({ exists: element ? true : false, href: element?.href });
+// evaluate_script で実行
+() => {
+  const element = document.querySelector('セレクター');
+  return {
+    exists: element ? true : false,
+    href: element?.href,
+    text: element?.textContent
+  };
+}
 ```
 
+### セレクターでクリック
+
 ```javascript
-// セレクターでクリック
-const element = document.querySelector('セレクター');
-if (element) {
-  element.click();
-  'Clicked';
-} else {
-  'Not found';
+// evaluate_script で実行
+() => {
+  const element = document.querySelector('セレクター');
+  if (element) {
+    element.click();
+    return 'Clicked';
+  } else {
+    return 'Not found';
+  }
 }
 ```
 
@@ -392,24 +426,47 @@ if (element) {
 
 `target="_blank"` のリンクを JavaScript の `element.click()` でクリックしても、ブラウザのセキュリティ制約により新規タブは開かない。Puppeteer では `getNewTabPage()` 関数でユーザークリックをシミュレートするため、この問題は発生しない。
 
-Claude in Chrome での動作確認時は、`target="_blank"` で開くページリンクを別タブなどで手動で開き、確認すること。
+chrome-devtools MCP での動作確認時は、`target="_blank"` で開くページリンクについては `new_page` ツールで直接 URL を開き、確認すること。
 
 ### ページ読み込み待機
 
-ページ遷移後は `wait` アクションで 2〜3 秒待機してから操作を行う。
+ページ遷移後は適切な待機時間を設定する。`navigate_page` の `timeout` パラメータで制御可能。
 
-```javascript
-// navigation 後
-await wait(2); // 2秒待機
-await screenshot(); // 状態確認
+```bash
+# navigation 後の待機は timeout で制御
+mcp__chrome-devtools__navigate_page
+  type: "url"
+  url: "https://example.com"
+  timeout: 30000  # 30秒
+
+# または evaluate_script で明示的に待機
+() => {
+  return new Promise(resolve => setTimeout(() => resolve('waited'), 2000));
+}
 ```
 
 ### ポイント変動の確認
 
 操作前後でポイントを確認し、正しく動作しているか検証する。
 
-- PointTown: ヘッダー右上の `pt` 表示
-- ECNavi: ヘッダー右上の `pts.` 表示
+```javascript
+// PointTown のポイント確認
+() => {
+  const pointElement = document.querySelector('[data-testid="header-point"]') ||
+                       document.querySelector('.header-point') ||
+                       Array.from(document.querySelectorAll('span'))
+                         .find(el => el.textContent?.includes('pt'));
+  return pointElement?.textContent;
+}
+
+// ECNavi のポイント確認
+() => {
+  const pointElement = document.querySelector('.header-point') ||
+                       Array.from(document.querySelectorAll('span'))
+                         .find(el => el.textContent?.includes('pts.'));
+  return pointElement?.textContent;
+}
+```
 
 ### ECNavi 実装済み機能
 
@@ -497,13 +554,31 @@ ECNavi では Google Rewarded Ads のポップアップ（「短い広告を見�
 ### トラブルシューティング
 
 1. **セレクターが見つからない場合**
-   - `read_page` で現在のページ構造を確認
-   - `javascript_tool` で `document.querySelectorAll()` を使って類似セレクターを探索
+   - `take_snapshot` で現在のページ構造を確認
+   - `evaluate_script` で `document.querySelectorAll()` を使って類似セレクターを探索
+   ```javascript
+   () => {
+     const elements = document.querySelectorAll('セレクター');
+     return Array.from(elements).map(el => ({
+       tag: el.tagName,
+       class: el.className,
+       id: el.id,
+       text: el.textContent?.substring(0, 50)
+     }));
+   }
+   ```
 
 2. **クリックしても反応がない場合**
-   - `wait` で待機時間を延ばす
-   - スクロールして要素を表示領域に入れてからクリック
+   - `navigate_page` の `timeout` パラメータで待機時間を延ばす
+   - `evaluate_script` でスクロールして要素を表示領域に入れてからクリック
+   ```javascript
+   () => {
+     const element = document.querySelector('セレクター');
+     element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+     return 'Scrolled';
+   }
+   ```
 
 3. **ログインが必要な場合**
-   - まず `mypage` 等にアクセスしてログイン状態を確認
+   - まず `mypage` 等にアクセスしてログイン状態を確認（`navigate_page`）
    - 未ログインの場合はログインページに遷移してログイン処理を行う
