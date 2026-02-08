@@ -40,7 +40,7 @@ async function main() {
   }
 
   // ECNavi 専用ゲームのリスト
-  const ecnaviOnlyGames = [
+  const ecnaviOnlyGames = new Set([
     'fishing',
     'entryLottery',
     'gesoten',
@@ -63,13 +63,13 @@ async function main() {
     'vegetable',
     'chocoRead',
     'enqueteRally',
-  ]
+  ])
 
   // フィルタリングされたゲームが ECNavi 専用かどうかを判定
   const isEcNaviOnly =
     gamesFilter &&
     gamesFilter.length > 0 &&
-    gamesFilter.every((game) => ecnaviOnlyGames.includes(game))
+    gamesFilter.every((game) => ecnaviOnlyGames.has(game))
 
   // 適切なクローラーのみを実行
   const crawlers = isEcNaviOnly
