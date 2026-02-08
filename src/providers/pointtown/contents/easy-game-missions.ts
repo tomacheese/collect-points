@@ -1,6 +1,49 @@
-import type { Page } from 'rebrowser-puppeteer-core'
+import type { ElementHandle, Page } from 'rebrowser-puppeteer-core'
 import type { PointTownContext } from '@/core/types'
 import { sleep } from '@/utils/functions'
+
+/**
+ * テキスト内容でボタンを検索する
+ * @param page ページ
+ * @param text 検索するテキスト
+ * @param exact 完全一致（true）または部分一致（false）
+ * @returns ボタン要素（見つからない場合は null）
+ */
+async function findButtonByText(
+  page: Page,
+  text: string,
+  exact = false
+): Promise<ElementHandle<HTMLButtonElement> | null> {
+  const button = await page.evaluate(
+    (searchText, exactMatch) => {
+      const buttons = [...document.querySelectorAll('button')]
+      return buttons.find((btn) => {
+        const btnText = btn.textContent?.trim() ?? ''
+        return exactMatch
+          ? btnText === searchText
+          : btnText.includes(searchText)
+      })
+    },
+    text,
+    exact
+  )
+
+  if (!button) {
+    return null
+  }
+
+  // ボタン要素のハンドルを取得
+  const buttons = await page.$$('button')
+  for (const btn of buttons) {
+    const btnText =
+      (await page.evaluate((el) => el.textContent?.trim(), btn)) ?? ''
+    if (exact ? btnText === text : btnText.includes(text)) {
+      return btn
+    }
+  }
+
+  return null
+}
 
 /**
  * ログインミッションを実行
@@ -18,12 +61,7 @@ async function executeLoginMission(
     await sleep(2000)
 
     // 「受け取る」ボタンをクリック
-    const receiveButton = await page
-      .waitForSelector('button:has-text("受け取る")', {
-        visible: true,
-        timeout: 5000,
-      })
-      .catch(() => null)
+    const receiveButton = await findButtonByText(page, '受け取る', false)
 
     if (!receiveButton) {
       context.logger.warn(
@@ -35,13 +73,19 @@ async function executeLoginMission(
     await receiveButton.click()
     await sleep(2000)
 
-    // ポップアップで「受け取る」ボタンをクリック（広告なし）
-    const popupReceiveButton = await page
-      .waitForSelector('button:has-text("受け取る"):not(:has-text("広告"))', {
-        visible: true,
-        timeout: 5000,
-      })
-      .catch(() => null)
+    // ポップアップで「受け取る」ボタンをクリック（広告なしのボタンを探す）
+    const buttons = await page.$$('button')
+    let popupReceiveButton: ElementHandle<HTMLButtonElement> | null = null
+
+    for (const btn of buttons) {
+      const btnText =
+        (await page.evaluate((el) => el.textContent?.trim(), btn)) ?? ''
+      // 「受け取る」を含み、「広告」を含まないボタンを探す
+      if (btnText.includes('受け取る') && !btnText.includes('広告')) {
+        popupReceiveButton = btn
+        break
+      }
+    }
 
     if (popupReceiveButton) {
       await popupReceiveButton.click()
@@ -90,12 +134,7 @@ async function executeRouletteCampaign(
       context.logger.info(`🎰 ルーレット ${i + 1}/10 回目`)
 
       // 「ルーレットを回す」ボタンをクリック
-      const spinButton = await page
-        .waitForSelector('button:has-text("ルーレットを回す")', {
-          visible: true,
-          timeout: 5000,
-        })
-        .catch(() => null)
+      const spinButton = await findButtonByText(page, 'ルーレットを回す', false)
 
       if (!spinButton) {
         context.logger.info('✅ 本日のルーレット回数上限に達しました')
@@ -106,12 +145,11 @@ async function executeRouletteCampaign(
       await sleep(2000)
 
       // 「広告を見てルーレットを回す」ボタンをクリック
-      const adButton = await page
-        .waitForSelector('button:has-text("広告を見てルーレットを回す")', {
-          visible: true,
-          timeout: 5000,
-        })
-        .catch(() => null)
+      const adButton = await findButtonByText(
+        page,
+        '広告を見てルーレットを回す',
+        false
+      )
 
       if (!adButton) {
         context.logger.warn('⚠️ 広告視聴ボタンが見つかりません、スキップします')
