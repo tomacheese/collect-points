@@ -1,49 +1,7 @@
-import type { ElementHandle, Page } from 'rebrowser-puppeteer-core'
+import type { Page } from 'rebrowser-puppeteer-core'
 import type { PointTownContext } from '@/core/types'
 import { sleep } from '@/utils/functions'
-
-/**
- * テキスト内容でボタンを検索する
- * @param page ページ
- * @param text 検索するテキスト
- * @param exact 完全一致（true）または部分一致（false）
- * @returns ボタン要素（見つからない場合は null）
- */
-async function findButtonByText(
-  page: Page,
-  text: string,
-  exact = false
-): Promise<ElementHandle<HTMLButtonElement> | null> {
-  const button = await page.evaluate(
-    (searchText, exactMatch) => {
-      const buttons = [...document.querySelectorAll('button')]
-      return buttons.find((btn) => {
-        const btnText = btn.textContent?.trim() ?? ''
-        return exactMatch
-          ? btnText === searchText
-          : btnText.includes(searchText)
-      })
-    },
-    text,
-    exact
-  )
-
-  if (!button) {
-    return null
-  }
-
-  // ボタン要素のハンドルを取得
-  const buttons = await page.$$('button')
-  for (const btn of buttons) {
-    const btnText =
-      (await page.evaluate((el) => el.textContent?.trim(), btn)) ?? ''
-    if (exact ? btnText === text : btnText.includes(text)) {
-      return btn
-    }
-  }
-
-  return null
-}
+import { safeGoto } from '@/utils/safe-operations'
 
 /**
  * ログインミッションを実行
@@ -61,34 +19,48 @@ async function executeLoginMission(
     await sleep(2000)
 
     // 「受け取る」ボタンをクリック
-    const receiveButton = await findButtonByText(page, '受け取る', false)
+    const receiveClicked = await page
+      .evaluate(() => {
+        const buttons = [...document.querySelectorAll('button')]
+        const button = buttons.find((btn) =>
+          btn.textContent?.includes('受け取る')
+        )
+        if (button) {
+          button.click()
+          return true
+        }
+        return false
+      })
+      .catch(() => false)
 
-    if (!receiveButton) {
+    if (!receiveClicked) {
       context.logger.warn(
         '⚠️ ログインミッションの受け取るボタンが見つかりません'
       )
       return
     }
 
-    await receiveButton.click()
     await sleep(2000)
 
     // ポップアップで「受け取る」ボタンをクリック（広告なしのボタンを探す）
-    const buttons = await page.$$('button')
-    let popupReceiveButton: ElementHandle<HTMLButtonElement> | null = null
+    const popupClicked = await page
+      .evaluate(() => {
+        const buttons = [...document.querySelectorAll('button')]
+        // 「受け取る」を含み、「広告」を含まないボタンを探す
+        const button = buttons.find(
+          (btn) =>
+            btn.textContent?.includes('受け取る') &&
+            !btn.textContent?.includes('広告')
+        )
+        if (button) {
+          button.click()
+          return true
+        }
+        return false
+      })
+      .catch(() => false)
 
-    for (const btn of buttons) {
-      const btnText =
-        (await page.evaluate((el) => el.textContent?.trim(), btn)) ?? ''
-      // 「受け取る」を含み、「広告」を含まないボタンを探す
-      if (btnText.includes('受け取る') && !btnText.includes('広告')) {
-        popupReceiveButton = btn
-        break
-      }
-    }
-
-    if (popupReceiveButton) {
-      await popupReceiveButton.click()
+    if (popupClicked) {
       context.logger.info('✅ ログインミッション報酬を受け取りました')
       await sleep(2000)
     } else {
@@ -134,29 +106,47 @@ async function executeRouletteCampaign(
       context.logger.info(`🎰 ルーレット ${i + 1}/10 回目`)
 
       // 「ルーレットを回す」ボタンをクリック
-      const spinButton = await findButtonByText(page, 'ルーレットを回す', false)
+      const spinClicked = await page
+        .evaluate(() => {
+          const buttons = [...document.querySelectorAll('button')]
+          const button = buttons.find((btn) =>
+            btn.textContent?.includes('ルーレットを回す')
+          )
+          if (button) {
+            button.click()
+            return true
+          }
+          return false
+        })
+        .catch(() => false)
 
-      if (!spinButton) {
+      if (!spinClicked) {
         context.logger.info('✅ 本日のルーレット回数上限に達しました')
         break
       }
 
-      await spinButton.click()
       await sleep(2000)
 
       // 「広告を見てルーレットを回す」ボタンをクリック
-      const adButton = await findButtonByText(
-        page,
-        '広告を見てルーレットを回す',
-        false
-      )
+      const adClicked = await page
+        .evaluate(() => {
+          const buttons = [...document.querySelectorAll('button')]
+          const button = buttons.find((btn) =>
+            btn.textContent?.includes('広告を見てルーレットを回す')
+          )
+          if (button) {
+            button.click()
+            return true
+          }
+          return false
+        })
+        .catch(() => false)
 
-      if (!adButton) {
+      if (!adClicked) {
         context.logger.warn('⚠️ 広告視聴ボタンが見つかりません、スキップします')
         break
       }
 
-      await adButton.click()
       await sleep(3000)
 
       // Google Rewarded Ads が表示される場合、URL から #goog_rewarded を除去して再アクセス
@@ -164,7 +154,7 @@ async function executeRouletteCampaign(
       if (currentUrl.includes('#goog_rewarded')) {
         context.logger.info('📺 広告ポップアップを検出、スキップします')
         const cleanUrl = currentUrl.replace('#goog_rewarded', '')
-        await page.goto(cleanUrl, { waitUntil: 'networkidle2' })
+        await safeGoto(page, cleanUrl, context.logger)
         await sleep(2000)
       } else {
         // 広告視聴完了後、ルーレット結果を待つ
@@ -174,9 +164,11 @@ async function executeRouletteCampaign(
       context.logger.info(`✅ ルーレット ${i + 1} 回目完了`)
 
       // 次のルーレットのために「ルーレット」タブに戻る
-      await page.goto('https://gamebox.pointtown.com/easygame/event#roulette', {
-        waitUntil: 'networkidle2',
-      })
+      await safeGoto(
+        page,
+        'https://gamebox.pointtown.com/easygame/event#roulette',
+        context.logger
+      )
       await sleep(2000)
     }
 
@@ -198,10 +190,12 @@ export async function easyGameMissions(
 ): Promise<void> {
   context.logger.info('🎯 easyGameMissions()')
 
-  // ミッションページにアクセス
-  await page.goto('https://gamebox.pointtown.com/easygame/event', {
-    waitUntil: 'networkidle2',
-  })
+  // ミッションページにアクセス（動的コンテンツが多いため safeGoto を使用）
+  await safeGoto(
+    page,
+    'https://gamebox.pointtown.com/easygame/event',
+    context.logger
+  )
 
   // ログインミッションを実行
   await executeLoginMission(context, page)
