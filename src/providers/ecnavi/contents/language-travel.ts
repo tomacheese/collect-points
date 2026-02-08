@@ -1,6 +1,7 @@
 import type { Page } from 'rebrowser-puppeteer-core'
 import type { EcNaviContext } from '@/core/types'
 import { sleep } from '@/utils/functions'
+import { safeGoto, safeWaitForNavigation } from '@/utils/safe-operations'
 
 /**
  * 語学トラベル
@@ -18,11 +19,10 @@ export async function languageTravel(
   context.logger.info('languageTravel()')
 
   // 最初の問題ページに移動
-  await page.goto(
+  await safeGoto(
+    page,
     'https://ecnavi.jp/contents/language_travel/courses/1/question/?daily_question_number=1',
-    {
-      waitUntil: 'networkidle2',
-    }
+    context.logger
   )
 
   // 9問回答（最大3ポイント）
@@ -35,7 +35,7 @@ export async function languageTravel(
     const answerButtons = await page.$$('button[type="button"]')
 
     // ナビゲーションボタンを除外（テキストが短い選択肢のみ）
-    const validButtons = []
+    const validButtons: typeof answerButtons = []
     for (const button of answerButtons) {
       const text = await page.evaluate(
         (el) => el.textContent?.trim() || '',
@@ -60,11 +60,13 @@ export async function languageTravel(
     // ランダムに選択してクリック
     const randomIndex = Math.floor(Math.random() * validButtons.length)
 
-    // ページのリロードを待機するために Promise.all を使用
-    await Promise.all([
-      page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 10_000 }),
-      validButtons[randomIndex].click(),
-    ])
+    // ページのリロードを待機
+    await safeWaitForNavigation(
+      page,
+      () => validButtons[randomIndex].click(),
+      context.logger,
+      { timeout: 10_000 }
+    )
 
     context.logger.info(
       `languageTravel: 選択肢 ${randomIndex + 1}/${validButtons.length} をクリック`
@@ -106,13 +108,12 @@ export async function languageTravel(
       }
 
       if (nextButton) {
-        await Promise.all([
-          page.waitForNavigation({
-            waitUntil: 'networkidle2',
-            timeout: 10_000,
-          }),
-          nextButton.click(),
-        ])
+        await safeWaitForNavigation(
+          page,
+          () => nextButton.click(),
+          context.logger,
+          { timeout: 10_000 }
+        )
         context.logger.info('languageTravel: 次の問題へ移動')
       } else {
         context.logger.warn(

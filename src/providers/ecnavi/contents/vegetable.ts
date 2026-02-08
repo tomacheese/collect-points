@@ -1,6 +1,7 @@
 import type { Page } from 'rebrowser-puppeteer-core'
 import type { EcNaviContext } from '@/core/types'
 import { sleep } from '@/utils/functions'
+import { safeGoto } from '@/utils/safe-operations'
 
 /**
  * ポイント畑
@@ -16,9 +17,7 @@ export async function vegetable(
 ): Promise<void> {
   context.logger.info('vegetable()')
 
-  await page.goto('https://ecnavi.jp/game/vegetable/', {
-    waitUntil: 'networkidle2',
-  })
+  await safeGoto(page, 'https://ecnavi.jp/game/vegetable/', context.logger)
 
   // 現在のURLをログに出力
   context.logger.info(`vegetable: 現在のURL: ${page.url()}`)
