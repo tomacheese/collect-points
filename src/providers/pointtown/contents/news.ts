@@ -1,6 +1,7 @@
 import type { Page } from 'rebrowser-puppeteer-core'
 import type { PointTownContext } from '@/core/types'
 import { sleep } from '@/utils/functions'
+import { safeGoto } from '@/utils/safe-operations'
 
 /**
  * ニュース閲覧
@@ -17,9 +18,11 @@ export async function news(
 ): Promise<void> {
   context.logger.info('news()')
 
-  await page.goto('https://www.pointtown.com/news/infoseek', {
-    waitUntil: 'networkidle2',
-  })
+  await safeGoto(
+    page,
+    'https://www.pointtown.com/news/infoseek',
+    context.logger
+  )
 
   // 初期未取得報酬を確認
   const initialUnclaimed = (await context.checkNewsCoin(page)) ?? 0
