@@ -43,7 +43,7 @@ export async function news(
   for (const link of targetLinks) {
     const url = await page.evaluate((element) => element.href, link)
     if (!url) {
-      context.logger.error('記事 URL が取得できませんでした')
+      context.logger.error('Failed to get article URL')
       continue
     }
 
@@ -58,7 +58,7 @@ export async function news(
       if ((error as Error).name === 'TimeoutError') {
         context.logger.warn(`記事ページ読み込みタイムアウト: ${url}`)
       } else {
-        context.logger.error('記事ページ読み込みエラー', error as Error)
+        context.logger.error('Article page load error', error as Error)
       }
     }
     await newPage.close()
@@ -108,24 +108,31 @@ export async function news(
           timeout: 10_000,
         }),
       ])
-
-      // クリック後に未取得報酬が減ったかを確認し、減っている場合のみ成功扱いとする
-      const afterUnclaimed =
-        (await context.checkNewsCoin(page)) ?? currentUnclaimed
-      if (afterUnclaimed < currentUnclaimed) {
-        processedCount++
-        context.logger.info(`報酬受け取り ${processedCount} 回目完了`)
-      } else {
-        context.logger.warn(
-          `報酬受け取りに失敗した可能性があります（未取得: ${afterUnclaimed} コインのまま）`
-        )
+    } catch (error) {
+      // waitForNavigation がタイムアウトした場合でも、クリックは成功している可能性がある
+      if ((error as Error).name !== 'TimeoutError') {
+        context.logger.error('Reward claim error', error as Error)
         break
       }
-      await sleep(1000)
-    } catch (error) {
-      context.logger.error('報酬受け取りエラー', error as Error)
+      // TimeoutError の場合は継続してポイント確認を行う
+      context.logger.warn(
+        'Navigation timeout, but checking if reward was claimed'
+      )
+    }
+
+    // クリック後に未取得報酬が減ったかを確認し、減っている場合のみ成功扱いとする
+    const afterUnclaimed =
+      (await context.checkNewsCoin(page)) ?? currentUnclaimed
+    if (afterUnclaimed < currentUnclaimed) {
+      processedCount++
+      context.logger.info(`報酬受け取り ${processedCount} 回目完了`)
+    } else {
+      context.logger.warn(
+        `報酬受け取りに失敗した可能性があります（未取得: ${afterUnclaimed} コインのまま）`
+      )
       break
     }
+    await sleep(1000)
   }
 
   // 最終未取得報酬を確認
