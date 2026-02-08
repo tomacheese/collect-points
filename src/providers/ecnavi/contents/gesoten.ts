@@ -21,9 +21,7 @@ export async function gesoten(
     waitUntil: 'networkidle2',
   })
 
-  const games = await page.$$(
-    'ul#reward-gacha-mission-game-contents div.c-gacha-list-card__action a'
-  )
+  const games = await page.$$('a[href*="/games/regist/"]')
   for (const game of games) {
     const url = await page.evaluate((element) => element.href, game)
     context.logger.info(`open ${url}`)

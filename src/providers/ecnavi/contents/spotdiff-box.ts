@@ -29,15 +29,22 @@ export async function spotdiffBox(
     context.logger
   )
 
-  // 挑戦ボタンをクリック
-  const challengeButton = await page
-    .waitForSelector('button:has-text("挑戦"), a:has-text("挑戦")', {
-      timeout: 5000,
+  // 挑戦ボタンをクリック（JavaScript でテキストを含む要素を探す）
+  const clicked = await page
+    .evaluate(() => {
+      const elements = Array.from(
+        document.querySelectorAll('button, a')
+      ) as HTMLElement[]
+      const button = elements.find((el) => el.textContent?.includes('挑戦'))
+      if (button) {
+        button.click()
+        return true
+      }
+      return false
     })
-    .catch(() => null)
+    .catch(() => false)
 
-  if (challengeButton) {
-    await challengeButton.click()
+  if (clicked) {
     await sleep(3000)
   }
 

@@ -30,4 +30,14 @@ export async function fishing(
     .waitForSelector('#home .gacha div.scene_1 button.common')
     .then((element) => element?.click())
   await sleep(5000)
+
+  // 結果ポップアップの「OK」ボタンをクリック
+  // ポップアップが表示されるまで待機し、ボタンをクリック
+  const okButtonSelector = '#home .gacha button.common'
+  if (await isExistsSelector(page, okButtonSelector)) {
+    await page
+      .waitForSelector(okButtonSelector)
+      .then((element) => element?.click())
+    await sleep(2000)
+  }
 }

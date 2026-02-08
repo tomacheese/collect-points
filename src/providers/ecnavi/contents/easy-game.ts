@@ -28,16 +28,27 @@ export async function easyGame(
   // 広告があれば視聴
   await watchAdIfExists(page)
 
-  // ゲーム開始ボタンをクリック
-  const startButton = await page
-    .waitForSelector(
-      'button:has-text("スタート"), button:has-text("はじめる"), button:has-text("挑戦")',
-      { timeout: 5000 }
-    )
-    .catch(() => null)
+  // ゲーム開始ボタンをクリック（JavaScript でテキストを含む要素を探す）
+  const clicked = await page
+    .evaluate(() => {
+      const elements = Array.from(
+        document.querySelectorAll('button, a')
+      ) as HTMLElement[]
+      const button = elements.find(
+        (el) =>
+          el.textContent?.includes('スタート') ||
+          el.textContent?.includes('はじめる') ||
+          el.textContent?.includes('挑戦')
+      )
+      if (button) {
+        button.click()
+        return true
+      }
+      return false
+    })
+    .catch(() => false)
 
-  if (startButton) {
-    await startButton.click()
+  if (clicked) {
     await sleep(10_000)
   }
 

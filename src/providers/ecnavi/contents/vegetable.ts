@@ -20,15 +20,30 @@ export async function vegetable(
     waitUntil: 'networkidle2',
   })
 
-  // はじめるボタンをクリック
-  const startButton = await page
-    .waitForSelector('img[alt*="はじめる"], a:has-text("はじめる")', {
-      timeout: 5000,
-    })
-    .catch(() => null)
+  // はじめるボタンをクリック（JavaScript でテキストを含む要素を探す）
+  const clicked = await page
+    .evaluate(() => {
+      // img[alt*="はじめる"] を探す
+      const img = document.querySelector('img[alt*="はじめる"]')
+      if (img && img.parentElement) {
+        img.parentElement.click()
+        return true
+      }
 
-  if (startButton) {
-    await startButton.click()
+      // a タグでテキストに「はじめる」を含む要素を探す
+      const elements = Array.from(
+        document.querySelectorAll('a')
+      ) as HTMLElement[]
+      const button = elements.find((el) => el.textContent?.includes('はじめる'))
+      if (button) {
+        button.click()
+        return true
+      }
+      return false
+    })
+    .catch(() => false)
+
+  if (clicked) {
     await sleep(2000)
 
     // クレーンゲーム操作：右方向に移動（長押し）

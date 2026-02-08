@@ -19,16 +19,27 @@ export async function languageTravel(
     waitUntil: 'networkidle2',
   })
 
-  // クイズ開始ボタンをクリック
-  const startButton = await page
-    .waitForSelector(
-      'button:has-text("スタート"), button:has-text("はじめる"), a:has-text("挑戦")',
-      { timeout: 5000 }
-    )
-    .catch(() => null)
+  // クイズ開始ボタンをクリック（JavaScript でテキストを含む要素を探す）
+  const clicked = await page
+    .evaluate(() => {
+      const elements = Array.from(
+        document.querySelectorAll('button, a')
+      ) as HTMLElement[]
+      const button = elements.find(
+        (el) =>
+          el.textContent?.includes('スタート') ||
+          el.textContent?.includes('はじめる') ||
+          el.textContent?.includes('挑戦')
+      )
+      if (button) {
+        button.click()
+        return true
+      }
+      return false
+    })
+    .catch(() => false)
 
-  if (startButton) {
-    await startButton.click()
+  if (clicked) {
     await sleep(3000)
   }
 

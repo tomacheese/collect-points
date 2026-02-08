@@ -29,16 +29,27 @@ export async function brainTraining(
     context.logger
   )
 
-  // 開始ボタンをクリック
-  const startButton = await page
-    .waitForSelector(
-      'button:has-text("つづきから"), button:has-text("はじめる"), a:has-text("挑戦")',
-      { timeout: 5000 }
-    )
-    .catch(() => null)
+  // 開始ボタンをクリック（JavaScript でテキストを含む要素を探す）
+  const startClicked = await page
+    .evaluate(() => {
+      const elements = Array.from(
+        document.querySelectorAll('button, a')
+      ) as HTMLElement[]
+      const button = elements.find(
+        (el) =>
+          el.textContent?.includes('つづきから') ||
+          el.textContent?.includes('はじめる') ||
+          el.textContent?.includes('挑戦')
+      )
+      if (button) {
+        button.click()
+        return true
+      }
+      return false
+    })
+    .catch(() => false)
 
-  if (startButton) {
-    await startButton.click()
+  if (startClicked) {
     await sleep(3000)
   }
 
@@ -56,12 +67,21 @@ export async function brainTraining(
     await answerButtons[randomIndex].click()
     await sleep(2000)
 
-    // 次へボタン
-    const nextButton = await page
-      .$('button:has-text("次へ"), a:has-text("次へ")')
-      .catch(() => null)
-    if (nextButton) {
-      await nextButton.click()
+    // 次へボタン（JavaScript でテキストを含む要素を探す）
+    const nextClicked = await page
+      .evaluate(() => {
+        const elements = Array.from(
+          document.querySelectorAll('button, a')
+        ) as HTMLElement[]
+        const button = elements.find((el) => el.textContent?.includes('次へ'))
+        if (button) {
+          button.click()
+          return true
+        }
+        return false
+      })
+      .catch(() => false)
+    if (nextClicked) {
       await sleep(2000)
     }
   }
