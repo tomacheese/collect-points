@@ -56,9 +56,11 @@ export async function natsupoi(
       }
       return false
     })
-    .catch((error) => {
+    .catch((error: unknown) => {
       // evaluate のエラーをログ出力
-      context.logger.warn(`natsupoi: ボタンクリック処理でエラー: ${error}`)
+      context.logger.warn(
+        `natsupoi: ボタンクリック処理でエラー: ${String(error)}`
+      )
       return false
     })
 
@@ -81,9 +83,11 @@ export async function natsupoi(
             .slice(0, 10),
         }
       })
-      .catch((error) => {
+      .catch((error: unknown) => {
         // デバッグ情報取得のエラーもログ出力
-        context.logger.warn(`natsupoi: デバッグ情報取得でエラー: ${error}`)
+        context.logger.warn(
+          `natsupoi: デバッグ情報取得でエラー: ${String(error)}`
+        )
         return null
       })
     if (debugInfo) {
