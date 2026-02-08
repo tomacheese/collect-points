@@ -220,7 +220,7 @@ export abstract class BaseCrawler implements Crawler {
 
   /**
    * ページの診断情報収集を設定する
-   * Console logs と Network logs を収集するリスナーを設定
+   * Console logs と Network logs を収集するリスナーと、JavaScript dialog を自動的に閉じるハンドラを設定
    * @param page 対象ページ
    */
   private setupPageDiagnostics(page: Page): void {
@@ -239,6 +239,24 @@ export abstract class BaseCrawler implements Crawler {
 
     // Network logs の収集を初期化
     this.networkLogs.set(page, [])
+
+    // JavaScript dialog (alert/confirm/prompt) を自動的に閉じる
+    page.on('dialog', (dialog) => {
+      this.logger.warn(
+        `JavaScript dialog を検出しました: ${dialog.type()} - ${dialog.message()}`
+      )
+      dialog
+        .dismiss()
+        .then(() => {
+          this.logger.info('Dialog を自動的に閉じました')
+        })
+        .catch((error: unknown) => {
+          this.logger.error(
+            'Dialog を閉じる際にエラーが発生しました',
+            error as Error
+          )
+        })
+    })
 
     // Console logs の収集
     page.on('console', (msg) => {
