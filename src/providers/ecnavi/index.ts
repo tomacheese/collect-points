@@ -25,7 +25,6 @@ import {
   entryLottery,
   ticketingLottery,
   natsupoi,
-  // spotdiffBox, // 画像認識が必要なため自動化不可
   languageTravel,
   brainExerciseGame,
   easyGame,
@@ -168,14 +167,6 @@ export default class EcNaviCrawler extends BaseCrawler {
         'natsupoi'
       )
     }
-    // まちがい探しボックス: 画像認識が必要なため自動化不可
-    // if (this.shouldRun('spotdiffBox')) {
-    //   await this.runMethod(
-    //     page,
-    //     (p) => spotdiffBox(this.context, p, this.watchAdIfExists.bind(this)),
-    //     'spotdiffBox'
-    //   )
-    // }
     if (this.shouldRun('languageTravel')) {
       await this.runMethod(
         page,

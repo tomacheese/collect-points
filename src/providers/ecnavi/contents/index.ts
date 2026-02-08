@@ -16,7 +16,6 @@ export { entryLottery, ticketingLottery } from './lottery'
 
 // 新ゲーム
 export { natsupoi } from './natsupoi'
-export { spotdiffBox } from './spotdiff-box'
 export { languageTravel } from './language-travel'
 export { brainExerciseGame } from './brain-exercise-game'
 export { easyGame } from './easy-game'
