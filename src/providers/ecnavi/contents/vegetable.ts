@@ -33,7 +33,7 @@ export async function vegetable(
       }
 
       // a タグでテキストに「はじめる」を含む要素を探す
-      const elements = Array.from(document.querySelectorAll('a'))
+      const elements = [...document.querySelectorAll('a')]
       const button = elements.find((el) => el.textContent?.includes('はじめる'))
       if (button) {
         button.click()
@@ -73,8 +73,8 @@ export async function vegetable(
     // デバッグ情報を出力
     const debugInfo = await page
       .evaluate(() => {
-        const allImages = Array.from(document.querySelectorAll('img'))
-        const allLinks = Array.from(document.querySelectorAll('a'))
+        const allImages = [...document.querySelectorAll('img')]
+        const allLinks = [...document.querySelectorAll('a')]
         return {
           url: globalThis.location.href,
           title: document.title,

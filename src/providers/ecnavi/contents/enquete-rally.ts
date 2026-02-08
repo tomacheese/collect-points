@@ -25,19 +25,19 @@ export async function enqueteRally(
   // 現在の URL をログ出力
   context.logger.info(`enqueteRally: 現在の URL: ${page.url()}`)
 
-  // ドロップダウンが存在するか確認
-  const selectElement = await page
-    .waitForSelector('select.c_select', { timeout: 5000 })
-    .catch(() => null)
+  // ラジオボタンが存在するか確認
+  const radioInputs = await page.$$(
+    'input[type="radio"][name="enquete_fields"]'
+  )
 
-  if (!selectElement) {
+  if (radioInputs.length === 0) {
     context.logger.info('アンケートが見つかりません（本日は終了済みの可能性）')
     // デバッグ情報を出力
     const debugInfo = await page
       .evaluate(() => ({
         url: globalThis.location.href,
         title: document.title,
-        selectCount: document.querySelectorAll('select').length,
+        radioCount: document.querySelectorAll('input[type="radio"]').length,
         bodyText: document.body.textContent?.slice(0, 200),
       }))
       .catch(() => null)
@@ -49,23 +49,20 @@ export async function enqueteRally(
     return
   }
 
-  // ドロップダウンの選択肢を取得（最初の「選択してください」を除く）
-  const options = await page.$$eval(
-    'select.c_select option[value]:not([value=""])',
-    (elements) => elements.map((el) => el.getAttribute('value') ?? '')
-  )
-
-  if (options.length === 0) {
-    context.logger.info('選択肢が見つかりません')
-    return
-  }
-
   // ランダムに選択肢を選ぶ
-  const randomIndex = Math.floor(Math.random() * options.length)
-  const selectedValue = options[randomIndex]
-  context.logger.info(`選択: ${selectedValue}`)
+  const randomIndex = Math.floor(Math.random() * radioInputs.length)
+  const selectedRadio = radioInputs[randomIndex]
 
-  await page.select('select.c_select', selectedValue)
+  // 選択されたラジオボタンのラベルテキストを取得
+  const labelText = await page.evaluate((radio) => {
+    const label = radio.closest('label')
+    return label?.textContent?.trim() ?? '不明'
+  }, selectedRadio)
+
+  context.logger.info(`選択: ${labelText}`)
+
+  // ラジオボタンをクリック
+  await selectedRadio.click()
   await sleep(1000)
 
   // 回答するボタンをクリック

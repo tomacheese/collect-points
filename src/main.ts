@@ -14,7 +14,8 @@ async function main() {
     `🚀 collect-points ${version ? `v${version}` : 'unknown version'} を起動します`
   )
 
-  if (!fs.existsSync('data')) {
+  // Docker 環境では /data にマウントされているため、ローカルの data ディレクトリは不要
+  if (!fs.existsSync('data') && !fs.existsSync('/data')) {
     fs.mkdirSync('data')
   }
 

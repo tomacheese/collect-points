@@ -36,7 +36,7 @@ export async function natsupoi(
   // ゲーム開始ボタンをクリック（JavaScript でテキストを含む要素を探す）
   const clicked = await page
     .evaluate(() => {
-      const elements = Array.from(document.querySelectorAll('button'))
+      const elements = [...document.querySelectorAll('button')]
       const button = elements.find(
         (el) =>
           el.textContent?.includes('スタート') ||
@@ -60,7 +60,7 @@ export async function natsupoi(
     // デバッグ情報を出力
     const debugInfo = await page
       .evaluate(() => {
-        const allButtons = Array.from(document.querySelectorAll('button'))
+        const allButtons = [...document.querySelectorAll('button')]
         return {
           url: globalThis.location.href,
           title: document.title,
