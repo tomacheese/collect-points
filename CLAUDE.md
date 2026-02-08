@@ -455,7 +455,6 @@ await screenshot(); // 状態確認
 | `horoscope` | スマホエミュレート | 星座占い |
 | `brainTraining` | クイズ回答型 | 脳トレクイズ |
 | `nazotore` | 広告視聴 + クイズ | 今夜はナゾトレ |
-| `spotdiff` | 広告視聴型 | まちがい探し |
 | `puzzle` | 広告視聴型 | クラッシュアイス |
 | `sugoroku` | 広告視聴型 | たびろく（すごろく）|
 | `dropgame` | 広告視聴型 | ふるふるパニック |
