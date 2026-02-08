@@ -3,7 +3,7 @@
     "target": "es2020",
     "module": "commonjs",
     "moduleResolution": "Node",
-    "lib": ["ESNext", "esnext.AsyncIterable", "DOM"],
+    "lib": ["ESNext", "esnext.AsyncIterable", "DOM", "DOM.Iterable"],
     "outDir": "./dist",
     "removeComments": true,
     "esModuleInterop": true,
@@ -21,6 +21,7 @@
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "experimentalDecorators": true,
+    "downlevelIteration": true,
     "baseUrl": ".",
     "newLine": "LF",
     "paths": {
