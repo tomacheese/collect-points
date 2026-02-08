@@ -1068,6 +1068,13 @@ export abstract class BaseCrawler implements Crawler {
     methodName?: string
   ): Promise<void> {
     const name = methodName ?? (method.name || 'unknown')
+
+    // ゲームフィルタリングチェック
+    if (!this.shouldRun(name)) {
+      this.logger.info(`⏭️ ${name}: スキップ（フィルター対象外）`)
+      return
+    }
+
     const startTime = Date.now()
     await page.bringToFront()
 

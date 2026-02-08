@@ -16,6 +16,7 @@ import {
   competition,
   dropgame,
   easyGame,
+  easyGameMissions,
   gacha,
   gesoten,
   horoscope,
@@ -138,6 +139,11 @@ export default class PointTownCrawler extends BaseCrawler {
       'competition'
     )
     await this.runMethod(page, (p) => easyGame(this.context, p), 'easyGame')
+    await this.runMethod(
+      page,
+      (p) => easyGameMissions(this.context, p),
+      'easyGameMissions'
+    )
     await this.runMethod(page, (p) => gesoten(this.context, p), 'gesoten')
     await this.runMethod(page, (p) => news(this.context, p), 'news')
 
