@@ -51,8 +51,14 @@ export async function brainTraining(
 
   if (startClicked) {
     context.logger.info('brainTraining: 開始ボタンをクリックしました')
-    // ページ遷移を待機（開始ボタンはクリック済みなので sleep で待機）
-    await sleep(10_000)
+    // ページ遷移を待機（クリック済みだが遷移検出のため waitForNavigation を使用）
+    await page
+      .waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 10_000 })
+      .catch(() => {
+        context.logger.warn(
+          'brainTraining: 開始ボタンクリック後のナビゲーション待機がタイムアウト'
+        )
+      })
   } else {
     context.logger.warn('brainTraining: 開始ボタンが見つかりません')
   }
@@ -127,8 +133,14 @@ export async function brainTraining(
 
     if (nextClicked) {
       context.logger.info(`brainTraining: 「次へ」ボタンをクリック`)
-      // 次のページへの遷移を待機（ボタンはクリック済みなので sleep で待機）
-      await sleep(5000)
+      // 次のページへの遷移を待機（クリック済みだが遷移検出のため waitForNavigation を使用）
+      await page
+        .waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 5000 })
+        .catch(() => {
+          context.logger.warn(
+            'brainTraining: 「次へ」ボタンクリック後のナビゲーション待機がタイムアウト'
+          )
+        })
     }
   }
 
