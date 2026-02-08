@@ -20,6 +20,9 @@ export async function vegetable(
     waitUntil: 'networkidle2',
   })
 
+  // 現在のURLをログに出力
+  context.logger.info(`vegetable: 現在のURL: ${page.url()}`)
+
   // はじめるボタンをクリック（JavaScript でテキストを含む要素を探す）
   const clicked = await page
     .evaluate(() => {
@@ -42,12 +45,14 @@ export async function vegetable(
     .catch(() => false)
 
   if (clicked) {
+    context.logger.info('vegetable: はじめるボタンをクリック')
     await sleep(2000)
 
     // クレーンゲーム操作：右方向に移動（長押し）
     // ゲーム画面内をクリック・ホールドして操作
     const gameArea = await page.$('.game_box, #game, [class*="game"]')
     if (gameArea) {
+      context.logger.info('vegetable: ゲームエリアを検出、クレーン操作開始')
       // 右移動（クリックして少し待つ）
       await page.mouse.down()
       await sleep(2000) // 適度な位置まで移動
@@ -58,9 +63,32 @@ export async function vegetable(
       await page.mouse.down()
       await sleep(1500)
       await page.mouse.up()
+      context.logger.info('vegetable: クレーン操作完了')
+    } else {
+      context.logger.warn('vegetable: ゲームエリアが見つかりません')
     }
 
     await sleep(5000)
+  } else {
+    context.logger.warn('vegetable: はじめるボタンが見つかりません')
+    // デバッグ情報を出力
+    const debugInfo = await page
+      .evaluate(() => {
+        const allImages = Array.from(document.querySelectorAll('img'))
+        const allLinks = Array.from(document.querySelectorAll('a'))
+        return {
+          url: window.location.href,
+          title: document.title,
+          imageCount: allImages.length,
+          imageAlts: allImages.map((img) => img.alt).slice(0, 10),
+          linkCount: allLinks.length,
+          linkTexts: allLinks.map((a) => a.textContent?.trim()).slice(0, 10),
+        }
+      })
+      .catch(() => null)
+    if (debugInfo) {
+      context.logger.info(`vegetable: デバッグ情報: ${JSON.stringify(debugInfo)}`)
+    }
   }
 
   await sleep(3000)
