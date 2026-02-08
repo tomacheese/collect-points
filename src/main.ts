@@ -56,7 +56,6 @@ async function main() {
     'ticketingLottery',
     'fund',
     'natsupoi',
-    'spotdiffBox',
     'languageTravel',
     'brainExerciseGame',
     'easyGame',

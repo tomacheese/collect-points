@@ -19,7 +19,6 @@ export { omikuji } from './omikuji'
 export { pointChance } from './point-chance'
 export { pointQ } from './point-q'
 export { puzzle } from './puzzle'
-export { spotdiff } from './spotdiff'
 export { stamprally } from './stamprally'
 export { sugoroku } from './sugoroku'
 

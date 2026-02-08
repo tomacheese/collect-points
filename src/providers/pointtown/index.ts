@@ -29,7 +29,6 @@ import {
   pointChance,
   pointQ,
   puzzle,
-  spotdiff,
   stamprally,
   sugoroku,
   triangleLot,
@@ -154,7 +153,6 @@ export default class PointTownCrawler extends BaseCrawler {
       'brainTraining'
     )
     await this.runMethod(page, (p) => nazotore(this.context, p), 'nazotore')
-    await this.runMethod(page, (p) => spotdiff(this.context, p), 'spotdiff')
     await this.runMethod(page, (p) => puzzle(this.context, p), 'puzzle')
     await this.runMethod(page, (p) => sugoroku(this.context, p), 'sugoroku')
     await this.runMethod(page, (p) => dropgame(this.context, p), 'dropgame')

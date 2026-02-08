@@ -429,7 +429,6 @@ await screenshot(); // 状態確認
 | `ticketingLottery` | ボタンクリック | 宝くじチケット一括使用 |
 | `fund` | 新規タブ | クリック募金 |
 | `natsupoi` | 広告視聴型 | ナツポイ |
-| `spotdiffBox` | 広告視聴型 | まちがい探し |
 | `languageTravel` | クイズ回答型 | 語学トラベル |
 | `brainExerciseGame` | 広告視聴型 | 頭の体操ゲーム |
 | `easyGame` | 広告視聴型 | かんたんゲーム |
@@ -456,7 +455,6 @@ await screenshot(); // 状態確認
 | `horoscope` | スマホエミュレート | 星座占い |
 | `brainTraining` | クイズ回答型 | 脳トレクイズ |
 | `nazotore` | 広告視聴 + クイズ | 今夜はナゾトレ |
-| `spotdiff` | 広告視聴型 | まちがい探し |
 | `puzzle` | 広告視聴型 | クラッシュアイス |
 | `sugoroku` | 広告視聴型 | たびろく（すごろく）|
 | `dropgame` | 広告視聴型 | ふるふるパニック |
