@@ -20,6 +20,9 @@ export async function chocoRead(
     waitUntil: 'networkidle2',
   })
 
+  // 現在の URL をログ出力
+  context.logger.info(`chocoRead: 現在の URL: ${page.url()}`)
+
   // 「今すぐ読んでポイントゲット」ボタンをクリック
   const directLinkButton = await page
     .waitForSelector('a.chocoyomi-direct-link__button', { timeout: 5000 })
@@ -27,8 +30,28 @@ export async function chocoRead(
 
   if (!directLinkButton) {
     context.logger.info('ちょこ読みのボタンが見つかりません')
+    // デバッグ情報を出力
+    const debugInfo = await page
+      .evaluate(() => ({
+        url: globalThis.location.href,
+        title: document.title,
+        linkCount: document.querySelectorAll('a').length,
+        linkTexts: Array.from(document.querySelectorAll('a'))
+          .map((a) => a.textContent?.trim())
+          .slice(0, 10),
+      }))
+      .catch(() => null)
+    if (debugInfo) {
+      context.logger.info(
+        `chocoRead: デバッグ情報: ${JSON.stringify(debugInfo)}`
+      )
+    }
     return
   }
+
+  context.logger.info(
+    'chocoRead: 「今すぐ読んでポイントゲット」ボタンをクリック'
+  )
 
   await Promise.all([
     directLinkButton.click(),
@@ -36,6 +59,7 @@ export async function chocoRead(
   ])
 
   // 無料チケットで読む
+  context.logger.info(`chocoRead: レンタルページの URL: ${page.url()}`)
   const rentalButton = await page
     .waitForSelector('button.chocoyomi-ad-page__button.button-rental', {
       timeout: 5000,
@@ -44,9 +68,26 @@ export async function chocoRead(
 
   if (!rentalButton) {
     context.logger.info('無料チケットボタンが見つかりません')
+    // デバッグ情報を出力
+    const debugInfo = await page
+      .evaluate(() => ({
+        url: globalThis.location.href,
+        title: document.title,
+        buttonCount: document.querySelectorAll('button').length,
+        buttonTexts: Array.from(document.querySelectorAll('button'))
+          .map((b) => b.textContent?.trim())
+          .slice(0, 10),
+      }))
+      .catch(() => null)
+    if (debugInfo) {
+      context.logger.info(
+        `chocoRead: デバッグ情報: ${JSON.stringify(debugInfo)}`
+      )
+    }
     return
   }
 
+  context.logger.info('chocoRead: 無料チケットボタンをクリック')
   await rentalButton.click()
   await sleep(1000)
 

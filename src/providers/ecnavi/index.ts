@@ -95,72 +95,120 @@ export default class EcNaviCrawler extends BaseCrawler {
     this.logger.info(`beforePoint: ${beforePoint}`)
 
     // 一番最初にエントリー
-    await this.runMethod(
-      page,
-      (p) => entryLottery(this.context, p),
-      'entryLottery'
-    )
+    if (this.shouldRun('entryLottery')) {
+      await this.runMethod(
+        page,
+        (p) => entryLottery(this.context, p),
+        'entryLottery'
+      )
+    }
 
-    await this.runMethod(page, (p) => gesoten(this.context, p), 'gesoten')
-    await this.runMethod(page, (p) => chirashi(this.context, p), 'chirashi')
-    await this.runMethod(
-      page,
-      (p) => chinju(this.context, p, this.handleRewardedAd.bind(this)),
-      'chinju'
-    )
-    await this.runMethod(page, (p) => quiz(this.context, p), 'quiz')
-    await this.runMethod(page, (p) => divination(this.context, p), 'divination')
-    await this.runMethod(page, (p) => fishing(this.context, p), 'fishing')
-    await this.runMethod(page, (p) => choice(this.context, p), 'choice')
-    await this.runMethod(page, (p) => news(this.context, p), 'news')
-    await this.runMethod(page, (p) => garapon(this.context, p), 'garapon')
-    await this.runMethod(page, (p) => doron(this.context, p), 'doron')
-    await this.runMethod(
-      page,
-      (p) => ticketingLottery(this.context, p),
-      'ticketingLottery'
-    )
-    await this.runMethod(page, (p) => fund(this.context, p), 'fund')
+    if (this.shouldRun('gesoten')) {
+      await this.runMethod(page, (p) => gesoten(this.context, p), 'gesoten')
+    }
+    if (this.shouldRun('chirashi')) {
+      await this.runMethod(page, (p) => chirashi(this.context, p), 'chirashi')
+    }
+    if (this.shouldRun('chinju')) {
+      await this.runMethod(
+        page,
+        (p) => chinju(this.context, p, this.handleRewardedAd.bind(this)),
+        'chinju'
+      )
+    }
+    if (this.shouldRun('quiz')) {
+      await this.runMethod(page, (p) => quiz(this.context, p), 'quiz')
+    }
+    if (this.shouldRun('divination')) {
+      await this.runMethod(
+        page,
+        (p) => divination(this.context, p),
+        'divination'
+      )
+    }
+    if (this.shouldRun('fishing')) {
+      await this.runMethod(page, (p) => fishing(this.context, p), 'fishing')
+    }
+    if (this.shouldRun('choice')) {
+      await this.runMethod(page, (p) => choice(this.context, p), 'choice')
+    }
+    if (this.shouldRun('news')) {
+      await this.runMethod(page, (p) => news(this.context, p), 'news')
+    }
+    if (this.shouldRun('garapon')) {
+      await this.runMethod(page, (p) => garapon(this.context, p), 'garapon')
+    }
+    if (this.shouldRun('doron')) {
+      await this.runMethod(page, (p) => doron(this.context, p), 'doron')
+    }
+    if (this.shouldRun('ticketingLottery')) {
+      await this.runMethod(
+        page,
+        (p) => ticketingLottery(this.context, p),
+        'ticketingLottery'
+      )
+    }
+    if (this.shouldRun('fund')) {
+      await this.runMethod(page, (p) => fund(this.context, p), 'fund')
+    }
 
     // 新ゲーム
-    await this.runMethod(
-      page,
-      (p) => natsupoi(this.context, p, this.watchAdIfExists.bind(this)),
-      'natsupoi'
-    )
-    await this.runMethod(
-      page,
-      (p) => spotdiffBox(this.context, p, this.watchAdIfExists.bind(this)),
-      'spotdiffBox'
-    )
-    await this.runMethod(
-      page,
-      (p) => languageTravel(this.context, p),
-      'languageTravel'
-    )
-    await this.runMethod(
-      page,
-      (p) =>
-        brainExerciseGame(this.context, p, this.watchAdIfExists.bind(this)),
-      'brainExerciseGame'
-    )
-    await this.runMethod(
-      page,
-      (p) => easyGame(this.context, p, this.watchAdIfExists.bind(this)),
-      'easyGame'
-    )
-    await this.runMethod(
-      page,
-      (p) => brainTraining(this.context, p, this.watchAdIfExists.bind(this)),
-      'brainTraining'
-    )
-    await this.runMethod(page, (p) => vegetable(this.context, p), 'vegetable')
-    await this.runMethod(page, (p) => chocoRead(this.context, p), 'chocoRead')
-    await this.runMethod(
-      page,
-      (p) => enqueteRally(this.context, p),
-      'enqueteRally'
-    )
+    if (this.shouldRun('natsupoi')) {
+      await this.runMethod(
+        page,
+        (p) => natsupoi(this.context, p, this.watchAdIfExists.bind(this)),
+        'natsupoi'
+      )
+    }
+    if (this.shouldRun('spotdiffBox')) {
+      await this.runMethod(
+        page,
+        (p) => spotdiffBox(this.context, p, this.watchAdIfExists.bind(this)),
+        'spotdiffBox'
+      )
+    }
+    if (this.shouldRun('languageTravel')) {
+      await this.runMethod(
+        page,
+        (p) => languageTravel(this.context, p),
+        'languageTravel'
+      )
+    }
+    if (this.shouldRun('brainExerciseGame')) {
+      await this.runMethod(
+        page,
+        (p) =>
+          brainExerciseGame(this.context, p, this.watchAdIfExists.bind(this)),
+        'brainExerciseGame'
+      )
+    }
+    if (this.shouldRun('easyGame')) {
+      await this.runMethod(
+        page,
+        (p) => easyGame(this.context, p, this.watchAdIfExists.bind(this)),
+        'easyGame'
+      )
+    }
+    if (this.shouldRun('brainTraining')) {
+      await this.runMethod(
+        page,
+        (p) => brainTraining(this.context, p, this.watchAdIfExists.bind(this)),
+        'brainTraining'
+      )
+    }
+    if (this.shouldRun('vegetable')) {
+      await this.runMethod(page, (p) => vegetable(this.context, p), 'vegetable')
+    }
+    if (this.shouldRun('chocoRead')) {
+      await this.runMethod(page, (p) => chocoRead(this.context, p), 'chocoRead')
+    }
+    if (this.shouldRun('enqueteRally')) {
+      await this.runMethod(
+        page,
+        (p) => enqueteRally(this.context, p),
+        'enqueteRally'
+      )
+    }
 
     const afterPoint = await this.getCurrentPoint(page)
     this.logger.info(`afterPoint: ${afterPoint}`)

@@ -28,16 +28,35 @@ export async function brainTraining(
   )
 
   // 「つづきから」または「はじめる」ボタンをクリック
-  const startButton = await page
-    .waitForSelector(
-      'a[href*="/quiz/question"], button:has-text("つづきから"), button:has-text("はじめる")',
-      { timeout: 5000 }
-    )
-    .catch(() => null)
+  const startClicked = await page
+    .evaluate(() => {
+      // a[href*="/quiz/question"] を探す
+      const questionLink = document.querySelector('a[href*="/quiz/question"]')
+      if (questionLink) {
+        ;(questionLink as HTMLElement).click()
+        return true
+      }
 
-  if (startButton) {
-    await startButton.click()
+      // ボタンを探す
+      const elements = Array.from(document.querySelectorAll('button'))
+      const button = elements.find(
+        (el) =>
+          el.textContent?.includes('つづきから') ||
+          el.textContent?.includes('はじめる')
+      )
+      if (button) {
+        button.click()
+        return true
+      }
+      return false
+    })
+    .catch(() => false)
+
+  if (startClicked) {
+    context.logger.info('brainTraining: 開始ボタンをクリック')
     await sleep(3000)
+  } else {
+    context.logger.warn('brainTraining: 開始ボタンが見つかりません')
   }
 
   // クイズに回答（最大10問）
@@ -59,13 +78,24 @@ export async function brainTraining(
     await sleep(2000)
 
     // 次の問題へ進むボタンがあればクリック
-    const nextButton = await page
-      .$(
-        'button:has-text("次へ"), button:has-text("次の問題"), a:has-text("次へ")'
-      )
-      .catch(() => null)
-    if (nextButton) {
-      await nextButton.click()
+    const nextClicked = await page
+      .evaluate(() => {
+        const elements = Array.from(
+          document.querySelectorAll('button, a')
+        ) as HTMLElement[]
+        const button = elements.find(
+          (el) =>
+            el.textContent?.includes('次へ') ||
+            el.textContent?.includes('次の問題')
+        )
+        if (button) {
+          button.click()
+          return true
+        }
+        return false
+      })
+      .catch(() => false)
+    if (nextClicked) {
       await sleep(2000)
     }
   }

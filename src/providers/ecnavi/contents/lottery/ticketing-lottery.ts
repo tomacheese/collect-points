@@ -16,9 +16,36 @@ export async function ticketingLottery(
   await page.goto('https://ecnavi.jp/game/lottery/', {
     waitUntil: 'networkidle2',
   })
-  await page
-    .waitForSelector('p.btn_ikkatsu')
-    .then((element) => element?.click())
+
+  // 現在の URL をログ出力
+  context.logger.info(`ticketingLottery: 現在の URL: ${page.url()}`)
+
+  const ikkatsuButton = await page
+    .waitForSelector('p.btn_ikkatsu', { timeout: 5000 })
     .catch(() => null)
-  await sleep(1000)
+
+  if (ikkatsuButton) {
+    context.logger.info('ticketingLottery: 一括応募ボタンをクリック')
+    await ikkatsuButton.click()
+    await sleep(1000)
+    context.logger.info('ticketingLottery: 処理完了')
+  } else {
+    context.logger.info(
+      'ticketingLottery: 一括応募ボタンが見つかりません（チケットなし）'
+    )
+    // デバッグ情報を出力
+    const debugInfo = await page
+      .evaluate(() => ({
+        url: globalThis.location.href,
+        title: document.title,
+        paragraphCount: document.querySelectorAll('p').length,
+        bodyText: document.body.textContent?.slice(0, 200),
+      }))
+      .catch(() => null)
+    if (debugInfo) {
+      context.logger.info(
+        `ticketingLottery: デバッグ情報: ${JSON.stringify(debugInfo)}`
+      )
+    }
+  }
 }

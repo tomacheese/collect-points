@@ -28,16 +28,28 @@ export async function puzzle(
   )
 
   // 開始ボタンをクリック
-  const startButton = await page
-    .waitForSelector(
-      'button:has-text("挑戦"), button:has-text("はじめる"), button:has-text("スタート")',
-      { timeout: 5000 }
-    )
-    .catch(() => null)
+  const clicked = await page
+    .evaluate(() => {
+      const elements = Array.from(document.querySelectorAll('button'))
+      const button = elements.find(
+        (el) =>
+          el.textContent?.includes('挑戦') ||
+          el.textContent?.includes('はじめる') ||
+          el.textContent?.includes('スタート')
+      )
+      if (button) {
+        button.click()
+        return true
+      }
+      return false
+    })
+    .catch(() => false)
 
-  if (startButton) {
-    await startButton.click()
+  if (clicked) {
+    context.logger.info('puzzle: 開始ボタンをクリック')
     await sleep(3000)
+  } else {
+    context.logger.warn('puzzle: 開始ボタンが見つかりません')
   }
 
   // 広告があれば視聴

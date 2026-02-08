@@ -19,6 +19,9 @@ export async function enqueteRally(
     waitUntil: 'networkidle2',
   })
 
+  // 現在の URL をログ出力
+  context.logger.info(`enqueteRally: 現在の URL: ${page.url()}`)
+
   // ドロップダウンが存在するか確認
   const selectElement = await page
     .waitForSelector('select.c_select', { timeout: 5000 })
@@ -26,6 +29,20 @@ export async function enqueteRally(
 
   if (!selectElement) {
     context.logger.info('アンケートが見つかりません（本日は終了済みの可能性）')
+    // デバッグ情報を出力
+    const debugInfo = await page
+      .evaluate(() => ({
+        url: globalThis.location.href,
+        title: document.title,
+        selectCount: document.querySelectorAll('select').length,
+        bodyText: document.body.textContent?.slice(0, 200),
+      }))
+      .catch(() => null)
+    if (debugInfo) {
+      context.logger.info(
+        `enqueteRally: デバッグ情報: ${JSON.stringify(debugInfo)}`
+      )
+    }
     return
   }
 

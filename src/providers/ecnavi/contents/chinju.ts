@@ -31,42 +31,39 @@ export async function chinju(
     return
   }
 
-  // 問題リンクをクリックしてナビゲーション（タイムアウト時は広告をチェックしてリトライ）
-  for (let attempt = 0; attempt < 2; attempt++) {
-    const questionLink = await page
-      .waitForSelector('a.chinju-lesson-question__link', { timeout: 5000 })
-      .catch(() => null)
+  // 回答リンクをクリック（ランダムに「もちろん！」または「知らない・・・」を選択）
+  const answerLinks = await page.$$('a[href*="/research/chinju_lesson/answer"]')
+  if (answerLinks.length === 0) {
+    context.logger.info('回答リンクが見つかりません')
+    return
+  }
 
-    if (!questionLink) {
-      context.logger.info('問題リンクが見つかりません')
-      return
-    }
+  // ランダムに回答を選択
+  const randomIndex = Math.floor(Math.random() * answerLinks.length)
+  const selectedLink = answerLinks[randomIndex]
 
-    try {
-      await Promise.all([
-        page.waitForNavigation({
-          waitUntil: 'domcontentloaded',
-          timeout: 30_000,
-        }),
-        questionLink.click(),
-      ])
-      // ナビゲーション成功
-      return
-    } catch (error) {
-      if ((error as Error).name === 'TimeoutError') {
-        context.logger.warn(
-          `ナビゲーションタイムアウト (試行 ${attempt + 1}/2)、広告ポップアップをチェック`
-        )
-        // タイムアウト時は広告をチェック
-        await handleRewardedAd(page)
-        // ページをリロードしてリトライ
-        await page.goto('https://ecnavi.jp/research/chinju_lesson/', {
-          waitUntil: 'networkidle2',
+  try {
+    // 広告オーバーレイによるクリック失敗を防ぐため JavaScript でクリック
+    await Promise.all([
+      page.waitForNavigation({
+        waitUntil: 'domcontentloaded',
+        timeout: 30_000,
+      }),
+      (async () => {
+        await selectedLink.evaluate((el) => {
+          ;(el as HTMLElement).click()
         })
-        // 次のループで再試行
-      } else {
-        throw error
-      }
+      })(),
+    ])
+    context.logger.info('chinju() 回答完了')
+  } catch (error) {
+    if ((error as Error).name === 'TimeoutError') {
+      context.logger.warn(
+        'ナビゲーションタイムアウト、広告ポップアップをチェック'
+      )
+      await handleRewardedAd(page)
+    } else {
+      throw error
     }
   }
 }

@@ -28,16 +28,28 @@ export async function sugoroku(
   await context.watchAdIfExists(page)
 
   // サイコロを振るボタンをクリック
-  const diceButton = await page
-    .waitForSelector(
-      'button:has-text("サイコロ"), button:has-text("振る"), button:has-text("スタート")',
-      { timeout: 5000 }
-    )
-    .catch(() => null)
+  const clicked = await page
+    .evaluate(() => {
+      const elements = Array.from(document.querySelectorAll('button'))
+      const button = elements.find(
+        (el) =>
+          el.textContent?.includes('サイコロ') ||
+          el.textContent?.includes('振る') ||
+          el.textContent?.includes('スタート')
+      )
+      if (button) {
+        button.click()
+        return true
+      }
+      return false
+    })
+    .catch(() => false)
 
-  if (diceButton) {
-    await diceButton.click()
+  if (clicked) {
+    context.logger.info('sugoroku: サイコロボタンをクリック')
     await sleep(5000) // アニメーション待機
+  } else {
+    context.logger.warn('sugoroku: サイコロボタンが見つかりません')
   }
 
   await sleep(5000)
