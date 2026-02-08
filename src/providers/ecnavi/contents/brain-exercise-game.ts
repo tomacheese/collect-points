@@ -43,10 +43,9 @@ export async function brainExerciseGame(
   const currentUrl = page.url()
   context.logger.info(`brainExerciseGame: 現在のURL: ${currentUrl}`)
 
-  // スタンプページのURLからベースURLを取得
+  // スタンプページのURLからURLオブジェクトを取得
   // 例: https://ecnavi.ib-game.jp/stamp/?uid=...&media_id=174&syid=...
   const urlObj = new URL(currentUrl)
-  const baseUrl = `${urlObj.origin}/sanji/top.php${urlObj.search}`
 
   // ゲームリスト（優先順位順）
   const games = [

@@ -78,16 +78,31 @@ export async function spotdiffBox(
         const response = await fetch(
           'https://ecnavi.kantangame.com/spotdiffapi/start.json'
         )
-        const data = await response.json()
-        return data
+        return (await response.json()) as unknown
       })
       .catch(() => null)
 
     if (
-      apiResponse?.status === 'OK' &&
-      apiResponse.data?.question?.answer_json_array
+      apiResponse &&
+      typeof apiResponse === 'object' &&
+      'status' in apiResponse &&
+      apiResponse.status === 'OK' &&
+      'data' in apiResponse &&
+      apiResponse.data &&
+      typeof apiResponse.data === 'object' &&
+      'question' in apiResponse.data &&
+      apiResponse.data.question &&
+      typeof apiResponse.data.question === 'object' &&
+      'answer_json_array' in apiResponse.data.question &&
+      Array.isArray(apiResponse.data.question.answer_json_array)
     ) {
-      answerData = apiResponse.data.question.answer_json_array
+      answerData = apiResponse.data.question.answer_json_array as {
+        x_from: number
+        y_from: number
+        x_to: number
+        y_to: number
+        answer_number: number
+      }[]
       context.logger.info(
         `spotdiffBox: APIから ${answerData.length} 個の回答を取得`
       )
