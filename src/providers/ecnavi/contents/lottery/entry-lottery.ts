@@ -1,6 +1,7 @@
 import type { Page } from 'rebrowser-puppeteer-core'
 import type { EcNaviContext } from '@/core/types'
 import { isExistsSelector, sleep } from '@/utils/functions'
+import { safeGoto } from '@/utils/safe-operations'
 
 /**
  * 宝くじエントリー
@@ -13,9 +14,7 @@ export async function entryLottery(
 ): Promise<void> {
   context.logger.info('entryLottery()')
 
-  await page.goto('https://ecnavi.jp/game/lottery/', {
-    waitUntil: 'networkidle2',
-  })
+  await safeGoto(page, 'https://ecnavi.jp/game/lottery/', context.logger)
 
   // 現在の URL をログ出力
   context.logger.info(`entryLottery: 現在の URL: ${page.url()}`)

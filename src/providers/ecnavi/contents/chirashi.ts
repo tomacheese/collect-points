@@ -1,6 +1,7 @@
 import type { Page } from 'rebrowser-puppeteer-core'
 import type { EcNaviContext } from '@/core/types'
 import { sleep } from '@/utils/functions'
+import { safeGoto } from '@/utils/safe-operations'
 
 /**
  * チラシ閲覧
@@ -13,9 +14,7 @@ export async function chirashi(
 ): Promise<void> {
   context.logger.info('chirashi()')
 
-  await page.goto('https://ecnavi.jp/contents/chirashi/', {
-    waitUntil: 'networkidle2',
-  })
+  await safeGoto(page, 'https://ecnavi.jp/contents/chirashi/', context.logger)
 
   // 現在の URL をログ出力
   context.logger.info(`chirashi: 現在の URL: ${page.url()}`)

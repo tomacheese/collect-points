@@ -1,6 +1,7 @@
 import type { Page } from 'rebrowser-puppeteer-core'
 import type { EcNaviContext } from '@/core/types'
 import { getNewTabPage, sleep } from '@/utils/functions'
+import { safeGoto } from '@/utils/safe-operations'
 
 /**
  * ガラポン
@@ -13,9 +14,11 @@ export async function garapon(
 ): Promise<void> {
   context.logger.info('garapon()')
 
-  await page.goto('https://ecnavi.jp/game/lottery/garapon/', {
-    waitUntil: 'networkidle2',
-  })
+  await safeGoto(
+    page,
+    'https://ecnavi.jp/game/lottery/garapon/',
+    context.logger
+  )
 
   // 現在の URL をログ出力
   context.logger.info(`garapon: 現在の URL: ${page.url()}`)

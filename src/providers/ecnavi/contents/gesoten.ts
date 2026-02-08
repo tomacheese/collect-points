@@ -1,6 +1,7 @@
 import type { Page } from 'rebrowser-puppeteer-core'
 import type { EcNaviContext } from '@/core/types'
 import { isExistsSelector, sleep } from '@/utils/functions'
+import { safeGoto } from '@/utils/safe-operations'
 
 /**
  * げそてん
@@ -13,14 +14,14 @@ export async function gesoten(
 ): Promise<void> {
   context.logger.info('gesoten()')
 
-  await page.goto('https://ecnavi.jp/gesoten/redirect/', {
-    waitUntil: 'networkidle2',
-  })
+  await safeGoto(page, 'https://ecnavi.jp/gesoten/redirect/', context.logger)
   context.logger.info(`gesoten: リダイレクト後の URL: ${page.url()}`)
 
-  await page.goto('https://gd.gesoten.com/m/ap-ecnavi-games/reward/gacha', {
-    waitUntil: 'networkidle2',
-  })
+  await safeGoto(
+    page,
+    'https://gd.gesoten.com/m/ap-ecnavi-games/reward/gacha',
+    context.logger
+  )
   context.logger.info(`gesoten: ガチャページの URL: ${page.url()}`)
 
   const games = await page.$$('a[href*="/games/regist/"]')
@@ -46,9 +47,7 @@ export async function gesoten(
     context.logger.info(`gesoten: ゲームを開く: ${url}`)
 
     const newPage = await page.browser().newPage()
-    await newPage.goto(url, {
-      waitUntil: 'networkidle2',
-    })
+    await safeGoto(newPage, url, context.logger)
     await sleep(3000)
     await newPage.close()
   }
@@ -62,8 +61,6 @@ export async function gesoten(
       page.click('button.c-gacha-ticket__action'),
     ])
     await sleep(3000)
-    await page.goto('https://gd.gesoten.com/reward/gacha', {
-      waitUntil: 'networkidle2',
-    })
+    await safeGoto(page, 'https://gd.gesoten.com/reward/gacha', context.logger)
   }
 }
