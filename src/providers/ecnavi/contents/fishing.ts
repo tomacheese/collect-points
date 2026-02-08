@@ -35,10 +35,10 @@ export async function fishing(
   const baitSelected = await page
     .evaluate(() => {
       // エサ選択画面の「選択」ボタンを探す（disabled でないもの）
-      const selectButtons = Array.from(document.querySelectorAll('button'))
+      const selectButtons = [...document.querySelectorAll('button')]
       const baitButton = selectButtons.find(
         (btn) =>
-          btn.textContent?.trim() === '選択' &&
+          btn.textContent.trim() === '選択' &&
           !btn.disabled &&
           btn.offsetParent !== null
       )
@@ -62,10 +62,9 @@ export async function fishing(
   const rodTabClicked = await page
     .evaluate(() => {
       // 「竿」タブのリンクを探してクリック
-      const links = Array.from(document.querySelectorAll('a'))
+      const links = [...document.querySelectorAll('a')]
       const rodTab = links.find(
-        (link) =>
-          link.textContent?.trim() === '竿' && link.offsetParent !== null
+        (link) => link.textContent.trim() === '竿' && link.offsetParent !== null
       )
       if (rodTab) {
         rodTab.click()
@@ -87,10 +86,10 @@ export async function fishing(
   const rodSelected = await page
     .evaluate(() => {
       // 竿選択画面の「選択」ボタンを探す（disabled でないもの）
-      const selectButtons = Array.from(document.querySelectorAll('button'))
+      const selectButtons = [...document.querySelectorAll('button')]
       const rodButton = selectButtons.find(
         (btn) =>
-          btn.textContent?.trim() === '選択' &&
+          btn.textContent.trim() === '選択' &&
           !btn.disabled &&
           btn.offsetParent !== null
       )
@@ -113,10 +112,10 @@ export async function fishing(
   // 5. 「釣りに行く」ボタンをクリック
   const goFishingButtonClicked = await page
     .evaluate(() => {
-      const buttons = Array.from(document.querySelectorAll('button'))
+      const buttons = [...document.querySelectorAll('button')]
       const goFishingButton = buttons.find(
         (btn) =>
-          btn.textContent?.includes('釣りに行く') && btn.offsetParent !== null
+          btn.textContent.includes('釣りに行く') && btn.offsetParent !== null
       )
       if (goFishingButton) {
         goFishingButton.click()

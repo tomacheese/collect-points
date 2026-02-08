@@ -33,9 +33,9 @@ export async function sugoroku(
       const elements = [...document.querySelectorAll('button')]
       const button = elements.find(
         (el) =>
-          el.textContent?.includes('サイコロ') ||
-          el.textContent?.includes('振る') ||
-          el.textContent?.includes('スタート')
+          el.textContent.includes('サイコロ') ||
+          el.textContent.includes('振る') ||
+          el.textContent.includes('スタート')
       )
       if (button) {
         button.click()

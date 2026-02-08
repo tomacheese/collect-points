@@ -35,9 +35,9 @@ export async function dropgame(
       const elements = [...document.querySelectorAll('button')]
       const button = elements.find(
         (el) =>
-          el.textContent?.includes('スタート') ||
-          el.textContent?.includes('はじめる') ||
-          el.textContent?.includes('プレイ')
+          el.textContent.includes('スタート') ||
+          el.textContent.includes('はじめる') ||
+          el.textContent.includes('プレイ')
       )
       if (button) {
         button.click()

@@ -38,7 +38,7 @@ export async function enqueteRally(
         url: globalThis.location.href,
         title: document.title,
         radioCount: document.querySelectorAll('input[type="radio"]').length,
-        bodyText: document.body.textContent?.slice(0, 200),
+        bodyText: document.body.textContent.slice(0, 200),
       }))
       .catch(() => null)
     if (debugInfo) {
@@ -56,7 +56,7 @@ export async function enqueteRally(
   // 選択されたラジオボタンのラベルテキストを取得
   const labelText = await page.evaluate((radio) => {
     const label = radio.closest('label')
-    return label?.textContent?.trim() ?? '不明'
+    return label?.textContent.trim() ?? '不明'
   }, selectedRadio)
 
   context.logger.info(`選択: ${labelText}`)

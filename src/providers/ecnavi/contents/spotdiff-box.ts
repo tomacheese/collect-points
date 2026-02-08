@@ -42,7 +42,7 @@ export async function spotdiffBox(
       const elements = [
         ...document.querySelectorAll('button, a'),
       ] as HTMLElement[]
-      const button = elements.find((el) => el.textContent?.includes('挑戦'))
+      const button = elements.find((el) => el.textContent.includes('挑戦'))
       if (button) {
         button.click()
         return true

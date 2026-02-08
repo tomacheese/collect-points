@@ -38,7 +38,7 @@ export async function languageTravel(
     const validButtons: typeof answerButtons = []
     for (const button of answerButtons) {
       const text = await page.evaluate(
-        (el) => el.textContent?.trim() || '',
+        (el) => el.textContent.trim() || '',
         button
       )
       if (
@@ -96,7 +96,7 @@ export async function languageTravel(
 
         for (const element of elements) {
           const text = await page.evaluate(
-            (el) => el.textContent?.trim() || '',
+            (el) => el.textContent.trim() || '',
             element
           )
           if (text.includes('次の問題へ')) {

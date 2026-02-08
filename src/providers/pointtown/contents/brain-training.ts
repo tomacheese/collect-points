@@ -41,8 +41,8 @@ export async function brainTraining(
       const elements = [...document.querySelectorAll('button')]
       const button = elements.find(
         (el) =>
-          el.textContent?.includes('つづきから') ||
-          el.textContent?.includes('はじめる')
+          el.textContent.includes('つづきから') ||
+          el.textContent.includes('はじめる')
       )
       if (button) {
         button.click()
@@ -85,8 +85,8 @@ export async function brainTraining(
         ] as HTMLElement[]
         const button = elements.find(
           (el) =>
-            el.textContent?.includes('次へ') ||
-            el.textContent?.includes('次の問題')
+            el.textContent.includes('次へ') ||
+            el.textContent.includes('次の問題')
         )
         if (button) {
           button.click()

@@ -34,7 +34,7 @@ export async function spotdiff(
       const elements = [
         ...document.querySelectorAll('button, a'),
       ] as HTMLElement[]
-      const button = elements.find((el) => el.textContent?.includes('挑戦する'))
+      const button = elements.find((el) => el.textContent.includes('挑戦する'))
       if (button) {
         button.click()
         return true
@@ -56,8 +56,8 @@ export async function spotdiff(
       const elements = [...document.querySelectorAll('button')]
       const button = elements.find(
         (el) =>
-          el.textContent?.includes('広告を再生') ||
-          el.textContent?.includes('広告を見て')
+          el.textContent.includes('広告を再生') ||
+          el.textContent.includes('広告を見て')
       )
       if (button) {
         button.click()
@@ -77,8 +77,8 @@ export async function spotdiff(
         const elements = [...document.querySelectorAll('button')]
         const button = elements.find(
           (el) =>
-            el.textContent?.includes('閉じる') ||
-            el.textContent?.includes('スキップ') ||
+            el.textContent.includes('閉じる') ||
+            el.textContent.includes('スキップ') ||
             el.className.includes('close')
         )
         if (button) {

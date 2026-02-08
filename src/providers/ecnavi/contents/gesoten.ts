@@ -34,7 +34,7 @@ export async function gesoten(
         url: globalThis.location.href,
         title: document.title,
         linkCount: document.querySelectorAll('a').length,
-        bodyText: document.body.textContent?.slice(0, 200),
+        bodyText: document.body.textContent.slice(0, 200),
       }))
       .catch(() => null)
     if (debugInfo) {

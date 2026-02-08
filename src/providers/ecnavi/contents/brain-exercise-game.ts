@@ -68,7 +68,7 @@ export async function brainExerciseGame(
         .evaluate(() => {
           const buttons = [...document.querySelectorAll('button, a')]
           const startButton = buttons.find((btn) =>
-            btn.textContent?.includes('スタートする')
+            btn.textContent.includes('スタートする')
           )
           if (startButton) {
             startButton.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -92,7 +92,7 @@ export async function brainExerciseGame(
         .evaluate(() => {
           const buttons = [...document.querySelectorAll('button, a')]
           const startButton = buttons.find((btn) =>
-            btn.textContent?.includes('スタートする')
+            btn.textContent.includes('スタートする')
           )
           if (startButton) {
             ;(startButton as HTMLElement).click()

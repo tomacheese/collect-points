@@ -48,9 +48,9 @@ export async function natsupoi(
       const elements = [...document.querySelectorAll('button')]
       const button = elements.find(
         (el) =>
-          el.textContent?.includes('スタート') ||
-          el.textContent?.includes('はじめる') ||
-          el.textContent?.includes('プレイ')
+          el.textContent.includes('スタート') ||
+          el.textContent.includes('はじめる') ||
+          el.textContent.includes('プレイ')
       )
       if (button) {
         button.click()
@@ -86,9 +86,7 @@ export async function natsupoi(
           url: globalThis.location.href,
           title: document.title,
           buttonCount: allButtons.length,
-          buttonTexts: allButtons
-            .map((b) => b.textContent?.trim())
-            .slice(0, 10),
+          buttonTexts: allButtons.map((b) => b.textContent.trim()).slice(0, 10),
         }
       })
       .catch((error: unknown) => {
