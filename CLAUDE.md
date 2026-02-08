@@ -245,7 +245,7 @@ data/diagnostics/{providerName}/{YYYY-MM-DD}/
 
 このプロジェクトは Claude Code を用いた自動運用を行う。
 
-### 1. 新規機能・既存機能の変更検出（週1回）
+### 1. 新規機能・既存機能の変更検出（週 1 回）
 
 **スケジュール**: 毎週土曜 8:00
 
@@ -266,7 +266,7 @@ data/diagnostics/{providerName}/{YYYY-MM-DD}/
 /detect-changes
 ```
 
-### 2. エラー原因の調査（週6回）
+### 2. エラー原因の調査（週 6 回）
 
 **スケジュール**: 毎日 8:00（土曜は除く）
 
@@ -290,7 +290,7 @@ data/diagnostics/{providerName}/{YYYY-MM-DD}/
 /investigate-errors
 ```
 
-### 3. Approved Issue の実装（週6回）
+### 3. Approved Issue の実装（週 6 回）
 
 **スケジュール**: 毎日 10:00（土曜は除く）
 
@@ -303,8 +303,8 @@ data/diagnostics/{providerName}/{YYYY-MM-DD}/
    - Lint 確認
    - CLAUDE.md などのドキュメント更新
    - コミット・プッシュ
-   - PR 作成（`Closes #{Issue番号}` を含める）。レビュアーに book000 を設定
-3. 既存 PR について、レビュー・CIエラー・コメントがあれば、対応を行う
+   - PR 作成（`Closes #{Issue 番号}` を含める）。レビュアーに book000 を設定
+3. 既存 PR について、レビュー・CI エラー・コメントがあれば、対応を行う
 
 **実行方法**:
 ```bash
@@ -313,7 +313,7 @@ data/diagnostics/{providerName}/{YYYY-MM-DD}/
 /implement-approved
 ```
 
-### 4. ブランチ/PR クリーンアップ（週1回）
+### 4. ブランチ/PR クリーンアップ（週 1 回）
 
 **スケジュール**: 毎週月曜 0:00
 
@@ -454,14 +454,16 @@ mcp__chrome-devtools__navigate_page
 () => {
   const pointElement = document.querySelector('[data-testid="header-point"]') ||
                        document.querySelector('.header-point') ||
-                       document.querySelector('span:has-text("pt")');
+                       Array.from(document.querySelectorAll('span'))
+                         .find(el => el.textContent?.includes('pt'));
   return pointElement?.textContent;
 }
 
 // ECNavi のポイント確認
 () => {
   const pointElement = document.querySelector('.header-point') ||
-                       document.querySelector('span:has-text("pts.")');
+                       Array.from(document.querySelectorAll('span'))
+                         .find(el => el.textContent?.includes('pts.'));
   return pointElement?.textContent;
 }
 ```
