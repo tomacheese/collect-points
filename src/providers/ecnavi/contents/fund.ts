@@ -1,6 +1,7 @@
 import type { Page } from 'rebrowser-puppeteer-core'
 import type { EcNaviContext } from '@/core/types'
 import { getNewTabPage, sleep } from '@/utils/functions'
+import { safeGoto } from '@/utils/safe-operations'
 
 /**
  * クリック募金
@@ -10,9 +11,11 @@ import { getNewTabPage, sleep } from '@/utils/functions'
 export async function fund(context: EcNaviContext, page: Page): Promise<void> {
   context.logger.info('fund()')
 
-  await page.goto('https://ecnavi.jp/smile_project/click_fund/', {
-    waitUntil: 'networkidle2',
-  })
+  await safeGoto(
+    page,
+    'https://ecnavi.jp/smile_project/click_fund/',
+    context.logger
+  )
 
   // 現在の URL をログ出力
   context.logger.info(`fund: 現在の URL: ${page.url()}`)

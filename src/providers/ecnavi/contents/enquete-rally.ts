@@ -1,6 +1,7 @@
 import type { Page } from 'rebrowser-puppeteer-core'
 import type { EcNaviContext } from '@/core/types'
 import { sleep } from '@/utils/functions'
+import { safeGoto } from '@/utils/safe-operations'
 
 /**
  * アンケートラリー
@@ -15,9 +16,11 @@ export async function enqueteRally(
 ): Promise<void> {
   context.logger.info('enqueteRally()')
 
-  await page.goto('https://ecnavi.jp/contents/enquete_rally/', {
-    waitUntil: 'networkidle2',
-  })
+  await safeGoto(
+    page,
+    'https://ecnavi.jp/contents/enquete_rally/',
+    context.logger
+  )
 
   // 現在の URL をログ出力
   context.logger.info(`enqueteRally: 現在の URL: ${page.url()}`)
