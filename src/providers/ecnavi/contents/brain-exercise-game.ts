@@ -35,9 +35,7 @@ export async function brainExerciseGame(
   // ゲーム開始ボタンをクリック（JavaScript でテキストを含む要素を探す）
   const clicked = await page
     .evaluate(() => {
-      const elements = Array.from(
-        document.querySelectorAll('button')
-      ) as HTMLElement[]
+      const elements = Array.from(document.querySelectorAll('button'))
       const button = elements.find(
         (el) =>
           el.textContent?.includes('スタート') ||

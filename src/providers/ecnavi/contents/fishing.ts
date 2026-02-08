@@ -29,9 +29,7 @@ export async function fishing(
   // 2. 「釣りに行く」ボタンをクリック（visible: true のボタン）
   const clicked = await page
     .evaluate(() => {
-      const buttons = Array.from(
-        document.querySelectorAll('button')
-      ) as HTMLElement[]
+      const buttons = Array.from(document.querySelectorAll('button'))
       const fishingButton = buttons.find(
         (btn) =>
           btn.textContent?.includes('釣りに行く') && btn.offsetParent !== null

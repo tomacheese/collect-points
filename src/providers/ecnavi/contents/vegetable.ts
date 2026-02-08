@@ -31,9 +31,7 @@ export async function vegetable(
       }
 
       // a タグでテキストに「はじめる」を含む要素を探す
-      const elements = Array.from(
-        document.querySelectorAll('a')
-      ) as HTMLElement[]
+      const elements = Array.from(document.querySelectorAll('a'))
       const button = elements.find((el) => el.textContent?.includes('はじめる'))
       if (button) {
         button.click()
