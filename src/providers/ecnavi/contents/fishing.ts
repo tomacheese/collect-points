@@ -33,7 +33,7 @@ export async function fishing(
   // 2. 「釣りに行く」ボタンをクリック（visible: true のボタン）
   const clicked = await page
     .evaluate(() => {
-      const buttons = Array.from(document.querySelectorAll('button'))
+      const buttons = [...document.querySelectorAll('button')]
       const fishingButton = buttons.find(
         (btn) =>
           btn.textContent?.includes('釣りに行く') && btn.offsetParent !== null
@@ -51,7 +51,7 @@ export async function fishing(
     // デバッグ情報を出力
     const debugInfo = await page
       .evaluate(() => {
-        const allButtons = Array.from(document.querySelectorAll('button'))
+        const allButtons = [...document.querySelectorAll('button')]
         return {
           url: globalThis.location.href,
           title: document.title,

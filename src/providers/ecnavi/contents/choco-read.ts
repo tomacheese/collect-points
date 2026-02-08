@@ -36,7 +36,7 @@ export async function chocoRead(
         url: globalThis.location.href,
         title: document.title,
         linkCount: document.querySelectorAll('a').length,
-        linkTexts: Array.from(document.querySelectorAll('a'))
+        linkTexts: [...document.querySelectorAll('a')]
           .map((a) => a.textContent?.trim())
           .slice(0, 10),
       }))
@@ -74,7 +74,7 @@ export async function chocoRead(
         url: globalThis.location.href,
         title: document.title,
         buttonCount: document.querySelectorAll('button').length,
-        buttonTexts: Array.from(document.querySelectorAll('button'))
+        buttonTexts: [...document.querySelectorAll('button')]
           .map((b) => b.textContent?.trim())
           .slice(0, 10),
       }))

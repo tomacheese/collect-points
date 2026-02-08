@@ -220,7 +220,7 @@ export abstract class BaseCrawler implements Crawler {
 
   /**
    * ページの診断情報収集を設定する
-   * Console logs と Network logs を収集するリスナーを設定
+   * Console logs と Network logs を収集するリスナーと、JavaScript dialog を自動的に閉じるハンドラを設定
    * @param page 対象ページ
    */
   private setupPageDiagnostics(page: Page): void {

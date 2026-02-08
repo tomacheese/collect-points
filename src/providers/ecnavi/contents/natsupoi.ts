@@ -13,18 +13,15 @@ import { safeGoto } from '@/utils/safe-operations'
  * 継続的に行われるため networkidle2 ではタイムアウトしやすい。
  * safeGoto を使用してタイムアウト時も処理を継続する。
  *
- * ページ読み込み後、Google Rewarded Ads のモーダル（「短い広告を見る」）が
- * 頻繁に表示されるため、handleRewardedAd で対応する。
+ * Google Rewarded Ads のモーダルは runMethod() で自動処理される。
  *
  * @param context クローラーコンテキスト
  * @param page ページ
- * @param handleRewardedAd Google Rewarded Ads 処理関数
  * @param watchAdIfExists 広告視聴処理関数
  */
 export async function natsupoi(
   context: EcNaviContext,
   page: Page,
-  handleRewardedAd: (page: Page) => Promise<void>,
   watchAdIfExists: (page: Page) => Promise<void>
 ): Promise<void> {
   context.logger.info('natsupoi()')
@@ -35,16 +32,13 @@ export async function natsupoi(
   // 現在のURLをログに出力
   context.logger.info(`natsupoi: 現在のURL: ${page.url()}`)
 
-  // Google Rewarded Ads のモーダルが表示される場合があるため処理
-  await handleRewardedAd(page)
-
   // 広告があれば視聴
   await watchAdIfExists(page)
 
   // ゲーム開始ボタンをクリック（JavaScript でテキストを含む要素を探す）
   const clicked = await page
     .evaluate(() => {
-      const elements = Array.from(document.querySelectorAll('button'))
+      const elements = [...document.querySelectorAll('button')]
       const button = elements.find(
         (el) =>
           el.textContent?.includes('スタート') ||
@@ -61,14 +55,21 @@ export async function natsupoi(
 
   if (clicked) {
     context.logger.info('natsupoi: ゲーム開始ボタンをクリック')
-    await sleep(10_000)
+    // ページ遷移を待機（クリック済みだが遷移検出のため waitForNavigation を使用）
+    await page
+      .waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 10_000 })
+      .catch(() => {
+        context.logger.warn(
+          'natsupoi: ゲーム開始ボタンクリック後のナビゲーション待機がタイムアウト'
+        )
+      })
     context.logger.info('natsupoi: ゲーム待機完了')
   } else {
     context.logger.warn('natsupoi: ゲーム開始ボタンが見つかりません')
     // デバッグ情報を出力
     const debugInfo = await page
       .evaluate(() => {
-        const allButtons = Array.from(document.querySelectorAll('button'))
+        const allButtons = [...document.querySelectorAll('button')]
         return {
           url: globalThis.location.href,
           title: document.title,
