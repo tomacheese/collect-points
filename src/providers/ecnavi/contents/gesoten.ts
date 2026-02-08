@@ -1,7 +1,7 @@
 import type { Page } from 'rebrowser-puppeteer-core'
 import type { EcNaviContext } from '@/core/types'
 import { isExistsSelector, sleep } from '@/utils/functions'
-import { safeGoto } from '@/utils/safe-operations'
+import { safeGoto, safeWaitForNavigation } from '@/utils/safe-operations'
 
 /**
  * げそてん
@@ -56,10 +56,11 @@ export async function gesoten(
     if (!(await isExistsSelector(page, 'button.c-gacha-ticket__action'))) {
       break
     }
-    await Promise.all([
-      page.waitForNavigation({ waitUntil: 'networkidle2' }),
-      page.click('button.c-gacha-ticket__action'),
-    ])
+    await safeWaitForNavigation(
+      page,
+      () => page.click('button.c-gacha-ticket__action'),
+      context.logger
+    )
     await sleep(3000)
     await safeGoto(page, 'https://gd.gesoten.com/reward/gacha', context.logger)
   }

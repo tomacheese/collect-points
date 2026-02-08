@@ -45,9 +45,7 @@ export async function chirashi(
     context.logger.info(`chirashi: チラシを開く: ${url}`)
 
     const newPage = await page.browser().newPage()
-    await newPage.goto(url, {
-      waitUntil: 'networkidle2',
-    })
+    await safeGoto(newPage, url, context.logger)
     await sleep(3000)
     await newPage.close()
   }
