@@ -39,32 +39,52 @@ export async function news(
     await newPage.close()
   }
 
-  const buttons = await page.$$('button.js-news-infoseek-article-submit')
-  context.logger.info(`buttons.length: ${buttons.length}`)
+  // 最大20記事分の報酬を受け取る
+  for (let processedCount = 0; processedCount < 20; processedCount++) {
+    context.logger.info(`Processing reward: ${processedCount + 1}/20`)
 
-  for (let index = 0; index < buttons.length; index++) {
-    context.logger.info(`click index: ${index}`)
-    const buttonList = await page.$$(`button.js-news-infoseek-article-submit`)
-    const button = buttonList[index]
-    // styleがnoneではないこと
-    const style = await page.evaluate(
-      (element) => element.style.display,
-      button
-    )
-    if (style === 'none') {
-      continue
+    // 毎回ボタンリストを再取得（ページリロード後にDOMが変わるため）
+    const buttons = await page.$$('button.js-news-infoseek-article-submit')
+
+    // 表示されている（style.display !== 'none'）最初のボタンを探す
+    let targetButton = null
+    for (const button of buttons) {
+      const style = await page.evaluate(
+        (element) => element.style.display,
+        button
+      )
+      if (style !== 'none') {
+        targetButton = button
+        break
+      }
     }
-    await button.evaluate((element) => {
+
+    if (!targetButton) {
+      context.logger.info('No more clickable buttons found.')
+      break
+    }
+
+    // ボタンを画面内にスクロール
+    await targetButton.evaluate((element) => {
       element.scrollIntoView()
-    }, button)
+    })
+
+    // ボタンをクリックして報酬を受け取る（ページリロードが発生する）
     await Promise.all([
-      button.click(),
-      page.waitForNavigation({ waitUntil: 'networkidle2' }),
+      targetButton.click(),
+      page.waitForNavigation({ waitUntil: 'domcontentloaded' }),
     ]).catch(() => null)
 
-    if ((await context.checkNewsCoin(page)) === 0) {
-      context.logger.info('news coin is 0.')
+    // 未取得報酬を確認
+    const remainingCoin = await context.checkNewsCoin(page)
+    if (remainingCoin === null) {
+      context.logger.warn('Failed to get remaining coin count.')
+      continue
+    }
+    if (remainingCoin === 0) {
+      context.logger.info('All rewards claimed. Remaining coin: 0')
       return
     }
+    context.logger.info(`Remaining coin: ${remainingCoin}`)
   }
 }
