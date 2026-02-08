@@ -234,7 +234,7 @@ export default class PointTownCrawler extends BaseCrawler {
         const parsed = Number.parseInt(replaced, 10)
         if (Number.isNaN(parsed)) {
           // 数値に変換できない場合もリトライ対象とする
-          throw new TypeError('Point value is NaN')
+          throw new TypeError(`Point value is NaN (replaced: ${replaced})`)
         }
         return parsed
       } catch (error) {
