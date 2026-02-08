@@ -30,7 +30,7 @@ export async function sugoroku(
   // サイコロを振るボタンをクリック
   const clicked = await page
     .evaluate(() => {
-      const elements = [...document.querySelectorAll('button')]
+      const elements = Array.from(document.querySelectorAll('button'))
       const button = elements.find(
         (el) =>
           el.textContent?.includes('サイコロ') ||

@@ -32,7 +32,7 @@ export async function dropgame(
   // ゲーム開始ボタンをクリック
   const clicked = await page
     .evaluate(() => {
-      const elements = [...document.querySelectorAll('button')]
+      const elements = Array.from(document.querySelectorAll('button'))
       const button = elements.find(
         (el) =>
           el.textContent?.includes('スタート') ||

@@ -38,7 +38,7 @@ export async function brainTraining(
       }
 
       // ボタンを探す
-      const elements = [...document.querySelectorAll('button')]
+      const elements = Array.from(document.querySelectorAll('button'))
       const button = elements.find(
         (el) =>
           el.textContent?.includes('つづきから') ||
@@ -80,9 +80,9 @@ export async function brainTraining(
     // 次の問題へ進むボタンがあればクリック
     const nextClicked = await page
       .evaluate(() => {
-        const elements = [
-          ...document.querySelectorAll('button, a'),
-        ] as HTMLElement[]
+        const elements = Array.from(
+          document.querySelectorAll('button, a')
+        ) as HTMLElement[]
         const button = elements.find(
           (el) =>
             el.textContent?.includes('次へ') ||

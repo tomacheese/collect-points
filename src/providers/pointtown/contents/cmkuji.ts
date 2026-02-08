@@ -27,9 +27,9 @@ export async function cmkuji(
   // くじを引くボタンをクリック
   const clicked = await page
     .evaluate(() => {
-      const elements = [
-        ...document.querySelectorAll('button, a'),
-      ] as HTMLElement[]
+      const elements = Array.from(
+        document.querySelectorAll('button, a')
+      ) as HTMLElement[]
       const button = elements.find(
         (el) =>
           el.textContent?.includes('くじを引く') ||
@@ -52,7 +52,7 @@ export async function cmkuji(
     // 動画終了後の閉じるボタン
     const closedClicked = await page
       .evaluate(() => {
-        const elements = [...document.querySelectorAll('button')]
+        const elements = Array.from(document.querySelectorAll('button'))
         const button = elements.find(
           (el) =>
             el.textContent?.includes('閉じる') ||
