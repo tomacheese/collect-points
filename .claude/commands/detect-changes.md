@@ -19,21 +19,21 @@ CLAUDE.md の「実装済み機能」セクションを参照し、現在実装�
 
 ### 3. サイトを探索
 
-Claude in Chrome を使用して、以下のサイトを探索する：
+chrome-devtools MCP を使用して、以下のサイトを探索する：
 
 #### PointTown
 
-1. https://www.pointtown.com/ にアクセス
-2. ゲームページ（/game）を確認
-3. 各ゲームのリンクを確認し、実装済み機能一覧と比較
-4. 新しいゲームや変更されたゲームを特定
+1. https://www.pointtown.com/ にアクセス（`navigate_page`）
+2. ゲームページ（/game）を確認（`take_snapshot` で構造確認）
+3. 各ゲームのリンクを確認し、実装済み機能一覧と比較（`evaluate_script` でリンク取得）
+4. 新しいゲームや変更されたゲームを特定（`take_screenshot` で視覚確認）
 
 #### ECNavi
 
-1. https://ecnavi.jp/ にアクセス
-2. 「毎日貯まる」メニューを確認
-3. 各ゲーム/コンテンツのリンクを確認し、実装済み機能一覧と比較
-4. 新しいゲームや変更されたコンテンツを特定
+1. https://ecnavi.jp/ にアクセス（`navigate_page`）
+2. 「毎日貯まる」メニューを確認（`take_snapshot` で構造確認）
+3. 各ゲーム/コンテンツのリンクを確認し、実装済み機能一覧と比較（`evaluate_script` でリンク取得）
+4. 新しいゲームや変更されたコンテンツを特定（`take_screenshot` で視覚確認）
 
 ### 3.5. 既存機能のセレクター検証（重要）
 
