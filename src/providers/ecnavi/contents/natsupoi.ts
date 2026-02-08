@@ -13,13 +13,18 @@ import { safeGoto } from '@/utils/safe-operations'
  * 継続的に行われるため networkidle2 ではタイムアウトしやすい。
  * safeGoto を使用してタイムアウト時も処理を継続する。
  *
+ * ページ読み込み後、Google Rewarded Ads のモーダル（「短い広告を見る」）が
+ * 頻繁に表示されるため、handleRewardedAd で対応する。
+ *
  * @param context クローラーコンテキスト
  * @param page ページ
+ * @param handleRewardedAd Google Rewarded Ads 処理関数
  * @param watchAdIfExists 広告視聴処理関数
  */
 export async function natsupoi(
   context: EcNaviContext,
   page: Page,
+  handleRewardedAd: (page: Page) => Promise<void>,
   watchAdIfExists: (page: Page) => Promise<void>
 ): Promise<void> {
   context.logger.info('natsupoi()')
@@ -29,6 +34,9 @@ export async function natsupoi(
 
   // 現在のURLをログに出力
   context.logger.info(`natsupoi: 現在のURL: ${page.url()}`)
+
+  // Google Rewarded Ads のモーダルが表示される場合があるため処理
+  await handleRewardedAd(page)
 
   // 広告があれば視聴
   await watchAdIfExists(page)

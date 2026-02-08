@@ -156,7 +156,13 @@ export default class EcNaviCrawler extends BaseCrawler {
     if (this.shouldRun('natsupoi')) {
       await this.runMethod(
         page,
-        (p) => natsupoi(this.context, p, this.watchAdIfExists.bind(this)),
+        (p) =>
+          natsupoi(
+            this.context,
+            p,
+            this.handleRewardedAd.bind(this),
+            this.watchAdIfExists.bind(this)
+          ),
         'natsupoi'
       )
     }
