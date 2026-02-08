@@ -239,10 +239,15 @@ export default class PointTownCrawler extends BaseCrawler {
           await sleep(10_000) // 10 秒待機してリトライ
           continue
         }
-        this.logger.error('getCurrentPoint: 3 回リトライしましたが失敗しました')
-        throw error
+        // 最後のリトライでも失敗した場合は -1 を返す
+        this.logger.error(
+          'getCurrentPoint: 3 回リトライしましたが失敗しました',
+          error as Error
+        )
+        return -1
       }
     }
+    // TypeScript の型チェックのため（理論上到達しない）
     return -1
   }
 

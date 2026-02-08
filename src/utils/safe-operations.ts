@@ -14,7 +14,7 @@ interface SafeGotoOptions {
    * デフォルト: false
    */
   preferNetworkIdle?: boolean
-  /** タイムアウト（ミリ秒）。デフォルト: 30000 */
+  /** タイムアウト（ミリ秒）。デフォルト: 60000 */
   timeout?: number
   /** タイムアウト時にリトライするかどうか。デフォルト: false */
   retryOnTimeout?: boolean
@@ -24,7 +24,7 @@ interface SafeGotoOptions {
  * safeWaitForNavigation のオプション
  */
 interface SafeWaitForNavigationOptions {
-  /** タイムアウト（ミリ秒）。デフォルト: 30000 */
+  /** タイムアウト（ミリ秒）。デフォルト: 60000 */
   timeout?: number
 }
 
@@ -112,7 +112,7 @@ export async function safeWaitForNavigation(
   logger: Logger,
   options?: SafeWaitForNavigationOptions
 ): Promise<void> {
-  const timeout = options?.timeout ?? 30_000
+  const timeout = options?.timeout ?? 60_000
 
   try {
     await Promise.all([
