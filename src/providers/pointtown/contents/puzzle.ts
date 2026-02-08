@@ -33,9 +33,9 @@ export async function puzzle(
       const elements = [...document.querySelectorAll('button')]
       const button = elements.find(
         (el) =>
-          el.textContent?.includes('挑戦') ||
-          el.textContent?.includes('はじめる') ||
-          el.textContent?.includes('スタート')
+          el.textContent.includes('挑戦') ||
+          el.textContent.includes('はじめる') ||
+          el.textContent.includes('スタート')
       )
       if (button) {
         button.click()

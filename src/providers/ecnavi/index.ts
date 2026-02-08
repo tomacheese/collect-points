@@ -25,7 +25,7 @@ import {
   entryLottery,
   ticketingLottery,
   natsupoi,
-  spotdiffBox,
+  // spotdiffBox, // 画像認識が必要なため自動化不可
   languageTravel,
   brainExerciseGame,
   easyGame,
@@ -66,6 +66,14 @@ export default class EcNaviCrawler extends BaseCrawler {
     await page
       .waitForSelector('input[name="passwd"]')
       .then((element) => element?.type(config.ecnavi.password))
+
+    // ログインボタンをクリック
+    const loginButton = await page.waitForSelector(
+      'button[type="submit"], input[type="submit"]'
+    )
+    if (loginButton) {
+      await loginButton.click()
+    }
 
     await waitForUrl(page, 'equal', 'https://ecnavi.jp/')
   }
@@ -160,13 +168,14 @@ export default class EcNaviCrawler extends BaseCrawler {
         'natsupoi'
       )
     }
-    if (this.shouldRun('spotdiffBox')) {
-      await this.runMethod(
-        page,
-        (p) => spotdiffBox(this.context, p, this.watchAdIfExists.bind(this)),
-        'spotdiffBox'
-      )
-    }
+    // まちがい探しボックス: 画像認識が必要なため自動化不可
+    // if (this.shouldRun('spotdiffBox')) {
+    //   await this.runMethod(
+    //     page,
+    //     (p) => spotdiffBox(this.context, p, this.watchAdIfExists.bind(this)),
+    //     'spotdiffBox'
+    //   )
+    // }
     if (this.shouldRun('languageTravel')) {
       await this.runMethod(
         page,

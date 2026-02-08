@@ -7,7 +7,13 @@ import { safeGoto } from '@/utils/safe-operations'
  * 頭の体操ゲーム
  *
  * ecnavi.ib-game.jp/stamp にリダイレクトされる。
- * 脳トレゲームをプレイしてスタンプを獲得する。
+ * 複数のミニゲーム（三字熟語、英単語、計算など）をプレイしてスタンプを獲得する。
+ * スタンプを10個集めて10pts獲得。1日5回プレイ可能、1日5スタンプまで獲得可能。
+ *
+ * ゲームリスト（一部）:
+ * - /sanji/ (三字熟語ゲーム)
+ * - /eitango/ (英単語ゲーム)
+ * - /keisan/ (計算ゲーム)
  *
  * リダイレクト先のゲームページでは動的コンテンツが多いため safeGoto を使用する。
  *
@@ -22,64 +28,90 @@ export async function brainExerciseGame(
 ): Promise<void> {
   context.logger.info('brainExerciseGame()')
 
-  // ゲームページは動的コンテンツが多いため safeGoto を使用
+  // スタンプページに移動
   await safeGoto(
     page,
     'https://ecnavi.jp/brain_exercise_game/redirect/',
     context.logger
   )
 
+  await sleep(3000)
+
   // 広告があれば視聴
   await watchAdIfExists(page)
 
-  // 現在のURLをログに出力
-  context.logger.info(`brainExerciseGame: 現在のURL: ${page.url()}`)
+  const currentUrl = page.url()
+  context.logger.info(`brainExerciseGame: 現在のURL: ${currentUrl}`)
 
-  // ゲーム開始ボタンをクリック（JavaScript でテキストを含む要素を探す）
-  const clicked = await page
-    .evaluate(() => {
-      const elements = [...document.querySelectorAll('button')]
-      const button = elements.find(
-        (el) =>
-          el.textContent?.includes('スタート') ||
-          el.textContent?.includes('はじめる') ||
-          el.textContent?.includes('プレイ')
-      )
-      if (button) {
-        button.click()
-        return true
+  // スタンプページのURLからURLオブジェクトを取得
+  // 例: https://ecnavi.ib-game.jp/stamp/?uid=...&media_id=174&syid=...
+  const urlObj = new URL(currentUrl)
+
+  // ゲームリスト（優先順位順）
+  const games = [
+    { name: '三字熟語ゲーム', path: '/sanji/top.php' },
+    { name: '英単語ゲーム', path: '/eitango/top.php' },
+    { name: '計算ゲーム', path: '/keisan/top.php' },
+  ]
+
+  // 最大3ゲームを試行
+  for (const game of games.slice(0, 3)) {
+    const gameUrl = `${urlObj.origin}${game.path}${urlObj.search}`
+    context.logger.info(`brainExerciseGame: ${game.name}にアクセス`)
+
+    try {
+      await safeGoto(page, gameUrl, context.logger)
+      await sleep(2000)
+
+      // 「スタートする」ボタンをクリック
+      const started = await page
+        .evaluate(() => {
+          const buttons = [...document.querySelectorAll('button, a')]
+          const startButton = buttons.find((btn) =>
+            btn.textContent.includes('スタートする')
+          )
+          if (startButton) {
+            startButton.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            return true
+          }
+          return false
+        })
+        .catch(() => false)
+
+      if (!started) {
+        context.logger.warn(
+          `brainExerciseGame: ${game.name}の「スタートする」ボタンが見つかりません`
+        )
+        continue
       }
-      return false
-    })
-    .catch(() => false)
 
-  if (clicked) {
-    context.logger.info('brainExerciseGame: ゲーム開始ボタンをクリック')
-    // ゲーム開始後の待機（広告視聴やゲームプレイ）
-    await sleep(10_000)
-    context.logger.info('brainExerciseGame: ゲーム待機完了')
-  } else {
-    context.logger.warn('brainExerciseGame: ゲーム開始ボタンが見つかりません')
-    // デバッグ情報を出力
-    const debugInfo = await page
-      .evaluate(() => {
-        const allButtons = [...document.querySelectorAll('button')]
-        return {
-          url: globalThis.location.href,
-          title: document.title,
-          buttonCount: allButtons.length,
-          buttonTexts: allButtons
-            .map((b) => b.textContent?.trim())
-            .slice(0, 10),
-        }
-      })
-      .catch(() => null)
-    if (debugInfo) {
-      context.logger.info(
-        `brainExerciseGame: デバッグ情報: ${JSON.stringify(debugInfo)}`
+      await sleep(1000)
+
+      // 実際にクリック
+      await page
+        .evaluate(() => {
+          const buttons = [...document.querySelectorAll('button, a')]
+          const startButton = buttons.find((btn) =>
+            btn.textContent.includes('スタートする')
+          )
+          if (startButton) {
+            ;(startButton as HTMLElement).click()
+          }
+        })
+        .catch(() => null)
+
+      context.logger.info(`brainExerciseGame: ${game.name}を開始`)
+
+      // ゲーム実行を待機（ゲームは自動的に進行しないため、適度な待機）
+      await sleep(10_000)
+
+      context.logger.info(`brainExerciseGame: ${game.name}完了`)
+    } catch (error) {
+      context.logger.warn(
+        `brainExerciseGame: ${game.name}でエラー: ${error instanceof Error ? error.message : String(error)}`
       )
     }
   }
 
-  await sleep(5000)
+  context.logger.info('brainExerciseGame: 処理完了')
 }

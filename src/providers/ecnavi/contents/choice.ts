@@ -28,7 +28,7 @@ export async function choice(
         url: globalThis.location.href,
         title: document.title,
         buttonCount: document.querySelectorAll('button').length,
-        bodyText: document.body.textContent?.slice(0, 200),
+        bodyText: document.body.textContent.slice(0, 200),
       }))
       .catch(() => null)
     if (debugInfo) {

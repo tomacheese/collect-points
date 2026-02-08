@@ -23,7 +23,7 @@ async function executeLoginMission(
       .evaluate(() => {
         const buttons = [...document.querySelectorAll('button')]
         const button = buttons.find((btn) =>
-          btn.textContent?.includes('受け取る')
+          btn.textContent.includes('受け取る')
         )
         if (button) {
           button.click()
@@ -51,8 +51,8 @@ async function executeLoginMission(
         // 「受け取る」を含み、「広告」を含まないボタンを探す
         const button = buttons.find(
           (btn) =>
-            btn.textContent?.includes('受け取る') &&
-            !btn.textContent?.includes('広告')
+            btn.textContent.includes('受け取る') &&
+            !btn.textContent.includes('広告')
         )
         if (button) {
           button.click()
@@ -116,7 +116,7 @@ async function executeRouletteCampaign(
         .evaluate(() => {
           const buttons = [...document.querySelectorAll('button')]
           const button = buttons.find((btn) =>
-            btn.textContent?.includes('ルーレットを回す')
+            btn.textContent.includes('ルーレットを回す')
           )
           if (button) {
             button.click()
@@ -144,7 +144,7 @@ async function executeRouletteCampaign(
         .evaluate(() => {
           const buttons = [...document.querySelectorAll('button')]
           const button = buttons.find((btn) =>
-            btn.textContent?.includes('広告を見てルーレットを回す')
+            btn.textContent.includes('広告を見てルーレットを回す')
           )
           if (button) {
             button.click()

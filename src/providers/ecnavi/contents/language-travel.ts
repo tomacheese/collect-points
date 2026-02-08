@@ -38,7 +38,7 @@ export async function languageTravel(
     const validButtons: typeof answerButtons = []
     for (const button of answerButtons) {
       const text = await page.evaluate(
-        (el) => el.textContent?.trim() || '',
+        (el) => el.textContent.trim() || '',
         button
       )
       if (
@@ -46,7 +46,8 @@ export async function languageTravel(
         text.length < 50 &&
         !text.includes('毎日貯まる') &&
         !text.includes('その他') &&
-        !text.includes('マイメニュー')
+        !text.includes('マイメニュー') &&
+        !text.includes('お気に入り')
       ) {
         validButtons.push(button)
       }
@@ -91,15 +92,15 @@ export async function languageTravel(
 
       while (!nextButton && attempts < maxAttempts) {
         await sleep(500)
-        const buttons = await page.$$('button')
+        const elements = await page.$$('button, a')
 
-        for (const button of buttons) {
+        for (const element of elements) {
           const text = await page.evaluate(
-            (el) => el.textContent?.trim() || '',
-            button
+            (el) => el.textContent.trim() || '',
+            element
           )
           if (text.includes('次の問題へ')) {
-            nextButton = button
+            nextButton = element
             break
           }
         }

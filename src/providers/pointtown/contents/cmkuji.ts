@@ -32,8 +32,8 @@ export async function cmkuji(
       ] as HTMLElement[]
       const button = elements.find(
         (el) =>
-          el.textContent?.includes('くじを引く') ||
-          el.textContent?.includes('動画を見る')
+          el.textContent.includes('くじを引く') ||
+          el.textContent.includes('動画を見る')
       )
       if (button) {
         button.click()
@@ -55,8 +55,8 @@ export async function cmkuji(
         const elements = [...document.querySelectorAll('button')]
         const button = elements.find(
           (el) =>
-            el.textContent?.includes('閉じる') ||
-            el.textContent?.includes('結果を見る') ||
+            el.textContent.includes('閉じる') ||
+            el.textContent.includes('結果を見る') ||
             el.className.includes('close')
         )
         if (button) {

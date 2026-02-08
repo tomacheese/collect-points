@@ -19,7 +19,8 @@ export async function chirashi(
   // 現在の URL をログ出力
   context.logger.info(`chirashi: 現在の URL: ${page.url()}`)
 
-  const chirashis = await page.$$('a.chirashi_link')
+  // 「このチラシを見る」リンクを取得
+  const chirashis = await page.$$('a[href*="/contents/chirashi/redirect/"]')
   context.logger.info(`chirashi: チラシリンク数: ${chirashis.length}`)
 
   if (chirashis.length === 0) {
@@ -29,7 +30,7 @@ export async function chirashi(
         url: globalThis.location.href,
         title: document.title,
         linkCount: document.querySelectorAll('a').length,
-        bodyText: document.body.textContent?.slice(0, 200),
+        bodyText: document.body.textContent.slice(0, 200),
       }))
       .catch(() => null)
     if (debugInfo) {

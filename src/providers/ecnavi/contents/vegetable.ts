@@ -27,14 +27,14 @@ export async function vegetable(
     .evaluate(() => {
       // img[alt*="はじめる"] を探す
       const img = document.querySelector('img[alt*="はじめる"]')
-      if (img && img.parentElement) {
+      if (img?.parentElement) {
         img.parentElement.click()
         return true
       }
 
       // a タグでテキストに「はじめる」を含む要素を探す
       const elements = [...document.querySelectorAll('a')]
-      const button = elements.find((el) => el.textContent?.includes('はじめる'))
+      const button = elements.find((el) => el.textContent.includes('はじめる'))
       if (button) {
         button.click()
         return true
@@ -81,7 +81,7 @@ export async function vegetable(
           imageCount: allImages.length,
           imageAlts: allImages.map((img) => img.alt).slice(0, 10),
           linkCount: allLinks.length,
-          linkTexts: allLinks.map((a) => a.textContent?.trim()).slice(0, 10),
+          linkTexts: allLinks.map((a) => a.textContent.trim()).slice(0, 10),
         }
       })
       .catch(() => null)

@@ -35,8 +35,7 @@ export async function nazotore(
       ] as HTMLElement[]
       const button = elements.find(
         (el) =>
-          el.textContent?.includes('挑戦') ||
-          el.textContent?.includes('はじめる')
+          el.textContent.includes('挑戦') || el.textContent.includes('はじめる')
       )
       if (button) {
         button.click()
