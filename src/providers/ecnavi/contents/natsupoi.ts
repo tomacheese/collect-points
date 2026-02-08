@@ -35,6 +35,13 @@ export async function natsupoi(
   // 広告があれば視聴
   await watchAdIfExists(page)
 
+  // ボタンが読み込まれるまで待機
+  try {
+    await page.waitForSelector('button', { timeout: 30_000 })
+  } catch {
+    context.logger.warn('natsupoi: ボタン要素の読み込みがタイムアウトしました')
+  }
+
   // ゲーム開始ボタンをクリック（JavaScript でテキストを含む要素を探す）
   const clicked = await page
     .evaluate(() => {
@@ -51,7 +58,12 @@ export async function natsupoi(
       }
       return false
     })
-    .catch(() => false)
+    .catch((error: unknown) => {
+      // evaluate のエラーをログ出力（Error オブジェクトの場合は第2引数に渡す）
+      const err = error instanceof Error ? error : new Error(String(error))
+      context.logger.warn('natsupoi: ボタンクリック処理でエラー', err)
+      return false
+    })
 
   if (clicked) {
     context.logger.info('natsupoi: ゲーム開始ボタンをクリック')
@@ -79,7 +91,12 @@ export async function natsupoi(
             .slice(0, 10),
         }
       })
-      .catch(() => null)
+      .catch((error: unknown) => {
+        // デバッグ情報取得のエラーもログ出力（Error オブジェクトの場合は第2引数に渡す）
+        const err = error instanceof Error ? error : new Error(String(error))
+        context.logger.warn('natsupoi: デバッグ情報取得でエラー', err)
+        return null
+      })
     if (debugInfo) {
       context.logger.info(
         `natsupoi: デバッグ情報: ${JSON.stringify(debugInfo)}`

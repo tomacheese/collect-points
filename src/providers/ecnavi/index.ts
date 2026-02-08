@@ -222,19 +222,48 @@ export default class EcNaviCrawler extends BaseCrawler {
    */
   protected async getCurrentPoint(page: Page): Promise<number> {
     this.logger.info('getCurrentPoint()')
-    await page.goto('https://ecnavi.jp/mypage/', {
-      waitUntil: 'networkidle2',
-    })
 
-    const nPointText = await page.evaluate((): string | null => {
-      const element = document.querySelector('span.c_point')
-      return element?.textContent ?? null
-    })
-    if (nPointText == null) {
-      return -1
+    // リトライロジック（最大 3 回試行）
+    for (let retry = 0; retry < 3; retry++) {
+      try {
+        await page.goto('https://ecnavi.jp/mypage/', {
+          waitUntil: 'domcontentloaded',
+          timeout: 180_000, // 3 分に延長
+        })
+
+        const nPointText = await page.evaluate((): string | null => {
+          const element = document.querySelector('span.c_point')
+          return element?.textContent ?? null
+        })
+        if (nPointText == null) {
+          // 要素未取得も失敗として扱い、リトライさせる
+          throw new ReferenceError('Point element not found')
+        }
+        const replaced = nPointText.replaceAll(',', '')
+        const parsed = Number.parseInt(replaced, 10)
+        if (Number.isNaN(parsed)) {
+          // 数値に変換できない場合もリトライ対象とする
+          throw new TypeError(`Point value is NaN (replaced: ${replaced})`)
+        }
+        return parsed
+      } catch (error) {
+        if (retry < 2) {
+          this.logger.warn(
+            `getCurrentPoint: リトライ ${retry + 1}/3 (${(error as Error).message})`
+          )
+          await sleep(10_000) // 10 秒待機してリトライ
+          continue
+        }
+        // 最後のリトライでも失敗した場合は -1 を返す
+        this.logger.error(
+          'getCurrentPoint: 3 回リトライしましたが失敗しました',
+          error as Error
+        )
+        return -1
+      }
     }
-    const replaced = nPointText.replaceAll(',', '')
-    return Number.parseInt(replaced, 10)
+    // TypeScript の型チェックのため（理論上到達しない）
+    return -1
   }
 
   /**
