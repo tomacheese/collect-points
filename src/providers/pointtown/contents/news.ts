@@ -107,10 +107,20 @@ export async function news(
           waitUntil: 'domcontentloaded',
           timeout: 10_000,
         }),
-      ]).catch(() => null)
+      ])
 
-      processedCount++
-      context.logger.info(`報酬受け取り ${processedCount} 回目完了`)
+      // クリック後に未取得報酬が減ったかを確認し、減っている場合のみ成功扱いとする
+      const afterUnclaimed =
+        (await context.checkNewsCoin(page)) ?? currentUnclaimed
+      if (afterUnclaimed < currentUnclaimed) {
+        processedCount++
+        context.logger.info(`報酬受け取り ${processedCount} 回目完了`)
+      } else {
+        context.logger.warn(
+          `報酬受け取りに失敗した可能性があります（未取得: ${afterUnclaimed} コインのまま）`
+        )
+        break
+      }
       await sleep(1000)
     } catch (error) {
       context.logger.error('報酬受け取りエラー', error as Error)

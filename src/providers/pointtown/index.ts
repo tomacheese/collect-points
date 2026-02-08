@@ -227,10 +227,16 @@ export default class PointTownCrawler extends BaseCrawler {
           return element?.textContent ?? null
         })
         if (nPointText == null) {
-          return -1
+          // ポイント要素がまだ取得できない場合は例外を投げてリトライさせる
+          throw new ReferenceError('Point element not found')
         }
         const replaced = nPointText.replaceAll(',', '')
-        return Number.parseInt(replaced, 10)
+        const parsed = Number.parseInt(replaced, 10)
+        if (Number.isNaN(parsed)) {
+          // 数値に変換できない場合もリトライ対象とする
+          throw new TypeError('Point value is NaN')
+        }
+        return parsed
       } catch (error) {
         if (retry < 2) {
           this.logger.warn(
