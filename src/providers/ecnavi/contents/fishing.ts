@@ -1,9 +1,16 @@
 import type { Page } from 'rebrowser-puppeteer-core'
 import type { EcNaviContext } from '@/core/types'
-import { isExistsSelector, sleep } from '@/utils/functions'
+import { sleep } from '@/utils/functions'
 
 /**
- * 釣りゲーム
+ * 釣りパンダガチャ
+ *
+ * ゲームフロー:
+ * 1. https://ecnavi.jp/game/fishing/play/ にアクセス
+ * 2. 「釣りに行く」ボタンをクリック
+ * 3. ゲームが自動実行される（15-20秒）
+ * 4. 結果画面が表示される
+ *
  * @param context クローラーコンテキスト
  * @param page ページ
  */
@@ -13,43 +20,39 @@ export async function fishing(
 ): Promise<void> {
   context.logger.info('fishing()')
 
+  // 1. ゲームページにアクセス
   await page.goto('https://ecnavi.jp/game/fishing/play/', {
     waitUntil: 'networkidle2',
   })
+  await sleep(3000)
 
-  if (!(await isExistsSelector(page, '#home .function button.gacha'))) {
+  // 2. 「釣りに行く」ボタンをクリック（visible: true のボタン）
+  const clicked = await page
+    .evaluate(() => {
+      const buttons = Array.from(
+        document.querySelectorAll('button')
+      ) as HTMLElement[]
+      const fishingButton = buttons.find(
+        (btn) =>
+          btn.textContent?.includes('釣りに行く') && btn.offsetParent !== null
+      )
+      if (fishingButton) {
+        fishingButton.click()
+        return true
+      }
+      return false
+    })
+    .catch(() => false)
+
+  if (!clicked) {
+    context.logger.warn('「釣りに行く」ボタンが見つかりません')
     return
   }
 
-  // 広告オーバーレイによるクリック失敗を防ぐため JavaScript でクリック
-  const gachaButton = await page.waitForSelector('#home .function button.gacha')
-  if (gachaButton) {
-    await gachaButton.evaluate((el) => {
-      ;(el as HTMLElement).click()
-    })
-  }
-  await sleep(5000)
+  context.logger.info('釣りゲームを開始しました')
 
-  const startButton = await page.waitForSelector(
-    '#home .gacha div.scene_1 button.common'
-  )
-  if (startButton) {
-    await startButton.evaluate((el) => {
-      ;(el as HTMLElement).click()
-    })
-  }
-  await sleep(5000)
+  // 3. ゲームが自動実行されるのを待つ
+  await sleep(20_000)
 
-  // 結果ポップアップの「OK」ボタンをクリック
-  // 広告オーバーレイによるクリック失敗を防ぐため JavaScript でクリック
-  const okButtonSelector = '#home .gacha button.common'
-  if (await isExistsSelector(page, okButtonSelector)) {
-    const okButton = await page.waitForSelector(okButtonSelector)
-    if (okButton) {
-      await okButton.evaluate((el) => {
-        ;(el as HTMLElement).click()
-      })
-    }
-    await sleep(2000)
-  }
+  context.logger.info('釣りゲーム完了')
 }

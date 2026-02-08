@@ -27,7 +27,54 @@ async function main() {
     })
   }
 
-  const crawlers = [new PointTownCrawler(), new EcNaviCrawler()]
+  // コマンドライン引数を解析
+  const args = process.argv.slice(2)
+  const gamesFilter: string[] | undefined = args
+    .find((arg) => arg.startsWith('--games='))
+    ?.split('=')[1]
+    ?.split(',')
+    .map((game) => game.trim())
+
+  if (gamesFilter && gamesFilter.length > 0) {
+    logger.info(`🎯 個別実行モード: ${gamesFilter.join(', ')}`)
+  }
+
+  // ECNavi 専用ゲームのリスト
+  const ecnaviOnlyGames = [
+    'fishing',
+    'entryLottery',
+    'gesoten',
+    'chirashi',
+    'chinju',
+    'quiz',
+    'divination',
+    'choice',
+    'news',
+    'garapon',
+    'doron',
+    'ticketingLottery',
+    'fund',
+    'natsupoi',
+    'spotdiffBox',
+    'languageTravel',
+    'brainExerciseGame',
+    'easyGame',
+    'brainTraining',
+    'vegetable',
+    'chocoRead',
+    'enqueteRally',
+  ]
+
+  // フィルタリングされたゲームが ECNavi 専用かどうかを判定
+  const isEcNaviOnly =
+    gamesFilter &&
+    gamesFilter.length > 0 &&
+    gamesFilter.every((game) => ecnaviOnlyGames.includes(game))
+
+  // 適切なクローラーのみを実行
+  const crawlers = isEcNaviOnly
+    ? [new EcNaviCrawler(gamesFilter)]
+    : [new PointTownCrawler(gamesFilter), new EcNaviCrawler(gamesFilter)]
 
   // ログイン処理だけ先に済ませる
   if (process.env.ENABLE_LOGIN === 'true') {

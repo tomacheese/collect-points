@@ -104,12 +104,14 @@ export abstract class BaseCrawler implements Crawler {
   protected screenshotConfig: ScreenshotConfig
   protected pointLogConfig: PointLogConfig
   protected diagnosticsConfig: DiagnosticsConfig
+  protected gamesFilter?: string[]
   private fileCleanupDone = false
   private consoleLogs = new WeakMap<Page, ConsoleLog[]>()
   private networkLogs = new WeakMap<Page, NetworkLog[]>()
 
-  constructor() {
+  constructor(gamesFilter?: string[]) {
     this.logger = Logger.configure(this.constructor.name)
+    this.gamesFilter = gamesFilter
 
     // NaN 検証を含むスクリーンショット設定
     const retentionDaysEnv = process.env.SCREENSHOT_RETENTION_DAYS
@@ -1480,6 +1482,21 @@ export abstract class BaseCrawler implements Crawler {
         await fs.promises.rmdir(providerDir)
       }
     }
+  }
+
+  /**
+   * 指定されたゲームを実行すべきかどうかを判定する
+   * @param gameName ゲーム名
+   * @returns 実行すべき場合は true
+   */
+  protected shouldRun(gameName: string): boolean {
+    // フィルターが指定されていない場合は全て実行
+    if (!this.gamesFilter || this.gamesFilter.length === 0) {
+      return true
+    }
+
+    // フィルターに含まれている場合のみ実行
+    return this.gamesFilter.includes(gameName)
   }
 
   /**
