@@ -1,7 +1,7 @@
 import type { Page } from 'rebrowser-puppeteer-core'
 import type { EcNaviContext } from '@/core/types'
 import { sleep } from '@/utils/functions'
-import { safeGoto } from '@/utils/safe-operations'
+import { safeGoto, safeWaitForNavigation } from '@/utils/safe-operations'
 
 /**
  * 脳トレクイズ
@@ -51,14 +51,14 @@ export async function brainTraining(
 
   if (startClicked) {
     context.logger.info('brainTraining: 開始ボタンをクリックしました')
-    // ページ遷移を待機
-    await Promise.race([
-      page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 10_000 }),
-      sleep(10_000),
-    ]).catch(() => {
-      context.logger.warn('brainTraining: ナビゲーション待機がタイムアウト')
-    })
-    await sleep(2000)
+    // ページ遷移を待機（クリック済みだが遷移検出のため waitForNavigation を使用）
+    await page
+      .waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 10_000 })
+      .catch(() => {
+        context.logger.warn(
+          'brainTraining: 開始ボタンクリック後のナビゲーション待機がタイムアウト'
+        )
+      })
   } else {
     context.logger.warn('brainTraining: 開始ボタンが見つかりません')
   }
@@ -107,12 +107,12 @@ export async function brainTraining(
     const randomIndex = Math.floor(Math.random() * answerButtons.length)
 
     // 回答をクリックし、ページのリロードを待機
-    await Promise.race([
-      page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 5000 }),
-      answerButtons[randomIndex].click().then(() => sleep(5000)),
-    ]).catch(() => {
-      context.logger.warn(`brainTraining: 回答後のナビゲーション待機失敗`)
-    })
+    await safeWaitForNavigation(
+      page,
+      () => answerButtons[randomIndex].click(),
+      context.logger,
+      { timeout: 5000 }
+    )
 
     await sleep(1000)
 
@@ -133,16 +133,14 @@ export async function brainTraining(
 
     if (nextClicked) {
       context.logger.info(`brainTraining: 「次へ」ボタンをクリック`)
-      // 次のページへの遷移を待機
-      await Promise.race([
-        page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 5000 }),
-        sleep(5000),
-      ]).catch(() => {
-        context.logger.warn(
-          `brainTraining: 次へボタン後のナビゲーション待機失敗`
-        )
-      })
-      await sleep(1000)
+      // 次のページへの遷移を待機（クリック済みだが遷移検出のため waitForNavigation を使用）
+      await page
+        .waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 5000 })
+        .catch(() => {
+          context.logger.warn(
+            'brainTraining: 「次へ」ボタンクリック後のナビゲーション待機がタイムアウト'
+          )
+        })
     }
   }
 
