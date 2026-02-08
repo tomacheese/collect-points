@@ -30,7 +30,7 @@ export async function puzzle(
   // 開始ボタンをクリック
   const clicked = await page
     .evaluate(() => {
-      const elements = Array.from(document.querySelectorAll('button'))
+      const elements = [...document.querySelectorAll('button')]
       const button = elements.find(
         (el) =>
           el.textContent?.includes('挑戦') ||
