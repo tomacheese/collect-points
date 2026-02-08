@@ -32,9 +32,7 @@ export async function brainTraining(
   // 開始ボタンをクリック（JavaScript でテキストを含む要素を探す）
   const startClicked = await page
     .evaluate(() => {
-      const elements = Array.from(
-        document.querySelectorAll('button, a')
-      ) as HTMLElement[]
+      const elements = [...document.querySelectorAll('button, a')] as HTMLElement[]
       const button = elements.find(
         (el) =>
           el.textContent?.includes('つづきから') ||
@@ -81,12 +79,14 @@ export async function brainTraining(
       // ページの状態をデバッグ
       const debugInfo = await page
         .evaluate(() => {
-          const allButtons = Array.from(document.querySelectorAll('button'))
+          const allButtons = [...document.querySelectorAll('button')]
           return {
-            url: window.location.href,
+            url: globalThis.location.href,
             title: document.title,
             buttonCount: allButtons.length,
-            buttonTexts: allButtons.map((b) => b.textContent?.trim()).slice(0, 10),
+            buttonTexts: allButtons
+              .map((b) => b.textContent?.trim())
+              .slice(0, 10),
           }
         })
         .catch(() => null)
@@ -117,9 +117,7 @@ export async function brainTraining(
     // 次へボタン（JavaScript でテキストを含む要素を探す）
     const nextClicked = await page
       .evaluate(() => {
-        const elements = Array.from(
-          document.querySelectorAll('button, a')
-        ) as HTMLElement[]
+        const elements = [...document.querySelectorAll('button, a')] as HTMLElement[]
         const button = elements.find((el) => el.textContent?.includes('次へ'))
         if (button) {
           button.click()
@@ -136,7 +134,9 @@ export async function brainTraining(
         page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 5000 }),
         sleep(5000),
       ]).catch(() => {
-        context.logger.warn(`brainTraining: 次へボタン後のナビゲーション待機失敗`)
+        context.logger.warn(
+          `brainTraining: 次へボタン後のナビゲーション待機失敗`
+        )
       })
       await sleep(1000)
     }

@@ -30,12 +30,11 @@ export async function nazotore(
   // 開始ボタンをクリック
   const clicked = await page
     .evaluate(() => {
-      const elements = Array.from(
-        document.querySelectorAll('button, a')
-      ) as HTMLElement[]
+      const elements = [...document.querySelectorAll('button, a')] as HTMLElement[]
       const button = elements.find(
         (el) =>
-          el.textContent?.includes('挑戦') || el.textContent?.includes('はじめる')
+          el.textContent?.includes('挑戦') ||
+          el.textContent?.includes('はじめる')
       )
       if (button) {
         button.click()

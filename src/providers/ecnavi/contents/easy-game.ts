@@ -34,9 +34,7 @@ export async function easyGame(
   // ゲーム開始ボタンをクリック（JavaScript でテキストを含む要素を探す）
   const clicked = await page
     .evaluate(() => {
-      const elements = Array.from(
-        document.querySelectorAll('button, a')
-      ) as HTMLElement[]
+      const elements = [...document.querySelectorAll('button, a')] as HTMLElement[]
       const button = elements.find(
         (el) =>
           el.textContent?.includes('スタート') ||
@@ -60,19 +58,21 @@ export async function easyGame(
     // デバッグ情報を出力
     const debugInfo = await page
       .evaluate(() => {
-        const allButtons = Array.from(
-          document.querySelectorAll('button, a')
-        ) as HTMLElement[]
+        const allButtons = [...document.querySelectorAll('button, a')] as HTMLElement[]
         return {
-          url: window.location.href,
+          url: globalThis.location.href,
           title: document.title,
           buttonCount: allButtons.length,
-          buttonTexts: allButtons.map((b) => b.textContent?.trim()).slice(0, 10),
+          buttonTexts: allButtons
+            .map((b) => b.textContent?.trim())
+            .slice(0, 10),
         }
       })
       .catch(() => null)
     if (debugInfo) {
-      context.logger.info(`easyGame: デバッグ情報: ${JSON.stringify(debugInfo)}`)
+      context.logger.info(
+        `easyGame: デバッグ情報: ${JSON.stringify(debugInfo)}`
+      )
     }
   }
 

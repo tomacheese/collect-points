@@ -14,23 +14,40 @@ export async function doron(context: EcNaviContext, page: Page): Promise<void> {
     waitUntil: 'networkidle2',
   })
 
-  await page.waitForSelector('ul.character-tanuki a').then(async (element) => {
-    const newPage = await getNewTabPage(context.logger, page, element)
-    if (newPage == null) {
-      return
-    }
-    await sleep(1000)
-    await newPage.close()
-    await sleep(1000)
-  })
+  // 現在の URL をログ出力
+  context.logger.info(`doron: 現在の URL: ${page.url()}`)
 
-  await page.waitForSelector('ul.character-kitsune a').then(async (element) => {
-    const newPage = await getNewTabPage(context.logger, page, element)
-    if (newPage == null) {
-      return
+  // たぬきリンク
+  const tanukiElement = await page
+    .waitForSelector('ul.character-tanuki a', { timeout: 5000 })
+    .catch(() => null)
+  if (tanukiElement) {
+    context.logger.info('doron: たぬきリンクをクリック')
+    const newPage = await getNewTabPage(context.logger, page, tanukiElement)
+    if (newPage != null) {
+      await sleep(1000)
+      await newPage.close()
+      await sleep(1000)
     }
-    await sleep(1000)
-    await newPage.close()
-    await sleep(1000)
-  })
+  } else {
+    context.logger.warn('doron: たぬきリンクが見つかりません')
+  }
+
+  // きつねリンク
+  const kitsuneElement = await page
+    .waitForSelector('ul.character-kitsune a', { timeout: 5000 })
+    .catch(() => null)
+  if (kitsuneElement) {
+    context.logger.info('doron: きつねリンクをクリック')
+    const newPage = await getNewTabPage(context.logger, page, kitsuneElement)
+    if (newPage != null) {
+      await sleep(1000)
+      await newPage.close()
+      await sleep(1000)
+    }
+  } else {
+    context.logger.warn('doron: きつねリンクが見つかりません')
+  }
+
+  context.logger.info('doron: 処理完了')
 }

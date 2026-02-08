@@ -31,9 +31,7 @@ export async function spotdiff(
   // 「挑戦する」ボタンをクリック
   const challengeClicked = await page
     .evaluate(() => {
-      const elements = Array.from(
-        document.querySelectorAll('button, a')
-      ) as HTMLElement[]
+      const elements = [...document.querySelectorAll('button, a')] as HTMLElement[]
       const button = elements.find((el) => el.textContent?.includes('挑戦する'))
       if (button) {
         button.click()
@@ -53,7 +51,7 @@ export async function spotdiff(
   // 広告を再生して開始するボタンがあればクリック
   const adClicked = await page
     .evaluate(() => {
-      const elements = Array.from(document.querySelectorAll('button'))
+      const elements = [...document.querySelectorAll('button')]
       const button = elements.find(
         (el) =>
           el.textContent?.includes('広告を再生') ||
@@ -74,7 +72,7 @@ export async function spotdiff(
     // 広告終了後の閉じるボタン
     const closeClicked = await page
       .evaluate(() => {
-        const elements = Array.from(document.querySelectorAll('button'))
+        const elements = [...document.querySelectorAll('button')]
         const button = elements.find(
           (el) =>
             el.textContent?.includes('閉じる') ||

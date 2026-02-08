@@ -27,9 +27,7 @@ export async function cmkuji(
   // くじを引くボタンをクリック
   const clicked = await page
     .evaluate(() => {
-      const elements = Array.from(
-        document.querySelectorAll('button, a')
-      ) as HTMLElement[]
+      const elements = [...document.querySelectorAll('button, a')] as HTMLElement[]
       const button = elements.find(
         (el) =>
           el.textContent?.includes('くじを引く') ||
@@ -44,13 +42,15 @@ export async function cmkuji(
     .catch(() => false)
 
   if (clicked) {
-    context.logger.info('cmkuji: くじを引くボタンをクリック、CM動画再生開始、30秒待機')
+    context.logger.info(
+      'cmkuji: くじを引くボタンをクリック、CM動画再生開始、30秒待機'
+    )
     await sleep(30_000) // CM視聴待機
 
     // 動画終了後の閉じるボタン
     const closedClicked = await page
       .evaluate(() => {
-        const elements = Array.from(document.querySelectorAll('button'))
+        const elements = [...document.querySelectorAll('button')]
         const button = elements.find(
           (el) =>
             el.textContent?.includes('閉じる') ||
