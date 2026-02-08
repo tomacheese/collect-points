@@ -240,6 +240,24 @@ export abstract class BaseCrawler implements Crawler {
     // Network logs の収集を初期化
     this.networkLogs.set(page, [])
 
+    // JavaScript dialog (alert/confirm/prompt) を自動的に閉じる
+    page.on('dialog', (dialog) => {
+      this.logger.warn(
+        `JavaScript dialog を検出しました: ${dialog.type()} - ${dialog.message()}`
+      )
+      dialog
+        .dismiss()
+        .then(() => {
+          this.logger.info('Dialog を自動的に閉じました')
+        })
+        .catch((error: unknown) => {
+          this.logger.error(
+            'Dialog を閉じる際にエラーが発生しました',
+            error as Error
+          )
+        })
+    })
+
     // Console logs の収集
     page.on('console', (msg) => {
       const logs = this.consoleLogs.get(page) ?? []
