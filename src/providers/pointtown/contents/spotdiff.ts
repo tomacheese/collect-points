@@ -31,7 +31,9 @@ export async function spotdiff(
   // 「挑戦する」ボタンをクリック
   const challengeClicked = await page
     .evaluate(() => {
-      const elements = [...document.querySelectorAll('button, a')] as HTMLElement[]
+      const elements = [
+        ...document.querySelectorAll('button, a'),
+      ] as HTMLElement[]
       const button = elements.find((el) => el.textContent?.includes('挑戦する'))
       if (button) {
         button.click()

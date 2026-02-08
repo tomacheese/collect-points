@@ -27,7 +27,9 @@ export async function cmkuji(
   // くじを引くボタンをクリック
   const clicked = await page
     .evaluate(() => {
-      const elements = [...document.querySelectorAll('button, a')] as HTMLElement[]
+      const elements = [
+        ...document.querySelectorAll('button, a'),
+      ] as HTMLElement[]
       const button = elements.find(
         (el) =>
           el.textContent?.includes('くじを引く') ||

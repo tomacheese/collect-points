@@ -80,7 +80,9 @@ export async function brainTraining(
     // 次の問題へ進むボタンがあればクリック
     const nextClicked = await page
       .evaluate(() => {
-        const elements = [...document.querySelectorAll('button, a')] as HTMLElement[]
+        const elements = [
+          ...document.querySelectorAll('button, a'),
+        ] as HTMLElement[]
         const button = elements.find(
           (el) =>
             el.textContent?.includes('次へ') ||

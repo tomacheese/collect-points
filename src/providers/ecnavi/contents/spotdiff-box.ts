@@ -35,7 +35,9 @@ export async function spotdiffBox(
   // 挑戦ボタンをクリック（JavaScript でテキストを含む要素を探す）
   const clicked = await page
     .evaluate(() => {
-      const elements = [...document.querySelectorAll('button, a')] as HTMLElement[]
+      const elements = [
+        ...document.querySelectorAll('button, a'),
+      ] as HTMLElement[]
       const button = elements.find((el) => el.textContent?.includes('挑戦'))
       if (button) {
         button.click()
@@ -53,7 +55,9 @@ export async function spotdiffBox(
     // デバッグ情報を出力
     const debugInfo = await page
       .evaluate(() => {
-        const allButtons = [...document.querySelectorAll('button, a')] as HTMLElement[]
+        const allButtons = [
+          ...document.querySelectorAll('button, a'),
+        ] as HTMLElement[]
         return {
           url: globalThis.location.href,
           title: document.title,
