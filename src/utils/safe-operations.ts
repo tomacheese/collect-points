@@ -61,7 +61,7 @@ export async function safeGoto(
   const waitUntil = options?.preferNetworkIdle
     ? 'networkidle2'
     : 'domcontentloaded'
-  const timeout = options?.timeout ?? 30_000
+  const timeout = options?.timeout ?? 60_000
 
   try {
     await page.goto(url, { waitUntil, timeout })
