@@ -28,16 +28,28 @@ export async function nazotore(
   )
 
   // 開始ボタンをクリック
-  const startButton = await page
-    .waitForSelector(
-      'button:has-text("挑戦"), button:has-text("はじめる"), a:has-text("挑戦")',
-      { timeout: 5000 }
-    )
-    .catch(() => null)
+  const clicked = await page
+    .evaluate(() => {
+      const elements = Array.from(
+        document.querySelectorAll('button, a')
+      ) as HTMLElement[]
+      const button = elements.find(
+        (el) =>
+          el.textContent?.includes('挑戦') || el.textContent?.includes('はじめる')
+      )
+      if (button) {
+        button.click()
+        return true
+      }
+      return false
+    })
+    .catch(() => false)
 
-  if (startButton) {
-    await startButton.click()
+  if (clicked) {
+    context.logger.info('nazotore: 開始ボタンをクリック')
     await sleep(3000)
+  } else {
+    context.logger.warn('nazotore: 開始ボタンが見つかりません')
   }
 
   // 広告があれば視聴

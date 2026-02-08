@@ -25,30 +25,54 @@ export async function cmkuji(
   )
 
   // くじを引くボタンをクリック
-  const drawButton = await page
-    .waitForSelector(
-      'button:has-text("くじを引く"), button:has-text("動画を見る"), a:has-text("くじを引く")',
-      { timeout: 5000 }
-    )
-    .catch(() => null)
+  const clicked = await page
+    .evaluate(() => {
+      const elements = Array.from(
+        document.querySelectorAll('button, a')
+      ) as HTMLElement[]
+      const button = elements.find(
+        (el) =>
+          el.textContent?.includes('くじを引く') ||
+          el.textContent?.includes('動画を見る')
+      )
+      if (button) {
+        button.click()
+        return true
+      }
+      return false
+    })
+    .catch(() => false)
 
-  if (drawButton) {
-    await drawButton.click()
-    context.logger.info('CM動画再生開始、30秒待機')
+  if (clicked) {
+    context.logger.info('cmkuji: くじを引くボタンをクリック、CM動画再生開始、30秒待機')
     await sleep(30_000) // CM視聴待機
 
     // 動画終了後の閉じるボタン
-    const closeButton = await page
-      .waitForSelector(
-        'button:has-text("閉じる"), button:has-text("結果を見る"), button[class*="close"]',
-        { timeout: 10_000 }
-      )
-      .catch(() => null)
+    const closedClicked = await page
+      .evaluate(() => {
+        const elements = Array.from(document.querySelectorAll('button'))
+        const button = elements.find(
+          (el) =>
+            el.textContent?.includes('閉じる') ||
+            el.textContent?.includes('結果を見る') ||
+            el.className.includes('close')
+        )
+        if (button) {
+          button.click()
+          return true
+        }
+        return false
+      })
+      .catch(() => false)
 
-    if (closeButton) {
-      await closeButton.click()
+    if (closedClicked) {
+      context.logger.info('cmkuji: 閉じるボタンをクリック')
       await sleep(3000)
+    } else {
+      context.logger.warn('cmkuji: 閉じるボタンが見つかりません')
     }
+  } else {
+    context.logger.warn('cmkuji: くじを引くボタンが見つかりません')
   }
 
   await sleep(3000)

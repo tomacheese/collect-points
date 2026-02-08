@@ -30,16 +30,28 @@ export async function dropgame(
   await context.watchAdIfExists(page)
 
   // ゲーム開始ボタンをクリック
-  const startButton = await page
-    .waitForSelector(
-      'button:has-text("スタート"), button:has-text("はじめる"), button:has-text("プレイ")',
-      { timeout: 5000 }
-    )
-    .catch(() => null)
+  const clicked = await page
+    .evaluate(() => {
+      const elements = Array.from(document.querySelectorAll('button'))
+      const button = elements.find(
+        (el) =>
+          el.textContent?.includes('スタート') ||
+          el.textContent?.includes('はじめる') ||
+          el.textContent?.includes('プレイ')
+      )
+      if (button) {
+        button.click()
+        return true
+      }
+      return false
+    })
+    .catch(() => false)
 
-  if (startButton) {
-    await startButton.click()
+  if (clicked) {
+    context.logger.info('dropgame: 開始ボタンをクリック')
     await sleep(10_000) // ゲームプレイ待機
+  } else {
+    context.logger.warn('dropgame: 開始ボタンが見つかりません')
   }
 
   await sleep(5000)

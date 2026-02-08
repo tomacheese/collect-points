@@ -29,43 +29,71 @@ export async function spotdiff(
   )
 
   // 「挑戦する」ボタンをクリック
-  const challengeButton = await page
-    .waitForSelector('button:has-text("挑戦する"), a:has-text("挑戦する")', {
-      timeout: 5000,
+  const challengeClicked = await page
+    .evaluate(() => {
+      const elements = Array.from(
+        document.querySelectorAll('button, a')
+      ) as HTMLElement[]
+      const button = elements.find((el) => el.textContent?.includes('挑戦する'))
+      if (button) {
+        button.click()
+        return true
+      }
+      return false
     })
-    .catch(() => null)
+    .catch(() => false)
 
-  if (challengeButton) {
-    await challengeButton.click()
+  if (challengeClicked) {
+    context.logger.info('spotdiff: 挑戦するボタンをクリック')
     await sleep(3000)
+  } else {
+    context.logger.warn('spotdiff: 挑戦するボタンが見つかりません')
   }
 
   // 広告を再生して開始するボタンがあればクリック
-  const adButton = await page
-    .waitForSelector(
-      'button:has-text("広告を再生"), button:has-text("広告を見て")',
-      {
-        timeout: 5000,
+  const adClicked = await page
+    .evaluate(() => {
+      const elements = Array.from(document.querySelectorAll('button'))
+      const button = elements.find(
+        (el) =>
+          el.textContent?.includes('広告を再生') ||
+          el.textContent?.includes('広告を見て')
+      )
+      if (button) {
+        button.click()
+        return true
       }
-    )
-    .catch(() => null)
+      return false
+    })
+    .catch(() => false)
 
-  if (adButton) {
-    await adButton.click()
-    context.logger.info('広告再生開始、30秒待機')
+  if (adClicked) {
+    context.logger.info('spotdiff: 広告再生開始、30秒待機')
     await sleep(30_000) // 広告視聴待機
 
     // 広告終了後の閉じるボタン
-    const closeButton = await page
-      .waitForSelector(
-        'button:has-text("閉じる"), button:has-text("スキップ"), button[class*="close"]',
-        { timeout: 10_000 }
-      )
-      .catch(() => null)
+    const closeClicked = await page
+      .evaluate(() => {
+        const elements = Array.from(document.querySelectorAll('button'))
+        const button = elements.find(
+          (el) =>
+            el.textContent?.includes('閉じる') ||
+            el.textContent?.includes('スキップ') ||
+            el.className.includes('close')
+        )
+        if (button) {
+          button.click()
+          return true
+        }
+        return false
+      })
+      .catch(() => false)
 
-    if (closeButton) {
-      await closeButton.click()
+    if (closeClicked) {
+      context.logger.info('spotdiff: 閉じるボタンをクリック')
       await sleep(2000)
+    } else {
+      context.logger.warn('spotdiff: 閉じるボタンが見つかりません')
     }
   }
 
