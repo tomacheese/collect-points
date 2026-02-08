@@ -1,6 +1,7 @@
 import type { Dialog, Page } from 'rebrowser-puppeteer-core'
 import type { PointTownContext } from '@/core/types'
 import { sleep } from '@/utils/functions'
+import { safeGoto } from '@/utils/safe-operations'
 
 /**
  * 動画でコインを実行する
@@ -25,9 +26,12 @@ export async function movieDeCoin(
   page.on('dialog', dialogHandler)
 
   try {
-    await page.goto('https://www.pointtown.com/movie-de-coin', {
-      waitUntil: 'networkidle2',
-    })
+    await safeGoto(
+      page,
+      'https://www.pointtown.com/movie-de-coin',
+      context.logger,
+      { preferNetworkIdle: true }
+    )
 
     // 残り回数を確認
     const remainingText = await page
@@ -97,9 +101,12 @@ export async function movieDeCoin(
       }
 
       // ページをリロードして次の動画を視聴
-      await page.goto('https://www.pointtown.com/movie-de-coin', {
-        waitUntil: 'networkidle2',
-      })
+      await safeGoto(
+        page,
+        'https://www.pointtown.com/movie-de-coin',
+        context.logger,
+        { preferNetworkIdle: true }
+      )
 
       // 次のループの前に少し待機
       await sleep(3000)

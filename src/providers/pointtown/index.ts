@@ -16,6 +16,7 @@ import {
   competition,
   dropgame,
   easyGame,
+  easyGameMissions,
   gacha,
   gesoten,
   horoscope,
@@ -138,6 +139,11 @@ export default class PointTownCrawler extends BaseCrawler {
       'competition'
     )
     await this.runMethod(page, (p) => easyGame(this.context, p), 'easyGame')
+    await this.runMethod(
+      page,
+      (p) => easyGameMissions(this.context, p),
+      'easyGameMissions'
+    )
     await this.runMethod(page, (p) => gesoten(this.context, p), 'gesoten')
     await this.runMethod(page, (p) => news(this.context, p), 'news')
 
@@ -211,21 +217,50 @@ export default class PointTownCrawler extends BaseCrawler {
    */
   protected async getCurrentPoint(page: Page): Promise<number> {
     this.logger.info('getCurrentPoint()')
-    await page.goto('https://www.pointtown.com/mypage', {
-      waitUntil: 'networkidle2',
-    })
 
-    const nPointText = await page.evaluate((): string | null => {
-      const element = document.querySelector(
-        'ul.c-mypage-summary-sec__main a[href="/mypage/point-history"]'
-      )
-      return element?.textContent ?? null
-    })
-    if (nPointText == null) {
-      return -1
+    // リトライロジック（最大 3 回試行）
+    for (let retry = 0; retry < 3; retry++) {
+      try {
+        await page.goto('https://www.pointtown.com/mypage', {
+          waitUntil: 'domcontentloaded',
+          timeout: 180_000, // 3 分に延長
+        })
+
+        const nPointText = await page.evaluate((): string | null => {
+          const element = document.querySelector(
+            'ul.c-mypage-summary-sec__main a[href="/mypage/point-history"]'
+          )
+          return element?.textContent ?? null
+        })
+        if (nPointText == null) {
+          // ポイント要素がまだ取得できない場合は例外を投げてリトライさせる
+          throw new ReferenceError('Point element not found')
+        }
+        const replaced = nPointText.replaceAll(',', '')
+        const parsed = Number.parseInt(replaced, 10)
+        if (Number.isNaN(parsed)) {
+          // 数値に変換できない場合もリトライ対象とする
+          throw new TypeError(`Point value is NaN (replaced: ${replaced})`)
+        }
+        return parsed
+      } catch (error) {
+        if (retry < 2) {
+          this.logger.warn(
+            `getCurrentPoint: リトライ ${retry + 1}/3 (${(error as Error).message})`
+          )
+          await sleep(10_000) // 10 秒待機してリトライ
+          continue
+        }
+        // 最後のリトライでも失敗した場合は -1 を返す
+        this.logger.error(
+          'getCurrentPoint: 3 回リトライしましたが失敗しました',
+          error as Error
+        )
+        return -1
+      }
     }
-    const replaced = nPointText.replaceAll(',', '')
-    return Number.parseInt(replaced, 10)
+    // TypeScript の型チェックのため（理論上到達しない）
+    return -1
   }
 
   /**
