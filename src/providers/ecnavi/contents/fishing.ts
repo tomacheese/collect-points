@@ -1,6 +1,7 @@
 import type { Page } from 'rebrowser-puppeteer-core'
 import type { EcNaviContext } from '@/core/types'
 import { sleep } from '@/utils/functions'
+import { safeGoto } from '@/utils/safe-operations'
 
 /**
  * 釣りパンダガチャ
@@ -11,6 +12,8 @@ import { sleep } from '@/utils/functions'
  * 3. ゲームが自動実行される（15-20秒）
  * 4. 結果画面が表示される
  *
+ * リダイレクト先のゲームページでは動的コンテンツが多いため safeGoto を使用する。
+ *
  * @param context クローラーコンテキスト
  * @param page ページ
  */
@@ -20,10 +23,8 @@ export async function fishing(
 ): Promise<void> {
   context.logger.info('fishing()')
 
-  // 1. ゲームページにアクセス
-  await page.goto('https://ecnavi.jp/game/fishing/play/', {
-    waitUntil: 'networkidle2',
-  })
+  // 1. ゲームページは動的コンテンツが多いため safeGoto を使用
+  await safeGoto(page, 'https://ecnavi.jp/game/fishing/play/', context.logger)
   await sleep(3000)
 
   // 現在のURLをログに出力
