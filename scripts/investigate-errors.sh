@@ -15,6 +15,9 @@ cd "$PROJECT_DIR"
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 
+# ~/.local/bin を PATH に追加（cron 環境で claude コマンドを使用するため）
+export PATH="$HOME/.local/bin:$PATH"
+
 # claude コマンドのパスを設定
 if command -v claude &> /dev/null; then
   CLAUDE_CMD="claude"
