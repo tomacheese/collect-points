@@ -223,6 +223,7 @@ export default class EcNaviCrawler extends BaseCrawler {
   protected async getCurrentPoint(page: Page): Promise<number> {
     this.logger.info('getCurrentPoint()')
 
+    const startTime = Date.now()
     // リトライロジック（最大 3 回試行）
     for (let retry = 0; retry < 3; retry++) {
       try {
@@ -254,7 +255,14 @@ export default class EcNaviCrawler extends BaseCrawler {
           await sleep(10_000) // 10 秒待機してリトライ
           continue
         }
-        // 最後のリトライでも失敗した場合は -1 を返す
+        // 最後のリトライでも失敗した場合は診断情報を保存
+        const executionTime = Date.now() - startTime
+        await this.saveDiagnosticsIfEnabled(
+          page,
+          'getCurrentPoint',
+          error as Error,
+          executionTime
+        )
         this.logger.error(
           'getCurrentPoint: 3 回リトライしましたが失敗しました',
           error as Error

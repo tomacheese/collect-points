@@ -196,7 +196,12 @@ private async watchAdIfExists(page: Page): Promise<void> {
 
 ### 概要
 
-`runMethod()` でメソッド実行中にエラーが発生すると、以下の診断情報を構造化 JSON 形式（gzip 圧縮）で自動保存する。
+以下の場合に診断情報を構造化 JSON 形式（gzip 圧縮）で自動保存する：
+
+1. **`runMethod()` でメソッド実行中にエラーが発生した場合**
+2. **`getCurrentPoint()` が 3 回リトライしても失敗した場合**
+
+これにより、ポイント取得エラーも含めた詳細な診断情報が記録される。
 
 ### 記録される情報
 
