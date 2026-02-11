@@ -509,6 +509,32 @@ export abstract class BaseCrawler implements Crawler {
   }
 
   /**
+   * 診断情報を保存する（getCurrentPoint などのヘルパーメソッド用）
+   *
+   * @param page - ページオブジェクト
+   * @param methodName - メソッド名
+   * @param error - エラーオブジェクト
+   */
+  protected async saveDiagnosticsIfEnabled(
+    page: Page,
+    methodName: string,
+    error: Error
+  ): Promise<void> {
+    if (!this.diagnosticsConfig.enabled) {
+      return
+    }
+    try {
+      const browser = page.browser()
+      await this.saveDiagnostics(browser, page, methodName, error, 0)
+    } catch (diagnosticError) {
+      this.logger.warn(
+        `${methodName}: Failed to save diagnostics`,
+        diagnosticError as Error
+      )
+    }
+  }
+
+  /**
    * ページ情報を収集する
    * @param page 対象ページ
    * @returns ページ情報

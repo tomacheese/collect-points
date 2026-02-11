@@ -249,7 +249,12 @@ export default class PointTownCrawler extends BaseCrawler {
           await sleep(10_000) // 10 秒待機してリトライ
           continue
         }
-        // 最後のリトライでも失敗した場合は -1 を返す
+        // 最後のリトライでも失敗した場合は診断情報を保存
+        await this.saveDiagnosticsIfEnabled(
+          page,
+          'getCurrentPoint',
+          error as Error
+        )
         this.logger.error(
           'getCurrentPoint: 3 回リトライしましたが失敗しました',
           error as Error

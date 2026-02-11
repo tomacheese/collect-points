@@ -66,12 +66,20 @@ gh issue list --repo tomacheese/collect-points --state all --label "bug" --json 
 エラーが見つかった場合、以下を実施：
 
 1. **ログの詳細確認**: エラー前後のログを確認し、コンテキストを把握
-2. **スクリーンショット確認**: `/data/screenshots/` 配下の該当時刻のスクリーンショットを確認
-3. **Chrome で再現確認**: chrome-devtools MCP を使用して、エラーが発生した機能を実際に操作し、現在の状態を確認
+2. **診断情報の確認（最重要）**: `/data/diagnostics/` または `data/prod-data/diagnostics/` 配下の該当する `.json.gz` ファイルを確認
+   - Console logs: ブラウザコンソールのログからエラーの詳細を確認
+   - Network logs: ネットワークリクエストの失敗やタイムアウトを確認
+   - HTML ダンプ: ページの実際の HTML 構造を確認
+   - **診断情報が存在する場合は必ず確認し、その内容を Issue に含めること**
+   - **診断情報が存在しない場合は、なぜ存在しないのか（診断機能の不具合の可能性）を明記すること**
+3. **スクリーンショット確認**: `/data/screenshots/` または `data/prod-data/screenshots/` 配下の該当時刻のスクリーンショットを確認
+4. **Chrome で再現確認**: chrome-devtools MCP を使用して、エラーが発生した機能を実際に操作し、現在の状態を確認
    - `navigate_page` でページにアクセス
    - `take_snapshot` でページ構造を確認
    - `evaluate_script` で JavaScript を実行してセレクターや要素の状態を確認
    - `take_screenshot` で視覚的な状態を確認
+
+**重要**: 推測のみで原因を記載してはならない。診断情報、スクリーンショット、ログの詳細、Chrome での再現確認など、**実際のデータに基づいて** 原因を特定すること。不明な場合は「原因不明」と明記し、確認した情報のみを記載する。
 
 ### 7. GitHub Issue を作成
 
@@ -95,8 +103,15 @@ gh issue create \
 {関連するログ}
 \`\`\`
 
+## 診断情報
+{診断情報ファイルのパスと主要な内容}
+- Console logs の重要なエラー
+- Network logs の失敗したリクエスト
+- HTML ダンプから分かる問題
+- **診断情報が存在しない場合**: なぜ診断情報が出力されなかったのか（例: getCurrentPoint() のエラーは診断情報対象外）
+
 ## 調査結果
-{原因の分析}
+{原因の分析（実際のデータに基づく）}
 
 ## 再現手順
 1. {手順1}
