@@ -1,6 +1,7 @@
 import type { Page } from 'rebrowser-puppeteer-core'
 import { KnownDevices } from 'rebrowser-puppeteer-core'
 import type { PointTownContext } from '@/core/types'
+import { safeGoto } from '@/utils/safe-operations'
 
 /**
  * 星占い（スマホ専用）
@@ -15,9 +16,14 @@ export async function horoscope(
 
   await page.emulate(KnownDevices['iPhone 12 Pro'])
 
-  await page.goto('https://www.pointtown.com/fortune/horoscope/detail', {
-    waitUntil: 'networkidle2',
-  })
+  await safeGoto(
+    page,
+    'https://www.pointtown.com/fortune/horoscope/detail',
+    context.logger,
+    {
+      preferNetworkIdle: true,
+    }
+  )
   await page
     .waitForSelector('button.horoscope-btn[type="submit"]')
     .then((element) => element?.click())

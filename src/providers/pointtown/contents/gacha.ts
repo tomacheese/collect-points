@@ -2,6 +2,7 @@ import type { Page } from 'rebrowser-puppeteer-core'
 import { KnownDevices } from 'rebrowser-puppeteer-core'
 import type { PointTownContext } from '@/core/types'
 import { sleep } from '@/utils/functions'
+import { safeGoto } from '@/utils/safe-operations'
 
 /**
  * ガチャ（スマホ専用）
@@ -16,8 +17,8 @@ export async function gacha(
 
   await page.emulate(KnownDevices['iPhone 12 Pro'])
 
-  await page.goto('https://www.pointtown.com/gacha/play', {
-    waitUntil: 'networkidle2',
+  await safeGoto(page, 'https://www.pointtown.com/gacha/play', context.logger, {
+    preferNetworkIdle: true,
   })
   await sleep(10_000)
 }
