@@ -982,16 +982,19 @@ export abstract class BaseCrawler implements Crawler {
     this.logger.info('close browser')
 
     const closePromise = browser.close()
+    let timeoutId: NodeJS.Timeout
     const timeoutPromise = new Promise<void>((_resolve, reject) => {
-      setTimeout(() => {
+      timeoutId = setTimeout(() => {
         reject(new Error('Browser close timeout (120s)'))
       }, 120_000)
     })
 
     try {
       await Promise.race([closePromise, timeoutPromise])
+      clearTimeout(timeoutId)
       this.logger.info('Browser closed successfully')
     } catch (error) {
+      clearTimeout(timeoutId)
       this.logger.error('Browser close failed or timed out', error as Error)
 
       try {
