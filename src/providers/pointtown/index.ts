@@ -10,6 +10,7 @@ import {
   waitForUrl,
 } from '@/utils/functions'
 import type { Browser, Page } from 'rebrowser-puppeteer-core'
+import { safeGoto } from '@/utils/safe-operations'
 import {
   brainTraining,
   cmkuji,
@@ -163,15 +164,32 @@ export default class PointTownCrawler extends BaseCrawler {
       'movieDeCoin'
     )
 
-    // スマホ系
+    // スマホ系（ポイントログは PC ページで行うため、mobilePage では無効化）
     const mobilePage = await browser.newPage()
-    await this.runMethod(mobilePage, (p) => gacha(this.context, p), 'gacha')
-    await this.runMethod(mobilePage, (p) => omikuji(this.context, p), 'omikuji')
-    await this.runMethod(
-      mobilePage,
-      (p) => horoscope(this.context, p),
-      'horoscope'
-    )
+    try {
+      await this.takeScreenshot(mobilePage, 'gacha', 'before')
+      await gacha(this.context, mobilePage)
+      await this.takeScreenshot(mobilePage, 'gacha', 'after')
+    } catch (error) {
+      this.logger.error('gacha: Error', error as Error)
+    }
+
+    try {
+      await this.takeScreenshot(mobilePage, 'omikuji', 'before')
+      await omikuji(this.context, mobilePage)
+      await this.takeScreenshot(mobilePage, 'omikuji', 'after')
+    } catch (error) {
+      this.logger.error('omikuji: Error', error as Error)
+    }
+
+    try {
+      await this.takeScreenshot(mobilePage, 'horoscope', 'before')
+      await horoscope(this.context, mobilePage)
+      await this.takeScreenshot(mobilePage, 'horoscope', 'after')
+    } catch (error) {
+      this.logger.error('horoscope: Error', error as Error)
+    }
+
     await mobilePage.close()
 
     // スタンプラリーの進捗確認
@@ -220,9 +238,9 @@ export default class PointTownCrawler extends BaseCrawler {
     // リトライロジック（最大 3 回試行）
     for (let retry = 0; retry < 3; retry++) {
       try {
-        await page.goto('https://www.pointtown.com/mypage', {
-          waitUntil: 'domcontentloaded',
+        await safeGoto(page, 'https://www.pointtown.com/mypage', this.logger, {
           timeout: 180_000, // 3 分に延長
+          retryOnTimeout: true,
         })
 
         const nPointText = await page.evaluate((): string | null => {
