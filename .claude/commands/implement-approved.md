@@ -14,6 +14,8 @@ gh issue list \
   --json number,title,body,labels
 ```
 
+取得した Issue について、Issue のコメントも取得して確認すること。
+
 ### 2. Issue ごとに実装を行う
 
 各 Issue について、以下の手順で実装：
