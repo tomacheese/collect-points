@@ -32,7 +32,7 @@
     "@sentry/node": "10.38.0",
     "@types/node": "24.10.12",
     "axios": "1.13.5",
-    "eslint": "9.39.2",
+    "eslint": "10.0.0",
     "eslint-config-standard": "17.1.0",
     "eslint-plugin-import": "2.32.0",
     "eslint-plugin-n": "17.23.2",
