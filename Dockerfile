@@ -58,6 +58,7 @@ ENV CHROMIUM_PATH=/usr/bin/chromium-browser
 ENV LOG_DIR=/data/logs/
 ENV USER_DATA_BASE=/data/userdata
 ENV SCREENSHOT_DIR=/data/screenshots
+ENV DIAGNOSTICS_DIR=/data/diagnostics
 
 # rebrowser-patches 設定（Cloudflare 検出回避）
 # alwaysIsolated: MutationObserver による検出を回避するため isolated context を使用
