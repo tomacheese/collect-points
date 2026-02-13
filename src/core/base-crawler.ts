@@ -972,6 +972,44 @@ export abstract class BaseCrawler implements Crawler {
   }
 
   /**
+   * ブラウザを安全にクローズする
+   *
+   * タイムアウト（120 秒）と強制終了のフォールバックを含む
+   *
+   * @param browser ブラウザインスタンス
+   */
+  private async closeBrowserSafely(browser: Browser): Promise<void> {
+    this.logger.info('close browser')
+
+    const closePromise = browser.close()
+    const timeoutPromise = new Promise<void>((_resolve, reject) => {
+      setTimeout(() => {
+        reject(new Error('Browser close timeout (120s)'))
+      }, 120_000)
+    })
+
+    try {
+      await Promise.race([closePromise, timeoutPromise])
+      this.logger.info('Browser closed successfully')
+    } catch (error) {
+      this.logger.error('Browser close failed or timed out', error as Error)
+
+      try {
+        const process = browser.process()
+        if (process) {
+          this.logger.warn('Killing browser process with SIGKILL')
+          process.kill('SIGKILL')
+          this.logger.info('Browser process killed')
+        } else {
+          this.logger.warn('Browser process not available for killing')
+        }
+      } catch (killError) {
+        this.logger.error('Failed to kill browser process', killError as Error)
+      }
+    }
+  }
+
+  /**
    * クローリングを実施する
    * @param method 実行対象のメソッド
    */
@@ -1055,8 +1093,7 @@ export abstract class BaseCrawler implements Crawler {
     } catch (error) {
       this.logger.error('Error', error as Error)
     }
-    this.logger.info('close browser')
-    await browser.close()
+    await this.closeBrowserSafely(browser)
   }
 
   /**
@@ -1079,8 +1116,7 @@ export abstract class BaseCrawler implements Crawler {
     } catch (error) {
       this.logger.error('Error', error as Error)
     }
-    this.logger.info('close browser')
-    await browser.close()
+    await this.closeBrowserSafely(browser)
   }
 
   /**
@@ -1178,13 +1214,27 @@ export abstract class BaseCrawler implements Crawler {
 
       this.logger.error('Error', error as Error)
 
-      // ProtocolError（CDP タイムアウト）の場合は、広告チェック後にリロードして復帰を試みる
+      // ProtocolError, TimeoutError, TargetCloseError の場合は、広告チェック後にリロードして復帰を試みる
       // 広告ポップアップが表示された状態でブラウザがフリーズするケースへの対策（Issue #407, #414）
-      if ((error as Error).name === 'ProtocolError') {
+      // TimeoutError, TargetCloseError も追加（Issue #448）
+      const recoverableErrors = [
+        'ProtocolError',
+        'TimeoutError',
+        'TargetCloseError',
+      ]
+      if (recoverableErrors.includes((error as Error).name)) {
+        // ページの健全性確認
+        if (page.isClosed()) {
+          this.logger.warn(
+            `${name}: ページが閉じられているため、復帰できません`
+          )
+          throw error
+        }
+
         this.logger.warn(
-          `${name}: ProtocolError が発生したため、広告チェック後にページをリロードして復帰を試みます`
+          `${name}: ${(error as Error).name} が発生したため、広告チェック後にページをリロードして復帰を試みます`
         )
-        // ProtocolError 後に広告ポップアップを処理（フリーズの原因になった可能性がある）
+        // エラー後に広告ポップアップを処理（フリーズの原因になった可能性がある）
         try {
           await this.handleRewardedAd(page)
         } catch {
@@ -1198,7 +1248,7 @@ export abstract class BaseCrawler implements Crawler {
             `${name}: ページのリロードに失敗しました: ${(reloadError as Error).message}`
           )
         }
-        // ProtocolError の場合は throw せず、次のメソッド実行に進む
+        // 復帰可能なエラーの場合は throw せず、次のメソッド実行に進む
         return
       }
 
