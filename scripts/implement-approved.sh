@@ -49,7 +49,7 @@ echo "Approved ラベルの Issue: ${APPROVED_COUNT} 件" | tee -a "$LOG_FILE"
 
 # Claude Code を実行（stream-json でリアルタイム進捗表示）
 # --dangerously-skip-permissions: cron 環境での非インタラクティブ実行に必要
-$CLAUDE_CMD --dangerously-skip-permissions -p "CLAUDE.md と .claude/commands/implement-approved.md を読んで、その内容に従って Approved ラベルが付いた Issue を実装してください。各 Issue ごとにブランチを作成し、実装して PR を作成してください。
+$CLAUDE_CMD --dangerously-skip-permissions -p "CLAUDE.md と .claude/commands/implement-approved.md を読んで、その内容に従って Approved ラベルが付いた Issue を実装してください。各 Issue ごとに Issue についているコメントを確認した上で、ブランチを作成し、実装して PR を作成してください。
 
 【重要】各ステップの開始時に進捗を報告してください：
 1. 「📋 Approved Issue の取得中...」
