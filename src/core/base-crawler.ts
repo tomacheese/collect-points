@@ -1125,8 +1125,8 @@ export abstract class BaseCrawler implements Crawler {
    * メソッド実行前後で広告ポップアップ（Google Rewarded Ads）をチェックし、
    * 表示されていれば処理する。また、メソッド実行中も定期的に広告を監視する。
    *
-   * ProtocolError（CDP タイムアウト）が発生した場合は、広告ポップアップの
-   * チェック後にページをリロードして次のメソッド実行に備える（Issue #407, #414）。
+   * ProtocolError, TimeoutError, TargetCloseError が発生した場合は、広告ポップアップの
+   * チェック後にページをリロードして次のメソッド実行に備える（Issue #407, #414, #448）。
    *
    * @param page ページ
    * @param method 実行するメソッド
@@ -1235,10 +1235,13 @@ export abstract class BaseCrawler implements Crawler {
           `${name}: ${(error as Error).name} が発生したため、広告チェック後にページをリロードして復帰を試みます`
         )
         // エラー後に広告ポップアップを処理（フリーズの原因になった可能性がある）
-        try {
-          await this.handleRewardedAd(page)
-        } catch {
-          // 広告処理に失敗しても続行
+        // ページが開いている場合のみ広告処理を試行（TargetCloseError の再発を防止）
+        if (!page.isClosed()) {
+          try {
+            await this.handleRewardedAd(page)
+          } catch {
+            // 広告処理に失敗しても続行
+          }
         }
         try {
           await page.reload({ waitUntil: 'domcontentloaded', timeout: 30_000 })
